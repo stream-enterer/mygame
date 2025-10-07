@@ -1,0 +1,34 @@
+# Build artifacts (the compiled program and temporary build files)
+build/
+*.o
+*.exe
+mygame
+
+# vcpkg downloads and cache (vcpkg is your dependency manager - don't upload its downloads)
+vcpkg/buildtrees/
+vcpkg/packages/
+vcpkg/downloads/
+vcpkg/installed/
+
+# IDE files (editor-specific configuration that's personal to you)
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files (operating system creates these automatically)
+.DS_Store
+Thumbs.db
+
+# CMake generated files (CMake creates these when configuring your build)
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+
+# vcpkg manifest install logs
+vcpkg-manifest-install.log
+vcpkg_installed/

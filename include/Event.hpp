@@ -1,0 +1,144 @@
+#ifndef EVENT_HPP
+#define EVENT_HPP
+
+#include "Position.hpp"
+
+namespace tutorial
+{
+    class Engine;
+    class Entity;
+
+    // Events
+    class Event
+    {
+    public:
+        virtual ~Event() = default;
+
+        virtual void Execute() = 0;
+    };
+
+    class EngineEvent : public Event
+    {
+    public:
+        EngineEvent(Engine& engine) : engine_(engine)
+        {
+        }
+
+        virtual void Execute() = 0;
+
+    protected:
+        Engine& engine_;
+    };
+
+    class MessageHistoryEvent final : public EngineEvent
+    {
+    public:
+        MessageHistoryEvent(Engine& engine);
+
+        void Execute() override;
+    };
+
+    class NewGameEvent final : public EngineEvent
+    {
+    public:
+        NewGameEvent(Engine& engine);
+
+        void Execute() override;
+    };
+
+    class ReturnToGameEvent final : public EngineEvent
+    {
+    public:
+        ReturnToGameEvent(Engine& engine);
+
+        void Execute() override;
+    };
+
+    class QuitEvent final : public EngineEvent
+    {
+    public:
+        QuitEvent(Engine& engine);
+
+        void Execute() override;
+    };
+
+    // Actions
+    class Action : public Event
+    {
+    public:
+        Action(Engine& engine, Entity& entity)
+            : engine_(engine), entity_(entity)
+        {
+        }
+
+        virtual void Execute();
+
+    protected:
+        Engine& engine_;
+        Entity& entity_;
+    };
+
+    class AiAction final : public Action
+    {
+    public:
+        AiAction(Engine& engine, Entity& entity);
+
+        void Execute() override;
+    };
+
+    class DieAction final : public Action
+    {
+    public:
+        DieAction(Engine& engine, Entity& entity);
+
+        void Execute() override;
+    };
+
+    class WaitAction final : public Action
+    {
+    public:
+        WaitAction(Engine& engine, Entity& entity);
+
+        void Execute() override;
+    };
+
+    class DirectionalAction : public Action
+    {
+    public:
+        DirectionalAction(Engine& engine, Entity& entity, pos_t pos)
+            : Action(engine, entity), pos_(pos)
+        {
+        }
+
+        virtual void Execute() = 0;
+
+    protected:
+        pos_t pos_;
+    };
+
+    class BumpAction final : public DirectionalAction
+    {
+    public:
+        BumpAction(Engine& engine, Entity& entity, pos_t pos);
+
+        void Execute() override;
+    };
+
+    class MeleeAction final : public DirectionalAction
+    {
+    public:
+        MeleeAction(Engine& engine, Entity& entity, pos_t pos);
+
+        void Execute() override;
+    };
+
+    class MoveAction final : public DirectionalAction
+    {
+    public:
+        MoveAction(Engine& engine, Entity& entity, pos_t pos);
+
+        void Execute() override;
+    };
+} // namespace tutorial
+
+#endif // EVENT_HPP
