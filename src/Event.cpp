@@ -9,8 +9,8 @@
 
 namespace tutorial
 {
-    MessageHistoryEvent::MessageHistoryEvent(Engine& engine)
-        : EngineEvent(engine)
+    MessageHistoryEvent::MessageHistoryEvent(Engine& engine) :
+        EngineEvent(engine)
     {
     }
 
@@ -83,8 +83,8 @@ namespace tutorial
 
 namespace tutorial
 {
-    DieAction::DieAction(Engine& engine, Entity& entity)
-        : Action(engine, entity)
+    DieAction::DieAction(Engine& engine, Entity& entity) :
+        Action(engine, entity)
     {
     }
 
@@ -109,8 +109,8 @@ namespace tutorial
 
 namespace tutorial
 {
-    WaitAction::WaitAction(Engine& engine, Entity& entity)
-        : Action(engine, entity)
+    WaitAction::WaitAction(Engine& engine, Entity& entity) :
+        Action(engine, entity)
     {
     }
 
@@ -122,8 +122,8 @@ namespace tutorial
 
 namespace tutorial
 {
-    BumpAction::BumpAction(Engine& engine, Entity& entity, pos_t pos)
-        : DirectionalAction(engine, entity, pos)
+    BumpAction::BumpAction(Engine& engine, Entity& entity, pos_t pos) :
+        DirectionalAction(engine, entity, pos)
     {
     }
 
@@ -156,8 +156,8 @@ namespace tutorial
 
 namespace tutorial
 {
-    MeleeAction::MeleeAction(Engine& engine, Entity& entity, pos_t pos)
-        : DirectionalAction(engine, entity, pos)
+    MeleeAction::MeleeAction(Engine& engine, Entity& entity, pos_t pos) :
+        DirectionalAction(engine, entity, pos)
     {
     }
 
@@ -210,8 +210,8 @@ namespace tutorial
 
 namespace tutorial
 {
-    MoveAction::MoveAction(Engine& engine, Entity& entity, pos_t pos)
-        : DirectionalAction(engine, entity, pos)
+    MoveAction::MoveAction(Engine& engine, Entity& entity, pos_t pos) :
+        DirectionalAction(engine, entity, pos)
     {
     }
 
@@ -230,6 +230,92 @@ namespace tutorial
             if (engine_.IsPlayer(entity_))
             {
                 engine_.ComputeFOV();
+            }
+        }
+    }
+} // namespace tutorial
+
+namespace tutorial
+{
+    PickupAction::PickupAction(Engine& engine, Entity& entity) :
+        Action(engine, entity)
+    {
+    }
+
+    void PickupAction::Execute()
+    {
+        Action::Execute();
+
+        auto entityPos = entity_.GetPos();
+
+        // Look for pickable items at the entity's position
+        bool found = false;
+        const auto& entities = engine_.GetEntities();
+
+        for (auto it = entities.begin(); it != entities.end(); ++it)
+        {
+            const auto& actor = *it;
+
+            if (actor->GetItem() && actor->GetPos() == entityPos
+                && !actor->IsBlocker())
+            {
+                // Try to pick up the item (only works for Player)
+                if (auto* player = dynamic_cast<Player*>(&entity_))
+                {
+                    auto actorName = actor->GetName();
+
+                    // Remove from world and add to inventory
+                    if (player->AddToInventory(
+                            engine_.RemoveEntity(actor.get())))
+                    {
+                        engine_.LogMessage("You pick up the " + actorName + ".",
+                                           color::light_azure, false);
+                        found = true;
+                        break;
+                    }
+                    else
+                    {
+                        engine_.LogMessage("Your inventory is full.",
+                                           color::red, false);
+                        found = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (!found)
+        {
+            engine_.LogMessage("There's nothing here that you can pick up.",
+                               color::white, false);
+        }
+    }
+} // namespace tutorial
+
+namespace tutorial
+{
+    UseItemAction::UseItemAction(Engine& engine, Entity& entity,
+                                 size_t itemIndex) :
+        Action(engine, entity), itemIndex_(itemIndex)
+    {
+    }
+
+    void UseItemAction::Execute()
+    {
+        Action::Execute();
+
+        if (auto* player = dynamic_cast<Player*>(&entity_))
+        {
+            if (Entity* item = player->GetInventoryItem(itemIndex_))
+            {
+                if (item->GetItem())
+                {
+                    if (item->GetItem()->Use(*player, engine_))
+                    {
+                        // Item was used successfully, remove from inventory
+                        player->RemoveFromInventory(itemIndex_);
+                    }
+                }
             }
         }
     }

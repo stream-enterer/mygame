@@ -1,13 +1,16 @@
 #include "MessageLogWindow.hpp"
 
+#include "Engine.hpp"
 #include "MessageLog.hpp"
 #include "UiWindow.hpp"
+
+#include <cstring>
 
 namespace tutorial
 {
     MessageLogWindow::MessageLogWindow(std::size_t width, std::size_t height,
-                                       pos_t pos, const MessageLog& log)
-        : UiWindowBase(width, height, pos), log_(log)
+                                       pos_t pos, const MessageLog& log) :
+        UiWindowBase(width, height, pos), log_(log)
     {
     }
 
@@ -56,5 +59,42 @@ namespace tutorial
         TCOD_console_blit(console_, 0, 0, TCOD_console_get_width(console_),
                           TCOD_console_get_height(console_), parent, pos_.x,
                           pos_.y, 1.0f, 1.0f);
+    }
+    void MessageLogWindow::RenderMouseLook(TCOD_Console* parent,
+                                           const Engine& engine) const
+    {
+        pos_t mousePos = engine.GetMousePos();
+
+        // If mouse is out of FOV, nothing to render
+        if (!engine.IsInFov(mousePos))
+        {
+            return;
+        }
+
+        // Build comma-separated list of entity names at mouse position
+        char buf[128] = "";
+        bool first = true;
+
+        // Scan through all entities
+        for (const auto& entity : engine.GetEntities())
+        {
+            if (entity->GetPos() == mousePos)
+            {
+                if (!first)
+                {
+                    strcat(buf, ", ");
+                }
+                else
+                {
+                    first = false;
+                }
+                strcat(buf, entity->GetName().c_str());
+            }
+        }
+
+        // Display the text at top of parent console
+        TCOD_console_set_default_foreground(parent,
+                                            tcod::ColorRGB{ 192, 192, 192 });
+        TCOD_console_print(parent, 1, 0, "%s", buf);
     }
 } // namespace tutorial

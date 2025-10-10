@@ -18,10 +18,12 @@ namespace tutorial
         void Clear();
         void MoveToFront(Entity& entity);
         void PlaceEntities(const Room& room, int maxMonstersPerRoom);
+        void PlaceItems(const Room& room, int maxItemsPerRoom);
         Entity_ptr& Spawn(Entity_ptr&& src);
         Entity_ptr& Spawn(Entity_ptr&& src, pos_t pos);
 
         Entity* GetBlockingEntity(pos_t pos) const;
+        std::unique_ptr<Entity> Remove(Entity* entity);
 
         using iterator = std::deque<Entity_ptr>::iterator;
         using const_iterator = std::deque<Entity_ptr>::const_iterator;

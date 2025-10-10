@@ -10,19 +10,21 @@ namespace tutorial
 {
     inline namespace
     {
-        static const IconRenderable kDeadIcon { color::dark_red, '%' };
+        static const IconRenderable kDeadIcon{ color::dark_red, '%' };
     }
 
     BaseEntity::BaseEntity(pos_t pos, const std::string& name, bool blocker,
                            AttackerComponent attack,
                            const DestructibleComponent& defense,
-                           const IconRenderable& renderable)
-        : name_(name),
-          renderable_(std::make_unique<IconRenderable>(renderable)),
-          defense_(std::make_unique<DestructibleComponent>(defense)),
-          attack_(std::make_unique<AttackerComponent>(attack)),
-          pos_(pos),
-          blocker_(blocker)
+                           const IconRenderable& renderable,
+                           std::unique_ptr<Item> item) :
+        name_(name),
+        renderable_(std::make_unique<IconRenderable>(renderable)),
+        defense_(std::make_unique<DestructibleComponent>(defense)),
+        attack_(std::make_unique<AttackerComponent>(attack)),
+        item_(std::move(item)),
+        pos_(pos),
+        blocker_(blocker)
     {
     }
 
@@ -40,14 +42,22 @@ namespace tutorial
         name_ = "remains of " + name_;
     }
 
-    void BaseEntity::Use()
+    void BaseEntity::Use(Engine& engine)
     {
-        // no op
+        if (item_)
+        {
+            item_->Use(*this, engine);
+        }
     }
 
     void BaseEntity::SetPos(pos_t pos)
     {
         pos_ = pos;
+    }
+
+    Item* BaseEntity::GetItem() const
+    {
+        return item_.get();
     }
 
     bool BaseEntity::CanAct() const
@@ -90,9 +100,10 @@ namespace tutorial
 {
     Npc::Npc(pos_t pos, const std::string& name, bool blocker,
              AttackerComponent attack, const DestructibleComponent& defense,
-             const IconRenderable& renderable, std::unique_ptr<AiComponent> ai)
-        : BaseEntity(pos, name, blocker, attack, defense, renderable),
-          ai_(std::move(ai))
+             const IconRenderable& renderable,
+             std::unique_ptr<AiComponent> ai) :
+        BaseEntity(pos, name, blocker, attack, defense, renderable),
+        ai_(std::move(ai))
     {
     }
 
@@ -112,19 +123,53 @@ namespace tutorial
     Player::Player(pos_t pos, const std::string& name, bool blocker,
                    AttackerComponent attack,
                    const DestructibleComponent& defense,
-                   const IconRenderable& renderable)
-        : BaseEntity(pos, name, blocker, attack, defense, renderable)
+                   const IconRenderable& renderable) :
+        BaseEntity(pos, name, blocker, attack, defense, renderable)
     {
     }
 
-    void Player::Use()
+    void Player::Use(Engine& engine)
     {
-        auto item = items_.begin();
+        // Using an item from inventory is now handled by UseItemAction
+        // This method is for when the player entity itself is "used" (not
+        // applicable)
+    }
 
-        if (item != items_.end())
+    bool Player::AddToInventory(std::unique_ptr<Entity> item)
+    {
+        if (inventory_.size() >= kMaxInventorySize)
         {
-            item->Use(*this);
-            items_.erase(item);
+            return false;
+        }
+        inventory_.push_back(std::move(item));
+        return true;
+    }
+
+    Entity* Player::GetInventoryItem(size_t index)
+    {
+        if (index < inventory_.size())
+        {
+            return inventory_[index].get();
+        }
+        return nullptr;
+    }
+
+    size_t Player::GetInventorySize() const
+    {
+        return inventory_.size();
+    }
+
+    const std::vector<std::unique_ptr<Entity>>& Player::GetInventory() const
+    {
+        return inventory_;
+    }
+
+    void Player::RemoveFromInventory(size_t index)
+    {
+        if (index < inventory_.size())
+        {
+            inventory_.erase(inventory_.begin() + index);
         }
     }
+
 } // namespace tutorial

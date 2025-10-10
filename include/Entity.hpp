@@ -8,6 +8,8 @@
 
 #include <memory>
 #include <string>
+#include <vector>
+class Item; // Forward declaration
 
 namespace tutorial
 {
@@ -22,8 +24,9 @@ namespace tutorial
 
         virtual void Act(Engine& engine) = 0;
         virtual void Die() = 0;
-        virtual void Use() = 0;
+        virtual void Use(Engine& engine) = 0;
         virtual void SetPos(pos_t pos) = 0;
+        virtual Item* GetItem() const = 0;
 
         virtual bool CanAct() const = 0;
         virtual AttackerComponent* GetAttacker() const = 0;
@@ -43,12 +46,14 @@ namespace tutorial
         BaseEntity(pos_t pos, const std::string& name, bool blocker,
                    AttackerComponent attack,
                    const DestructibleComponent& defense,
-                   const IconRenderable& renderable);
+                   const IconRenderable& renderable,
+                   std::unique_ptr<Item> item = nullptr);
 
         virtual void Act(Engine& engine) override;
         virtual void Die() override;
-        virtual void Use() override;
+        virtual void Use(Engine& engine) override;
         virtual void SetPos(pos_t pos) override;
+        virtual Item* GetItem() const override;
 
         virtual bool CanAct() const override;
         virtual AttackerComponent* GetAttacker() const override;
@@ -63,6 +68,7 @@ namespace tutorial
         std::unique_ptr<IconRenderable> renderable_;
         std::unique_ptr<DestructibleComponent> defense_;
         std::unique_ptr<AttackerComponent> attack_;
+        std::unique_ptr<Item> item_;
         pos_t pos_;
         bool blocker_;
     };
@@ -93,10 +99,16 @@ namespace tutorial
                AttackerComponent attack, const DestructibleComponent& defense,
                const IconRenderable& renderable);
 
-        void Use() override;
+        void Use(Engine& engine) override;
+        bool AddToInventory(std::unique_ptr<Entity> item);
+        Entity* GetInventoryItem(size_t index);
+        size_t GetInventorySize() const;
+        const std::vector<std::unique_ptr<Entity>>& GetInventory() const;
+        void RemoveFromInventory(size_t index);
 
     private:
-        std::vector<Item> items_;
+        std::vector<std::unique_ptr<Entity>> inventory_;
+        static constexpr size_t kMaxInventorySize = 26;
     };
 } // namespace tutorial
 

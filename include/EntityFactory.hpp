@@ -32,6 +32,12 @@ namespace tutorial
     public:
         std::unique_ptr<Entity> Create() override;
     };
+
+    class HealthPotionFactory : public AEntityFactory
+    {
+    public:
+        std::unique_ptr<Entity> Create() override;
+    };
 } // namespace tutorial
 
 #endif // ENTITY_FACTORY_HPP

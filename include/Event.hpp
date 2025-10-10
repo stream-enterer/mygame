@@ -1,6 +1,7 @@
 #ifndef EVENT_HPP
 #define EVENT_HPP
 
+#include "Colors.hpp"
 #include "Position.hpp"
 
 namespace tutorial
@@ -66,8 +67,8 @@ namespace tutorial
     class Action : public Event
     {
     public:
-        Action(Engine& engine, Entity& entity)
-            : engine_(engine), entity_(entity)
+        Action(Engine& engine, Entity& entity) :
+            engine_(engine), entity_(entity)
         {
         }
 
@@ -105,8 +106,8 @@ namespace tutorial
     class DirectionalAction : public Action
     {
     public:
-        DirectionalAction(Engine& engine, Entity& entity, pos_t pos)
-            : Action(engine, entity), pos_(pos)
+        DirectionalAction(Engine& engine, Entity& entity, pos_t pos) :
+            Action(engine, entity), pos_(pos)
         {
         }
 
@@ -138,6 +139,25 @@ namespace tutorial
         MoveAction(Engine& engine, Entity& entity, pos_t pos);
 
         void Execute() override;
+    };
+
+    class PickupAction final : public Action
+    {
+    public:
+        PickupAction(Engine& engine, Entity& entity);
+
+        void Execute() override;
+    };
+
+    class UseItemAction final : public Action
+    {
+    public:
+        UseItemAction(Engine& engine, Entity& entity, size_t itemIndex);
+
+        void Execute() override;
+
+    private:
+        size_t itemIndex_;
     };
 } // namespace tutorial
 

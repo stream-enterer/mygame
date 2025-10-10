@@ -16,6 +16,8 @@ namespace tutorial
         MOVE_LEFT,
         MOVE_RIGHT,
         WAIT,
+        PICKUP,
+        INVENTORY,
         MESSAGE_HISTORY,
         RETURN_TO_GAME,
         NEW_GAME,
@@ -66,6 +68,14 @@ namespace tutorial
     {
     public:
         GameOverEventHandler(Engine& engine);
+    };
+
+    class InventoryEventHandler final : public BaseEventHandler
+    {
+    public:
+        InventoryEventHandler(Engine& engine);
+
+        std::unique_ptr<Event> Dispatch() const override;
     };
 } // namespace tutorial
 

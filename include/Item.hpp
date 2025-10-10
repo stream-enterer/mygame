@@ -4,19 +4,25 @@
 namespace tutorial
 {
     class Entity;
+    class Engine;
 
     class Item
     {
     public:
         virtual ~Item() = default;
 
-        virtual void Use(Entity& entity) = 0;
+        virtual bool Use(Entity& owner, Engine& engine) = 0;
     };
 
     class HealthPotion final : public Item
     {
     public:
-        void Use(Entity& entity) override;
+        explicit HealthPotion(unsigned int amount);
+
+        bool Use(Entity& owner, Engine& engine) override;
+
+    private:
+        unsigned int amount_;
     };
 } // namespace tutorial
 

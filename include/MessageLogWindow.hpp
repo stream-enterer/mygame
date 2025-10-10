@@ -12,6 +12,8 @@ namespace tutorial
 {
     class MessageLog;
 
+    class Engine;
+
     class MessageLogWindow : public UiWindowBase
     {
     public:
@@ -19,6 +21,7 @@ namespace tutorial
                          const MessageLog& log);
 
         void Render(TCOD_Console* parent) const;
+        void RenderMouseLook(TCOD_Console* parent, const Engine& engine) const;
 
     private:
         const MessageLog& log_;

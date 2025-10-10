@@ -42,14 +42,21 @@ namespace tutorial
         void GetInput();
         void HandleDeathEvent(Entity& entity);
         void HandleEvents();
-        void LogMessage(const std::string& text, tcod::ColorRGB color, bool stack);
+        void LogMessage(const std::string& text, tcod::ColorRGB color,
+                        bool stack);
         void NewGame();
         void ReturnToMainGame();
+        void SetMousePos(pos_t pos);
         void ShowMessageHistory();
         void Quit();
+        std::unique_ptr<Entity> RemoveEntity(Entity* entity);
 
         Entity* GetBlockingEntity(pos_t pos) const;
         Entity* GetPlayer() const;
+        pos_t GetMousePos() const;
+        TCOD_Context* GetContext() const;
+        const Configuration& GetConfig() const;
+        const EntityManager& GetEntities() const;
         bool IsBlocker(pos_t pos) const;
         bool IsInBounds(pos_t pos) const;
         bool IsInFov(pos_t pos) const;
@@ -83,10 +90,12 @@ namespace tutorial
         TCOD_Context* context_;
         TCOD_Console* console_;
         SDL_Window* window_;
-        
+
         Window windowState_;
         bool gameOver_;
         bool running_;
+
+        pos_t mousePos_;
     };
 } // namespace tutorial
 

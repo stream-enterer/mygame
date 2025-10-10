@@ -19,33 +19,34 @@ namespace tutorial
 
         static const std::array<std::function<std::unique_ptr<Event>(Engine&)>,
                                 kNumActions>
-            kGameActions {
+            kGameActions{
                 // Up
                 [](auto& engine)
                 {
                     return std::make_unique<BumpAction>(
-                        engine, *engine.GetPlayer(), pos_t { 0, -1 });
+                        engine, *engine.GetPlayer(), pos_t{ 0, -1 });
                 },
                 // Down
                 [](auto& engine)
                 {
                     return std::make_unique<BumpAction>(
-                        engine, *engine.GetPlayer(), pos_t { 0, 1 });
+                        engine, *engine.GetPlayer(), pos_t{ 0, 1 });
                 },
                 // Left
                 [](auto& engine)
                 {
                     return std::make_unique<BumpAction>(
-                        engine, *engine.GetPlayer(), pos_t { -1, 0 });
+                        engine, *engine.GetPlayer(), pos_t{ -1, 0 });
                 },
                 // Right
                 [](auto& engine)
                 {
                     return std::make_unique<BumpAction>(
-                        engine, *engine.GetPlayer(), pos_t { 1, 0 });
+                        engine, *engine.GetPlayer(), pos_t{ 1, 0 });
                 },
                 // Wait action
-                [](auto& engine) {
+                [](auto& engine)
+                {
                     return std::make_unique<WaitAction>(engine,
                                                         *engine.GetPlayer());
                 },
@@ -77,8 +78,8 @@ namespace tutorial
     {
         // Use SDL3's event system instead of deprecated TCOD events
         SDL_Event sdlEvent;
-        
-        std::unique_ptr<Event> event { nullptr };
+
+        std::unique_ptr<Event> event{ nullptr };
 
         // Poll all pending events
         while (SDL_PollEvent(&sdlEvent))
@@ -88,17 +89,36 @@ namespace tutorial
             {
                 return std::make_unique<QuitEvent>(engine_);
             }
-            
+
+            // Handle mouse motion
+            if (sdlEvent.type == SDL_EVENT_MOUSE_MOTION)
+            {
+                // Get window size in pixels
+                SDL_Window* window =
+                    TCOD_context_get_sdl_window(engine_.GetContext());
+                int windowWidth, windowHeight;
+                SDL_GetWindowSize(window, &windowWidth, &windowHeight);
+
+                // Convert pixel coordinates to tile coordinates
+                int tileX = (sdlEvent.motion.x * engine_.GetConfig().width)
+                            / windowWidth;
+                int tileY = (sdlEvent.motion.y * engine_.GetConfig().height)
+                            / windowHeight;
+
+                // Store in engine
+                engine_.SetMousePos(pos_t{ tileX, tileY });
+            }
+
             // Check if it's a key press
             if (sdlEvent.type == SDL_EVENT_KEY_DOWN)
             {
                 // Convert SDL keycode to our KeyPress format
                 SDL_Keycode sdlKey = sdlEvent.key.key;
-                
+
                 // Map SDL keycodes to TCOD keycodes for compatibility
                 TCOD_keycode_t tcodKey = TCODK_NONE;
                 char character = '\0';
-                
+
                 switch (sdlKey)
                 {
                     case SDLK_UP:
@@ -131,13 +151,13 @@ namespace tutorial
                         }
                         break;
                 }
-                
+
                 try
                 {
-                    KeyPress keypress { tcodKey, character };
+                    KeyPress keypress{ tcodKey, character };
                     auto action = keyMap_.at(keypress);
                     event = kGameActions.at(action)(engine_);
-                    
+
                     // Return the first valid event we find
                     if (event != nullptr)
                     {
@@ -155,37 +175,37 @@ namespace tutorial
     }
 
     static const std::unordered_map<KeyPress, Actions, KeyPressHash>
-        MainGameKeyMap { { TCODK_UP, Actions::MOVE_UP },
-                         { TCODK_DOWN, Actions::MOVE_DOWN },
-                         { TCODK_LEFT, Actions::MOVE_LEFT },
-                         { TCODK_RIGHT, Actions::MOVE_RIGHT },
-                         { TCODK_SPACE, Actions::WAIT },
-                         { { TCODK_CHAR, 'v' }, Actions::MESSAGE_HISTORY },
-                         { TCODK_ENTER, Actions::NEW_GAME },
-                         { TCODK_ESCAPE, Actions::QUIT } };
+        MainGameKeyMap{ { TCODK_UP, Actions::MOVE_UP },
+                        { TCODK_DOWN, Actions::MOVE_DOWN },
+                        { TCODK_LEFT, Actions::MOVE_LEFT },
+                        { TCODK_RIGHT, Actions::MOVE_RIGHT },
+                        { TCODK_SPACE, Actions::WAIT },
+                        { { TCODK_CHAR, 'v' }, Actions::MESSAGE_HISTORY },
+                        { TCODK_ENTER, Actions::NEW_GAME },
+                        { TCODK_ESCAPE, Actions::QUIT } };
 
-    MainGameEventHandler::MainGameEventHandler(Engine& engine)
-        : BaseEventHandler(engine)
+    MainGameEventHandler::MainGameEventHandler(Engine& engine) :
+        BaseEventHandler(engine)
     {
         SetKeyMap(MainGameKeyMap);
     }
 
     static const std::unordered_map<KeyPress, Actions, KeyPressHash>
-        MessageHistoryKeyMap { { { TCODK_CHAR, 'v' },
-                                 Actions::RETURN_TO_GAME } };
+        MessageHistoryKeyMap{ { { TCODK_CHAR, 'v' },
+                                Actions::RETURN_TO_GAME } };
 
-    MessageHistoryEventHandler::MessageHistoryEventHandler(Engine& engine)
-        : BaseEventHandler(engine)
+    MessageHistoryEventHandler::MessageHistoryEventHandler(Engine& engine) :
+        BaseEventHandler(engine)
     {
         SetKeyMap(MessageHistoryKeyMap);
     }
 
     static const std::unordered_map<KeyPress, Actions, KeyPressHash>
-        GameOverKeyMap { { TCODK_ENTER, Actions::NEW_GAME },
-                         { TCODK_ESCAPE, Actions::QUIT } };
+        GameOverKeyMap{ { TCODK_ENTER, Actions::NEW_GAME },
+                        { TCODK_ESCAPE, Actions::QUIT } };
 
-    GameOverEventHandler::GameOverEventHandler(Engine& engine)
-        : BaseEventHandler(engine)
+    GameOverEventHandler::GameOverEventHandler(Engine& engine) :
+        BaseEventHandler(engine)
     {
         SetKeyMap(GameOverKeyMap);
     }

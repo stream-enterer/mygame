@@ -16,20 +16,22 @@ namespace tutorial
         return power_;
     }
 
-    DestructibleComponent::DestructibleComponent(uint defense, uint hp)
-        : defense_(defense), maxHp_(hp), hp_(hp)
+    DestructibleComponent::DestructibleComponent(uint defense, uint hp) :
+        defense_(defense), maxHp_(hp), hp_(hp)
     {
     }
 
     DestructibleComponent::DestructibleComponent(uint defense, uint maxHp,
-                                                 uint hp)
-        : defense_(defense), maxHp_(maxHp), hp_(hp)
+                                                 uint hp) :
+        defense_(defense), maxHp_(maxHp), hp_(hp)
     {
     }
 
-    void DestructibleComponent::Heal(uint value)
+    unsigned int DestructibleComponent::Heal(uint value)
     {
+        uint oldHp = hp_;
         hp_ += std::min<uint>(maxHp_, hp_ + value);
+        return hp_ - oldHp;
     }
 
     void DestructibleComponent::TakeDamage(uint value)
@@ -57,8 +59,8 @@ namespace tutorial
         return (hp_ <= 0);
     }
 
-    IconRenderable::IconRenderable(tcod::ColorRGB color, char icon)
-        : color_(color), icon_(icon)
+    IconRenderable::IconRenderable(tcod::ColorRGB color, char icon) :
+        color_(color), icon_(icon)
     {
     }
 
@@ -67,7 +69,7 @@ namespace tutorial
         // Use C API functions instead of deprecated C++ methods
         // Set the character at this position
         TCOD_console_put_char(parent, pos.x, pos.y, icon_, TCOD_BKGND_NONE);
-        
+
         // Set the foreground color for this character
         TCOD_console_set_char_foreground(parent, pos.x, pos.y, color_);
     }

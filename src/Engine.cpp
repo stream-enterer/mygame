@@ -31,22 +31,23 @@ namespace tutorial
     } // namespace
 
     // Public methods
-    Engine::Engine(const Configuration& config)
-        : config_(config),
-          eventHandler_(std::make_unique<MainGameEventHandler>(*this)),
-          map_(std::make_unique<Map>(config.width, config.height - kUiHeight)),
-          messageHistoryWindow_(std::make_unique<MessageHistoryWindow>(
-              config.width, config.height, pos_t { 0, 0 }, messageLog_)),
-          messageLogWindow_(std::make_unique<MessageLogWindow>(
-              40, 5, pos_t { 21, 45 }, messageLog_)),
-          player_(nullptr),
-          healthBar_(nullptr),
-          context_(nullptr),
-          console_(nullptr),
-          window_(nullptr),
-          windowState_(MainGame),
-          gameOver_(false),
-          running_(true)
+    Engine::Engine(const Configuration& config) :
+        config_(config),
+        eventHandler_(std::make_unique<MainGameEventHandler>(*this)),
+        map_(std::make_unique<Map>(config.width, config.height - kUiHeight)),
+        messageHistoryWindow_(std::make_unique<MessageHistoryWindow>(
+            config.width, config.height, pos_t{ 0, 0 }, messageLog_)),
+        messageLogWindow_(std::make_unique<MessageLogWindow>(
+            40, 5, pos_t{ 21, 45 }, messageLog_)),
+        player_(nullptr),
+        healthBar_(nullptr),
+        context_(nullptr),
+        console_(nullptr),
+        window_(nullptr),
+        windowState_(MainGame),
+        gameOver_(false),
+        running_(true),
+        mousePos_{ 0, 0 }
     {
         // Create console - this is the display buffer we'll draw to
         console_ = TCOD_console_new(config.width, config.height);
@@ -176,13 +177,19 @@ namespace tutorial
             entities_.PlaceEntities(*it, kMaxMonstersPerRoom);
         }
 
+        // Place items
+        for (auto it = rooms.begin() + 1; it != rooms.end(); ++it)
+        {
+            entities_.PlaceItems(*it, 2); // Max 2 items per room
+        }
+
         // Create player and add them to entity list
-        PlayerFactory factory {};
+        PlayerFactory factory{};
         player_ = entities_.Spawn(factory.Create(), rooms[0].GetCenter()).get();
 
         // Create health bar
         healthBar_ =
-            std::make_unique<HealthBar>(20, 1, pos_t { 0, 45 }, *player_);
+            std::make_unique<HealthBar>(20, 1, pos_t{ 0, 45 }, *player_);
 
         this->ComputeFOV();
 
@@ -219,6 +226,16 @@ namespace tutorial
         running_ = false;
     }
 
+    void Engine::SetMousePos(pos_t pos)
+    {
+        mousePos_ = pos;
+    }
+
+    std::unique_ptr<Entity> Engine::RemoveEntity(Entity* entity)
+    {
+        return entities_.Remove(entity);
+    }
+
     Entity* Engine::GetBlockingEntity(pos_t pos) const
     {
         return entities_.GetBlockingEntity(pos);
@@ -227,6 +244,26 @@ namespace tutorial
     Entity* Engine::GetPlayer() const
     {
         return player_;
+    }
+
+    pos_t Engine::GetMousePos() const
+    {
+        return mousePos_;
+    }
+
+    TCOD_Context* Engine::GetContext() const
+    {
+        return context_;
+    }
+
+    const Configuration& Engine::GetConfig() const
+    {
+        return config_;
+    }
+
+    const EntityManager& Engine::GetEntities() const
+    {
+        return entities_;
     }
 
     bool Engine::IsBlocker(pos_t pos) const
@@ -304,13 +341,15 @@ namespace tutorial
             // Render UI elements on top
             healthBar_->Render(console_);
             messageLogWindow_->Render(console_);
+            messageLogWindow_->RenderMouseLook(console_, *this);
         }
         else if (windowState_ == MessageHistory)
         {
             messageHistoryWindow_->Render(console_);
         }
 
-        // Present the console to the screen - this actually shows what we drew
+        // Present the console to the screen - this actually shows what we
+        // drew
         TCOD_context_present(context_, console_, nullptr);
     }
 

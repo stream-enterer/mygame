@@ -21,7 +21,7 @@ BraceWrapping:
 BreakBeforeBinaryOperators: NonAssignment
 BreakBeforeBraces: Allman
 BreakBeforeTernaryOperators: true
-BreakConstructorInitializers: BeforeColon
+BreakConstructorInitializers: AfterColon
 BreakInheritanceList: BeforeColon
 CompactNamespaces: true
 ConstructorInitializerAllOnOneLineOrOnePerLine: true
@@ -32,7 +32,7 @@ IndentPPDirectives: BeforeHash
 NamespaceIndentation: All
 PointerAlignment: Left
 SpaceBeforeAssignmentOperators: true
-SpaceBeforeCpp11BracedList: true
+SpaceBeforeCpp11BracedList: false
 SpaceBeforeCtorInitializerColon: true
 SpaceBeforeInheritanceColon: true
 SpaceBeforeParens: ControlStatements
