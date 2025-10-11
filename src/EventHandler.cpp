@@ -15,7 +15,7 @@ namespace tutorial
 {
     inline namespace
     {
-        constexpr std::size_t kNumActions = 9;
+        constexpr std::size_t kNumActions = 11;
 
         static const std::array<std::function<std::unique_ptr<Event>(Engine&)>,
                                 kNumActions>
@@ -50,6 +50,15 @@ namespace tutorial
                     return std::make_unique<WaitAction>(engine,
                                                         *engine.GetPlayer());
                 },
+                // Pickup action
+                [](auto& engine)
+                {
+                    return std::make_unique<PickupAction>(engine,
+                                                          *engine.GetPlayer());
+                },
+                // Inventory event
+                [](auto& engine)
+                { return std::make_unique<InventoryEvent>(engine); },
                 // Message history event
                 [](auto& engine)
                 { return std::make_unique<MessageHistoryEvent>(engine); },
@@ -180,9 +189,10 @@ namespace tutorial
                         { TCODK_LEFT, Actions::MOVE_LEFT },
                         { TCODK_RIGHT, Actions::MOVE_RIGHT },
                         { TCODK_SPACE, Actions::WAIT },
+                        { { TCODK_CHAR, 'g' }, Actions::PICKUP },
+                        { { TCODK_CHAR, 'i' }, Actions::INVENTORY },
                         { { TCODK_CHAR, 'v' }, Actions::MESSAGE_HISTORY },
-                        { TCODK_ENTER, Actions::NEW_GAME },
-                        { TCODK_ESCAPE, Actions::QUIT } };
+                        { TCODK_ENTER, Actions::NEW_GAME } };
 
     MainGameEventHandler::MainGameEventHandler(Engine& engine) :
         BaseEventHandler(engine)
@@ -209,4 +219,46 @@ namespace tutorial
     {
         SetKeyMap(GameOverKeyMap);
     }
+
+    InventoryEventHandler::InventoryEventHandler(Engine& engine) :
+        BaseEventHandler(engine)
+    {
+        // No specific key map needed - handles a-z directly
+    }
+
+    std::unique_ptr<Event> InventoryEventHandler::Dispatch() const
+    {
+        SDL_Event sdlEvent;
+        std::unique_ptr<Event> event{ nullptr };
+
+        while (SDL_PollEvent(&sdlEvent))
+        {
+            if (sdlEvent.type == SDL_EVENT_QUIT)
+            {
+                return std::make_unique<QuitEvent>(engine_);
+            }
+
+            if (sdlEvent.type == SDL_EVENT_KEY_DOWN)
+            {
+                SDL_Keycode sdlKey = sdlEvent.key.key;
+
+                // Escape or 'i' returns to game
+                if (sdlKey == SDLK_ESCAPE || sdlKey == SDLK_I)
+                {
+                    return std::make_unique<ReturnToGameEvent>(engine_);
+                }
+
+                // Check for a-z keys for item selection
+                if (sdlKey >= SDLK_A && sdlKey <= SDLK_Z)
+                {
+                    size_t itemIndex = sdlKey - SDLK_A;
+                    return std::make_unique<UseItemAction>(
+                        engine_, *engine_.GetPlayer(), itemIndex);
+                }
+            }
+        }
+
+        return event;
+    }
+
 } // namespace tutorial

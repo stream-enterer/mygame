@@ -39,6 +39,14 @@ namespace tutorial
         void Execute() override;
     };
 
+    class InventoryEvent final : public EngineEvent
+    {
+    public:
+        InventoryEvent(Engine& engine);
+
+        void Execute() override;
+    };
+
     class NewGameEvent final : public EngineEvent
     {
     public:

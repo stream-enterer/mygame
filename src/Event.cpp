@@ -320,3 +320,15 @@ namespace tutorial
         }
     }
 } // namespace tutorial
+
+namespace tutorial
+{
+    InventoryEvent::InventoryEvent(Engine& engine) : EngineEvent(engine)
+    {
+    }
+
+    void InventoryEvent::Execute()
+    {
+        engine_.ShowInventory();
+    }
+} // namespace tutorial

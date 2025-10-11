@@ -6,6 +6,7 @@
 #include "Event.hpp"
 #include "EventHandler.hpp"
 #include "HealthBar.hpp"
+#include "InventoryWindow.hpp"
 #include "Map.hpp"
 #include "MapGenerator.hpp"
 #include "MessageHistoryWindow.hpp"
@@ -191,6 +192,11 @@ namespace tutorial
         healthBar_ =
             std::make_unique<HealthBar>(20, 1, pos_t{ 0, 45 }, *player_);
 
+        // Create inventory window
+        inventoryWindow_ = std::make_unique<InventoryWindow>(
+            50, 28, pos_t{ config_.width / 2 - 25, config_.height / 2 - 14 },
+            *player_);
+
         this->ComputeFOV();
 
         messageLog_.AddMessage("Hello and welcome to the C++ libtcod dungeon!",
@@ -218,6 +224,15 @@ namespace tutorial
         {
             eventHandler_ = std::make_unique<MessageHistoryEventHandler>(*this);
             windowState_ = MessageHistory;
+        }
+    }
+
+    void Engine::ShowInventory()
+    {
+        if (windowState_ != Inventory)
+        {
+            eventHandler_ = std::make_unique<InventoryEventHandler>(*this);
+            windowState_ = Inventory;
         }
     }
 
@@ -320,24 +335,20 @@ namespace tutorial
     {
         // Clear the console - this is our drawing buffer
         TCOD_console_clear(console_);
-
         if (windowState_ == MainGame)
         {
             // Render the map to the console
             map_->Render(console_);
-
             // Show all entities' positions if in fov
             for (const auto& entity : entities_)
             {
                 const auto pos = entity->GetPos();
-
                 if (map_->IsInFov(pos))
                 {
                     const auto& renderable = entity->GetRenderable();
                     renderable->Render(console_, pos);
                 }
             }
-
             // Render UI elements on top
             healthBar_->Render(console_);
             messageLogWindow_->Render(console_);
@@ -347,7 +358,28 @@ namespace tutorial
         {
             messageHistoryWindow_->Render(console_);
         }
+        else if (windowState_ == Inventory)
+        {
+            // Render game state underneath
+            map_->Render(console_);
 
+            for (const auto& entity : entities_)
+            {
+                const auto pos = entity->GetPos();
+                if (map_->IsInFov(pos))
+                {
+                    const auto& renderable = entity->GetRenderable();
+                    renderable->Render(console_, pos);
+                }
+            }
+
+            // Render UI elements
+            healthBar_->Render(console_);
+            messageLogWindow_->Render(console_);
+
+            // Render inventory on top
+            inventoryWindow_->Render(console_);
+        }
         // Present the console to the screen - this actually shows what we
         // drew
         TCOD_context_present(context_, console_, nullptr);

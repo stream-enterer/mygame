@@ -18,7 +18,8 @@ namespace tutorial
     enum Window
     {
         MainGame,
-        MessageHistory
+        MessageHistory,
+        Inventory
     };
 
     class Entity;
@@ -28,6 +29,7 @@ namespace tutorial
     class Map;
     class MessageHistoryWindow;
     class MessageLogWindow;
+    class InventoryWindow;
 
     class Engine
     {
@@ -48,6 +50,7 @@ namespace tutorial
         void ReturnToMainGame();
         void SetMousePos(pos_t pos);
         void ShowMessageHistory();
+        void ShowInventory();
         void Quit();
         std::unique_ptr<Entity> RemoveEntity(Entity* entity);
 
@@ -82,6 +85,7 @@ namespace tutorial
         std::unique_ptr<Map> map_;
         std::unique_ptr<MessageHistoryWindow> messageHistoryWindow_;
         std::unique_ptr<MessageLogWindow> messageLogWindow_;
+        std::unique_ptr<InventoryWindow> inventoryWindow_;
 
         Entity* player_;
         std::unique_ptr<HealthBar> healthBar_;
