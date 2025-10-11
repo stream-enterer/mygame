@@ -331,6 +331,154 @@ namespace tutorial
         return map_->IsWall(pos);
     }
 
+    Entity* Engine::GetClosestMonster(int x, int y, float range) const
+    {
+        Entity* closest = nullptr;
+        float bestDistance = 1E6f;
+
+        for (const auto& entity : entities_)
+        {
+            // Only target monsters (not player, items, or neutral)
+            if (entity->GetFaction() == Faction::MONSTER
+                && entity->GetDestructible()
+                && !entity->GetDestructible()->IsDead())
+
+            {
+                float distance = entity->GetDistance(x, y);
+                if (distance < bestDistance
+                    && (distance <= range || range == 0.0f))
+                {
+                    bestDistance = distance;
+                    closest = entity.get();
+                }
+            }
+        }
+
+        return closest;
+    }
+
+    bool Engine::PickATile(int* x, int* y, float maxRange)
+    {
+        SDL_Event sdlEvent;
+
+        while (running_)
+        {
+            // Render the current game state
+            this->Render();
+
+            // Highlight valid tiles in range
+            for (int cx = 0; cx < map_->GetWidth(); cx++)
+            {
+                for (int cy = 0; cy < map_->GetHeight(); cy++)
+                {
+                    if (map_->IsInFov(pos_t{ cx, cy })
+                        && (maxRange == 0.0f
+                            || player_->GetDistance(cx, cy) <= maxRange))
+                    {
+                        // Get current background color and brighten it
+                        TCOD_color_t tcodCol =
+                            TCOD_console_get_char_background(console_, cx, cy);
+
+                        // Convert to ColorRGB and brighten
+                        tcod::ColorRGB col{ tcodCol.r, tcodCol.g, tcodCol.b };
+                        col.r = std::min(255, static_cast<int>(col.r * 1.2f));
+                        col.g = std::min(255, static_cast<int>(col.g * 1.2f));
+                        col.b = std::min(255, static_cast<int>(col.b * 1.2f));
+
+                        TCOD_console_set_char_background(console_, cx, cy, col,
+                                                         TCOD_BKGND_SET);
+                    }
+                }
+            }
+
+            // Handle mouse/keyboard events
+            while (SDL_PollEvent(&sdlEvent))
+            {
+                if (sdlEvent.type == SDL_EVENT_MOUSE_MOTION)
+                {
+                    // Update mouse position
+                    SDL_Window* window = TCOD_context_get_sdl_window(context_);
+                    int windowWidth, windowHeight;
+                    SDL_GetWindowSize(window, &windowWidth, &windowHeight);
+
+                    int tileX =
+                        (sdlEvent.motion.x * config_.width) / windowWidth;
+                    int tileY =
+                        (sdlEvent.motion.y * config_.height) / windowHeight;
+
+                    mousePos_ = pos_t{ tileX, tileY };
+
+                    // Highlight tile under mouse if valid
+                    if (map_->IsInFov(mousePos_)
+                        && (maxRange == 0.0f
+                            || player_->GetDistance(mousePos_.x, mousePos_.y)
+                                   <= maxRange))
+                    {
+                        TCOD_console_set_char_background(
+                            console_, mousePos_.x, mousePos_.y, color::white,
+                            TCOD_BKGND_SET);
+                    }
+                }
+
+                if (sdlEvent.type == SDL_EVENT_MOUSE_BUTTON_DOWN
+                    && sdlEvent.button.button == SDL_BUTTON_LEFT)
+                {
+                    // Check if clicked tile is valid
+                    if (map_->IsInFov(mousePos_)
+                        && (maxRange == 0.0f
+                            || player_->GetDistance(mousePos_.x, mousePos_.y)
+                                   <= maxRange))
+                    {
+                        *x = mousePos_.x;
+                        *y = mousePos_.y;
+                        return true;
+                    }
+                }
+
+                if (sdlEvent.type == SDL_EVENT_MOUSE_BUTTON_DOWN
+                    && sdlEvent.button.button == SDL_BUTTON_RIGHT)
+                {
+                    return false;
+                }
+
+                if (sdlEvent.type == SDL_EVENT_KEY_DOWN)
+                {
+                    return false;
+                }
+            }
+
+            TCOD_context_present(context_, console_, nullptr);
+        }
+
+        return false;
+    }
+
+    Entity* Engine::GetActor(int x, int y) const
+    {
+        for (const auto& entity : entities_)
+        {
+            if (entity->GetPos().x == x && entity->GetPos().y == y
+                && entity->GetDestructible()
+                && !entity->GetDestructible()->IsDead())
+            {
+                return entity.get();
+            }
+        }
+        return nullptr;
+    }
+
+    void Engine::DealDamage(Entity& target, unsigned int damage)
+    {
+        target.GetDestructible()->TakeDamage(damage);
+
+        if (target.GetDestructible()->IsDead())
+        {
+            auto action = DieAction(*this, target);
+            std::unique_ptr<Event> event = std::make_unique<DieAction>(action);
+            AddEventFront(event);
+        }
+    }
+
     void Engine::Render()
     {
         // Clear the console - this is our drawing buffer

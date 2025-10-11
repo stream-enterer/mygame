@@ -2,11 +2,13 @@
 
 -  Prompt on ESC main menu to quit game
 -  Cap potion overheal
+-  Let scrolls cast with no target
 
 ## S-Tier
 
 -  diagnonal movement
 -  autopickup
+-  Convert to data-driven design
 
 ## A-Tier
 
@@ -17,3 +19,5 @@
 -  sound
 -  Exile-like spell effects
 -  Height
+- scroll visual radius
+- Realmz-like targeting system

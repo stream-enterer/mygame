@@ -6,6 +6,8 @@
 #include "Engine.hpp"
 #include "Util.hpp"
 
+#include <cmath>
+
 namespace tutorial
 {
     inline namespace
@@ -16,7 +18,7 @@ namespace tutorial
     BaseEntity::BaseEntity(pos_t pos, const std::string& name, bool blocker,
                            AttackerComponent attack,
                            const DestructibleComponent& defense,
-                           const IconRenderable& renderable,
+                           const IconRenderable& renderable, Faction faction,
                            std::unique_ptr<Item> item) :
         name_(name),
         renderable_(std::make_unique<IconRenderable>(renderable)),
@@ -24,6 +26,7 @@ namespace tutorial
         attack_(std::make_unique<AttackerComponent>(attack)),
         item_(std::move(item)),
         pos_(pos),
+        faction_(faction),
         blocker_(blocker)
     {
     }
@@ -94,15 +97,27 @@ namespace tutorial
     {
         return blocker_;
     }
+
+    float BaseEntity::GetDistance(int cx, int cy) const
+    {
+        int dx = pos_.x - cx;
+        int dy = pos_.y - cy;
+        return std::sqrt(dx * dx + dy * dy);
+    }
+
+    Faction BaseEntity::GetFaction() const
+    {
+        return faction_;
+    }
 } // namespace tutorial
 
 namespace tutorial
 {
     Npc::Npc(pos_t pos, const std::string& name, bool blocker,
              AttackerComponent attack, const DestructibleComponent& defense,
-             const IconRenderable& renderable,
+             const IconRenderable& renderable, Faction faction,
              std::unique_ptr<AiComponent> ai) :
-        BaseEntity(pos, name, blocker, attack, defense, renderable),
+        BaseEntity(pos, name, blocker, attack, defense, renderable, faction),
         ai_(std::move(ai))
     {
     }
@@ -116,6 +131,13 @@ namespace tutorial
 
         ai_->Perform(engine, *this);
     }
+
+    std::unique_ptr<AiComponent> Npc::SwapAi(std::unique_ptr<AiComponent> newAi)
+    {
+        std::unique_ptr<AiComponent> oldAi = std::move(ai_);
+        ai_ = std::move(newAi);
+        return oldAi;
+    }
 } // namespace tutorial
 
 namespace tutorial
@@ -123,8 +145,8 @@ namespace tutorial
     Player::Player(pos_t pos, const std::string& name, bool blocker,
                    AttackerComponent attack,
                    const DestructibleComponent& defense,
-                   const IconRenderable& renderable) :
-        BaseEntity(pos, name, blocker, attack, defense, renderable)
+                   const IconRenderable& renderable, Faction faction) :
+        BaseEntity(pos, name, blocker, attack, defense, renderable, faction)
     {
     }
 

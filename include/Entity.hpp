@@ -13,8 +13,15 @@ class Item; // Forward declaration
 
 namespace tutorial
 {
-    class Engine;
 
+    enum class Faction
+    {
+        PLAYER,
+        MONSTER,
+        NEUTRAL
+    };
+
+    class Engine;
     class Entity
     {
     public:
@@ -35,6 +42,8 @@ namespace tutorial
         virtual const RenderableComponent* GetRenderable() const = 0;
         virtual pos_t GetPos() const = 0;
         virtual bool IsBlocker() const = 0;
+        virtual float GetDistance(int cx, int cy) const = 0;
+        virtual Faction GetFaction() const = 0;
     };
 } // namespace tutorial
 
@@ -46,7 +55,7 @@ namespace tutorial
         BaseEntity(pos_t pos, const std::string& name, bool blocker,
                    AttackerComponent attack,
                    const DestructibleComponent& defense,
-                   const IconRenderable& renderable,
+                   const IconRenderable& renderable, Faction faction,
                    std::unique_ptr<Item> item = nullptr);
 
         virtual void Act(Engine& engine) override;
@@ -62,6 +71,8 @@ namespace tutorial
         virtual const RenderableComponent* GetRenderable() const override;
         virtual pos_t GetPos() const override;
         virtual bool IsBlocker() const override;
+        virtual float GetDistance(int cx, int cy) const override;
+        virtual Faction GetFaction() const override;
 
     protected:
         std::string name_;
@@ -70,6 +81,7 @@ namespace tutorial
         std::unique_ptr<AttackerComponent> attack_;
         std::unique_ptr<Item> item_;
         pos_t pos_;
+        Faction faction_;
         bool blocker_;
     };
 } // namespace tutorial
@@ -81,9 +93,11 @@ namespace tutorial
     public:
         Npc(pos_t pos, const std::string& name, bool blocker,
             AttackerComponent attack, const DestructibleComponent& defense,
-            const IconRenderable& renderable, std::unique_ptr<AiComponent> ai);
+            const IconRenderable& renderable, Faction faction,
+            std::unique_ptr<AiComponent> ai);
 
         void Act(Engine& engine) override;
+        std::unique_ptr<AiComponent> SwapAi(std::unique_ptr<AiComponent> newAi);
 
     private:
         std::unique_ptr<AiComponent> ai_;
@@ -97,7 +111,7 @@ namespace tutorial
     public:
         Player(pos_t pos, const std::string& name, bool blocker,
                AttackerComponent attack, const DestructibleComponent& defense,
-               const IconRenderable& renderable);
+               const IconRenderable& renderable, Faction faction);
 
         void Use(Engine& engine) override;
         bool AddToInventory(std::unique_ptr<Entity> item);

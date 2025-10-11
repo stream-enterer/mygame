@@ -46,7 +46,11 @@ namespace tutorial
         void HandleEvents();
         void LogMessage(const std::string& text, tcod::ColorRGB color,
                         bool stack);
+        void DealDamage(Entity& target, unsigned int damage);
         void NewGame();
+        Entity* GetClosestMonster(int x, int y, float range) const;
+        bool PickATile(int* x, int* y, float maxRanger = 0.0f);
+        Entity* GetActor(int x, int y) const;
         void ReturnToMainGame();
         void SetMousePos(pos_t pos);
         void ShowMessageHistory();

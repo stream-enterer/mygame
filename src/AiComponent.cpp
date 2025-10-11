@@ -18,7 +18,7 @@ inline namespace
     auto checkCardinalPoints = [](pos_t pos,
                                   pos_t target) -> tcod::BresenhamLine
     {
-        constexpr std::array<pos_t, 4> cardinals { {
+        constexpr std::array<pos_t, 4> cardinals{ {
             { 0, -1 }, // up
             { 0, 1 },  // down
             { -1, 0 }, // left
@@ -30,7 +30,7 @@ inline namespace
 
         for (auto [x, y] : cardinals)
         {
-            auto new_pos = pos_t { x, y } + target;
+            auto new_pos = pos_t{ x, y } + target;
 
             auto line =
                 tcod::BresenhamLine({ pos.x, pos.y }, { new_pos.x, new_pos.y })
@@ -121,7 +121,7 @@ namespace tutorial
         if (canPathToTarget(path, engine))
         {
             auto dest = path[0];
-            auto destPos = pos_t { dest[0], dest[1] } - pos;
+            auto destPos = pos_t{ dest[0], dest[1] } - pos;
 
             auto action = MoveAction(engine, entity, destPos);
             std::unique_ptr<Event> event = std::make_unique<MoveAction>(action);
@@ -133,5 +133,61 @@ namespace tutorial
         auto action = WaitAction(engine, entity);
         std::unique_ptr<Event> event = std::make_unique<WaitAction>(action);
         engine.AddEventFront(event);
+    }
+
+    ConfusedMonsterAi::ConfusedMonsterAi(int nbTurns,
+                                         std::unique_ptr<AiComponent> oldAi) :
+        nbTurns_(nbTurns), oldAi_(std::move(oldAi))
+    {
+    }
+
+    void ConfusedMonsterAi::Perform(Engine& engine, Entity& entity)
+    {
+        // Wander randomly
+        auto* rand = TCODRandom::getInstance();
+        int dx = rand->getInt(-1, 1);
+        int dy = rand->getInt(-1, 1);
+
+        if (dx != 0 || dy != 0)
+        {
+            int destx = entity.GetPos().x + dx;
+            int desty = entity.GetPos().y + dy;
+
+            if (engine.IsInBounds(pos_t{ destx, desty })
+                && !engine.IsWall(pos_t{ destx, desty }))
+            {
+                auto* target = engine.GetBlockingEntity(pos_t{ destx, desty });
+                if (target)
+                {
+                    // Attack anyone including other monsters
+                    auto action = MeleeAction(engine, entity, pos_t{ dx, dy });
+                    std::unique_ptr<Event> event =
+                        std::make_unique<MeleeAction>(action);
+                    engine.AddEventFront(event);
+                }
+                else
+                {
+                    auto action = MoveAction(engine, entity, pos_t{ dx, dy });
+                    std::unique_ptr<Event> event =
+                        std::make_unique<MoveAction>(action);
+                    engine.AddEventFront(event);
+                }
+            }
+        }
+
+        // Decrease confusion and restore old AI when done
+        nbTurns_--;
+        if (nbTurns_ <= 0)
+        {
+            engine.LogMessage(
+                "The " + entity.GetName() + " is no longer confused!",
+                color::red, false);
+
+            // Restore the original AI
+            if (auto* npc = dynamic_cast<Npc*>(&entity))
+            {
+                npc->SwapAi(std::move(oldAi_));
+            }
+        }
     }
 } // namespace tutorial

@@ -181,21 +181,13 @@ namespace tutorial
 
             if (damage > 0)
             {
-                defender->TakeDamage(damage);
-
                 engine_.LogMessage(util::capitalize(entity_.GetName())
                                        + " attacks " + target->GetName()
                                        + " for " + std::to_string(damage)
                                        + " hit points.",
                                    color::red, true);
 
-                if (defender->IsDead())
-                {
-                    auto action = DieAction(engine_, *target);
-                    std::unique_ptr<Event> event =
-                        std::make_unique<DieAction>(action);
-                    engine_.AddEventFront(event);
-                }
+                engine_.DealDamage(*target, damage);
             }
             else
             {

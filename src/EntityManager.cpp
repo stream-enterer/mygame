@@ -136,9 +136,33 @@ namespace tutorial
 
             if (!blocked)
             {
-                // For now, only create health potions
-                HealthPotionFactory factory;
-                Spawn(factory.Create(), pos);
+                // Roll dice to determine item type
+                int dice = rand->getInt(0, 100);
+
+                if (dice < 70)
+                {
+                    // 70% chance: health potion
+                    HealthPotionFactory factory;
+                    Spawn(factory.Create(), pos);
+                }
+                else if (dice < 70 + 10)
+                {
+                    // 10% chance: scroll of lightning bolt
+                    LightningBoltFactory factory;
+                    Spawn(factory.Create(), pos);
+                }
+                else if (dice < 70 + 10 + 10)
+                {
+                    // 10% chance: scroll of fireball
+                    FireballFactory factory;
+                    Spawn(factory.Create(), pos);
+                }
+                else
+                {
+                    // 10% chance: scroll of confusion
+                    ConfuserFactory factory;
+                    Spawn(factory.Create(), pos);
+                }
             }
         }
     }
