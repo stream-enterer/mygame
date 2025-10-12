@@ -3,6 +3,7 @@
 
 #include "Configuration.hpp"
 #include "EntityManager.hpp"
+#include "InventoryMode.hpp"
 #include "MessageLog.hpp"
 #include "Position.hpp"
 
@@ -55,8 +56,18 @@ namespace tutorial
         void SetMousePos(pos_t pos);
         void ShowMessageHistory();
         void ShowInventory();
+        void SetInventoryMode(InventoryMode mode)
+        {
+            inventoryMode_ = mode;
+        }
+        InventoryMode GetInventoryMode() const
+        {
+            return inventoryMode_;
+        }
         void Quit();
         std::unique_ptr<Entity> RemoveEntity(Entity* entity);
+        Entity* SpawnEntity(std::unique_ptr<Entity> entity, pos_t pos,
+                            bool atFront = false);
 
         Entity* GetBlockingEntity(pos_t pos) const;
         Entity* GetPlayer() const;
@@ -64,6 +75,10 @@ namespace tutorial
         TCOD_Context* GetContext() const;
         const Configuration& GetConfig() const;
         const EntityManager& GetEntities() const;
+        EventHandler* GetEventHandler() const
+        {
+            return eventHandler_.get();
+        }
         bool IsBlocker(pos_t pos) const;
         bool IsInBounds(pos_t pos) const;
         bool IsInFov(pos_t pos) const;
@@ -104,6 +119,7 @@ namespace tutorial
         bool running_;
 
         pos_t mousePos_;
+        InventoryMode inventoryMode_;
     };
 } // namespace tutorial
 

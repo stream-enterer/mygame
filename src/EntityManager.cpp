@@ -93,6 +93,14 @@ namespace tutorial
         return entity;
     }
 
+    std::unique_ptr<Entity>& EntityManager::SpawnAtFront(
+        std::unique_ptr<Entity>&& src, pos_t pos)
+    {
+        src->SetPos(pos);
+        entities_.push_front(std::move(src));
+        return entities_.front();
+    }
+
     std::unique_ptr<Entity> EntityManager::Remove(Entity* entity)
     {
         for (auto it = entities_.begin(); it != entities_.end(); ++it)

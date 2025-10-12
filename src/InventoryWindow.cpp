@@ -8,7 +8,7 @@ namespace tutorial
 {
     InventoryWindow::InventoryWindow(std::size_t width, std::size_t height,
                                      pos_t pos, const Entity& player) :
-        UiWindowBase(width, height, pos), player_(player)
+        UiWindowBase(width, height, pos), player_(player), title_("Inventory")
     {
     }
 
@@ -22,7 +22,7 @@ namespace tutorial
         TCOD_console_print_frame(console_, 0, 0,
                                  TCOD_console_get_width(console_),
                                  TCOD_console_get_height(console_), true,
-                                 TCOD_BKGND_DEFAULT, "Inventory");
+                                 TCOD_BKGND_DEFAULT, title_.c_str());
 
         // Display items with shortcuts
         if (auto* player = dynamic_cast<const Player*>(&player_))

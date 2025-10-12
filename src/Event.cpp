@@ -315,6 +315,43 @@ namespace tutorial
 
 namespace tutorial
 {
+    DropItemAction::DropItemAction(Engine& engine, Entity& entity,
+                                   size_t itemIndex) :
+        Action(engine, entity), itemIndex_(itemIndex)
+    {
+    }
+
+    void DropItemAction::Execute()
+    {
+        Action::Execute();
+
+        if (auto* player = dynamic_cast<Player*>(&entity_))
+        {
+            if (Entity* item = player->GetInventoryItem(itemIndex_))
+            {
+                // Save the name before we move the item
+                std::string itemName = item->GetName();
+
+                // Extract from inventory (transfers ownership)
+                auto extractedItem = player->ExtractFromInventory(itemIndex_);
+                if (extractedItem)
+                {
+                    // Spawn back into world at player's position
+                    engine_.SpawnEntity(std::move(extractedItem),
+                                        player->GetPos(), true);
+                    engine_.LogMessage("You drop the " + itemName + ".",
+                                       color::light_azure, false);
+
+                    // Return to main game after dropping
+                    engine_.ReturnToMainGame();
+                }
+            }
+        }
+    }
+} // namespace tutorial
+
+namespace tutorial
+{
     InventoryEvent::InventoryEvent(Engine& engine) : EngineEvent(engine)
     {
     }

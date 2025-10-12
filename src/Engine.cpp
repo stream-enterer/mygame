@@ -48,7 +48,8 @@ namespace tutorial
         windowState_(MainGame),
         gameOver_(false),
         running_(true),
-        mousePos_{ 0, 0 }
+        mousePos_{ 0, 0 },
+        inventoryMode_(InventoryMode::Use)
     {
         // Create console - this is the display buffer we'll draw to
         console_ = TCOD_console_new(config.width, config.height);
@@ -233,6 +234,26 @@ namespace tutorial
         {
             eventHandler_ = std::make_unique<InventoryEventHandler>(*this);
             windowState_ = Inventory;
+
+            // Apply the current inventory mode to the handler
+            if (auto* invHandler =
+                    dynamic_cast<InventoryEventHandler*>(eventHandler_.get()))
+            {
+                invHandler->SetMode(inventoryMode_);
+
+                // Set window title based on mode
+                if (inventoryMode_ == InventoryMode::Drop)
+                {
+                    inventoryWindow_->SetTitle("Drop which item?");
+                }
+                else
+                {
+                    inventoryWindow_->SetTitle("Inventory");
+                }
+            }
+
+            // Reset mode to Use for next time
+            inventoryMode_ = InventoryMode::Use;
         }
     }
 
@@ -249,6 +270,17 @@ namespace tutorial
     std::unique_ptr<Entity> Engine::RemoveEntity(Entity* entity)
     {
         return entities_.Remove(entity);
+    }
+
+    Entity* Engine::SpawnEntity(std::unique_ptr<Entity> entity, pos_t pos,
+                                bool atFront)
+    {
+        entity->SetPos(pos);
+        if (atFront)
+        {
+            return entities_.SpawnAtFront(std::move(entity), pos).get();
+        }
+        return entities_.Spawn(std::move(entity), pos).get();
     }
 
     Entity* Engine::GetBlockingEntity(pos_t pos) const

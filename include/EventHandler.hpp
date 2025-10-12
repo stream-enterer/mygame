@@ -2,6 +2,7 @@
 #define EVENT_HANDLER_HPP
 
 #include "Event.hpp"
+#include "InventoryMode.hpp"
 #include "KeyPress.hpp"
 
 #include <memory>
@@ -18,6 +19,7 @@ namespace tutorial
         WAIT,
         PICKUP,
         INVENTORY,
+        DROP_ITEM,
         MESSAGE_HISTORY,
         RETURN_TO_GAME,
         NEW_GAME,
@@ -76,6 +78,17 @@ namespace tutorial
         InventoryEventHandler(Engine& engine);
 
         std::unique_ptr<Event> Dispatch() const override;
+        void SetMode(InventoryMode mode)
+        {
+            mode_ = mode;
+        }
+        InventoryMode GetMode() const
+        {
+            return mode_;
+        }
+
+    private:
+        InventoryMode mode_;
     };
 } // namespace tutorial
 

@@ -167,6 +167,17 @@ namespace tutorial
     private:
         size_t itemIndex_;
     };
+
+    class DropItemAction final : public Action
+    {
+    public:
+        DropItemAction(Engine& engine, Entity& entity, size_t itemIndex);
+
+        void Execute() override;
+
+    private:
+        size_t itemIndex_;
+    };
 } // namespace tutorial
 
 #endif // EVENT_HPP

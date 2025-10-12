@@ -194,4 +194,15 @@ namespace tutorial
         }
     }
 
+    std::unique_ptr<Entity> Player::ExtractFromInventory(size_t index)
+    {
+        if (index < inventory_.size())
+        {
+            auto item = std::move(inventory_[index]);
+            inventory_.erase(inventory_.begin() + index);
+            return item;
+        }
+        return nullptr;
+    }
+
 } // namespace tutorial

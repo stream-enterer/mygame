@@ -119,6 +119,7 @@ namespace tutorial
         size_t GetInventorySize() const;
         const std::vector<std::unique_ptr<Entity>>& GetInventory() const;
         void RemoveFromInventory(size_t index);
+        std::unique_ptr<Entity> ExtractFromInventory(size_t index);
 
     private:
         std::vector<std::unique_ptr<Entity>> inventory_;

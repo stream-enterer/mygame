@@ -15,7 +15,7 @@ namespace tutorial
 {
     inline namespace
     {
-        constexpr std::size_t kNumActions = 11;
+        constexpr std::size_t kNumActions = 12;
 
         static const std::array<std::function<std::unique_ptr<Event>(Engine&)>,
                                 kNumActions>
@@ -59,6 +59,12 @@ namespace tutorial
                 // Inventory event
                 [](auto& engine)
                 { return std::make_unique<InventoryEvent>(engine); },
+                // Drop item event
+                [](auto& engine)
+                {
+                    engine.SetInventoryMode(InventoryMode::Drop);
+                    return std::make_unique<InventoryEvent>(engine);
+                },
                 // Message history event
                 [](auto& engine)
                 { return std::make_unique<MessageHistoryEvent>(engine); },
@@ -192,6 +198,7 @@ namespace tutorial
                         { { TCODK_CHAR, 'g' }, Actions::PICKUP },
                         { { TCODK_CHAR, 'i' }, Actions::INVENTORY },
                         { { TCODK_CHAR, 'v' }, Actions::MESSAGE_HISTORY },
+                        { { TCODK_CHAR, 'd' }, Actions::DROP_ITEM },
                         { TCODK_ENTER, Actions::NEW_GAME } };
 
     MainGameEventHandler::MainGameEventHandler(Engine& engine) :
@@ -221,7 +228,7 @@ namespace tutorial
     }
 
     InventoryEventHandler::InventoryEventHandler(Engine& engine) :
-        BaseEventHandler(engine)
+        BaseEventHandler(engine), mode_(InventoryMode::Use)
     {
         // No specific key map needed - handles a-z directly
     }
@@ -243,7 +250,8 @@ namespace tutorial
                 SDL_Keycode sdlKey = sdlEvent.key.key;
 
                 // Escape or 'i' returns to game
-                if (sdlKey == SDLK_ESCAPE || sdlKey == SDLK_I)
+                if (sdlKey == SDLK_ESCAPE || sdlKey == SDLK_I
+                    || sdlKey == SDLK_D)
                 {
                     return std::make_unique<ReturnToGameEvent>(engine_);
                 }
@@ -252,8 +260,16 @@ namespace tutorial
                 if (sdlKey >= SDLK_A && sdlKey <= SDLK_Z)
                 {
                     size_t itemIndex = sdlKey - SDLK_A;
-                    return std::make_unique<UseItemAction>(
-                        engine_, *engine_.GetPlayer(), itemIndex);
+                    if (mode_ == InventoryMode::Drop)
+                    {
+                        return std::make_unique<DropItemAction>(
+                            engine_, *engine_.GetPlayer(), itemIndex);
+                    }
+                    else
+                    {
+                        return std::make_unique<UseItemAction>(
+                            engine_, *engine_.GetPlayer(), itemIndex);
+                    }
                 }
             }
         }

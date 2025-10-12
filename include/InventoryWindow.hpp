@@ -21,6 +21,14 @@ namespace tutorial
 
         void Render(TCOD_Console* parent) const override;
 
+        void SetTitle(const std::string& title)
+        {
+            title_ = title;
+        }
+
+    private:
+        std::string title_;
+
     private:
         const Entity& player_;
     };
