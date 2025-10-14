@@ -2,7 +2,6 @@
 
 #include "Colors.hpp"
 #include "Entity.hpp"
-#include "EntityFactory.hpp"
 #include "Event.hpp"
 #include "EventHandler.hpp"
 #include "HealthBar.hpp"
@@ -12,6 +11,7 @@
 #include "MessageHistoryWindow.hpp"
 #include "MessageLogWindow.hpp"
 
+#include <iostream>
 #include <memory>
 #include <stdexcept>
 #include <string>
@@ -203,8 +203,9 @@ namespace tutorial
         }
 
         // Create player and add them to entity list
-        PlayerFactory factory{};
-        player_ = entities_.Spawn(factory.Create(), rooms[0].GetCenter()).get();
+        auto playerEntity =
+            TemplateRegistry::Instance().Create("player", rooms[0].GetCenter());
+        player_ = entities_.Spawn(std::move(playerEntity)).get();
 
         // Create health bar
         healthBar_ =

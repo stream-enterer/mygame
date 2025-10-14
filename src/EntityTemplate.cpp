@@ -81,8 +81,9 @@ namespace tutorial
                 + "' missing or invalid 'color' field (must be [r,g,b])");
         }
         tpl.color =
-            tcod::ColorRGB{ j["color"][0].get<int>(), j["color"][1].get<int>(),
-                            j["color"][2].get<int>() };
+            tcod::ColorRGB{ static_cast<uint8_t>(j["color"][0].get<int>()),
+                            static_cast<uint8_t>(j["color"][1].get<int>()),
+                            static_cast<uint8_t>(j["color"][2].get<int>()) };
 
         if (!j.contains("blocks"))
         {
@@ -126,17 +127,24 @@ namespace tutorial
         }
         tpl.power = j["power"];
 
-        if (!j.contains("ai"))
+        // AI is optional (items don't need it)
+        if (j.contains("ai"))
         {
-            throw std::runtime_error("Entity '" + id
-                                     + "' missing required field 'ai'");
+            tpl.aiType = j["ai"];
         }
-        tpl.aiType = j["ai"];
 
         // Optional item data
         if (j.contains("item"))
         {
             tpl.item = ItemData::FromJson(j["item"]);
+        }
+
+        // Validation: Monsters must have AI
+        if (tpl.faction == "monster" && !tpl.aiType.has_value())
+        {
+            throw std::runtime_error(
+                "Monster template '" + id
+                + "' must have 'ai' field (monsters require AI behavior)");
         }
 
         return tpl;
@@ -155,7 +163,10 @@ namespace tutorial
         j["maxHp"] = maxHp;
         j["defense"] = defense;
         j["power"] = power;
-        j["ai"] = aiType;
+        if (aiType.has_value())
+        {
+            j["ai"] = aiType.value();
+        }
 
         if (item.has_value())
         {
@@ -230,16 +241,19 @@ namespace tutorial
             }
         }
 
-        // Create AI component based on type
+        // Create AI component based on type (if AI type is specified)
         std::unique_ptr<AiComponent> aiComponent = nullptr;
-        if (aiType == "hostile")
+        if (aiType.has_value())
         {
-            aiComponent = std::make_unique<HostileAi>();
-        }
-        else if (aiType == "player")
-        {
-            // Player AI will be set by Player class itself
-            aiComponent = nullptr;
+            if (aiType.value() == "hostile")
+            {
+                aiComponent = std::make_unique<HostileAi>();
+            }
+            else if (aiType.value() == "player")
+            {
+                // Player AI will be set by Player class itself
+                aiComponent = nullptr;
+            }
         }
 
         // Create appropriate entity type

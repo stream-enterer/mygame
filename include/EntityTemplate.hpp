@@ -44,7 +44,7 @@ namespace tutorial
         int power;
 
         // AI type
-        std::string aiType; // "hostile", "player", "confused"
+        std::optional<std::string> aiType; // "hostile", "player", "confused"
 
         // Optional item data
         std::optional<ItemData> item;

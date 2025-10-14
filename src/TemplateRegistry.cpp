@@ -91,4 +91,53 @@ namespace tutorial
                 catch (const std::exception& e)
                 {
                     std::cerr << "[TemplateRegistry] Failed to load "
-                              << filepath << ": " << e.what() << std:
+                              << filepath << ": " << e.what() << std::endl;
+                    // Continue loading other files
+                }
+            }
+        }
+    }
+
+    const EntityTemplate* TemplateRegistry::Get(const std::string& id) const
+    {
+        auto it = templates_.find(id);
+        if (it != templates_.end())
+        {
+            return &it->second;
+        }
+        return nullptr;
+    }
+
+    bool TemplateRegistry::Has(const std::string& id) const
+    {
+        return templates_.find(id) != templates_.end();
+    }
+
+    std::unique_ptr<Entity> TemplateRegistry::Create(const std::string& id,
+                                                     pos_t pos) const
+    {
+        const EntityTemplate* tpl = Get(id);
+        if (!tpl)
+        {
+            throw std::runtime_error("Template not found: " + id);
+        }
+        return tpl->CreateEntity(pos);
+    }
+
+    void TemplateRegistry::Clear()
+    {
+        templates_.clear();
+        std::cout << "[TemplateRegistry] Cleared all templates" << std::endl;
+    }
+
+    std::vector<std::string> TemplateRegistry::GetAllIds() const
+    {
+        std::vector<std::string> ids;
+        ids.reserve(templates_.size());
+        for (const auto& [id, tpl] : templates_)
+        {
+            ids.push_back(id);
+        }
+        return ids;
+    }
+} // namespace tutorial

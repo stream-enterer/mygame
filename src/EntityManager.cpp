@@ -1,8 +1,9 @@
 #include "EntityManager.hpp"
 
-#include "EntityFactory.hpp"
 #include "Map.hpp"
+#include "TemplateRegistry.hpp"
 
+#include <iostream>
 #include <libtcod/mersenne.hpp>
 #include <memory>
 
@@ -59,19 +60,21 @@ namespace tutorial
                 continue;
             }
 
-            std::unique_ptr<AEntityFactory> factory{ nullptr };
-
-            // Add either an orc or a troll
+            // Spawn monster based on template
+            // TODO: Better way of doing this so we don't need all of the spawn
+            // weights in this file
+            std::string templateId;
             if (rand->getInt(0, 100) < 80)
             {
-                factory = std::make_unique<OrcFactory>();
-                Spawn(factory->Create(), pos);
+                templateId = "orc";
             }
             else
             {
-                factory = std::make_unique<TrollFactory>();
-                Spawn(factory->Create(), pos);
+                templateId = "troll";
             }
+
+            auto entity = TemplateRegistry::Instance().Create(templateId, pos);
+            Spawn(std::move(entity));
         }
     }
 
@@ -147,30 +150,35 @@ namespace tutorial
                 // Roll dice to determine item type
                 int dice = rand->getInt(0, 100);
 
+                std::string itemTemplateId;
+
                 if (dice < 70)
                 {
                     // 70% chance: health potion
-                    HealthPotionFactory factory;
-                    Spawn(factory.Create(), pos);
+                    itemTemplateId = "health_potion";
                 }
                 else if (dice < 70 + 10)
                 {
                     // 10% chance: scroll of lightning bolt
-                    LightningBoltFactory factory;
-                    Spawn(factory.Create(), pos);
+                    itemTemplateId = "lightning_scroll";
                 }
                 else if (dice < 70 + 10 + 10)
                 {
                     // 10% chance: scroll of fireball
-                    FireballFactory factory;
-                    Spawn(factory.Create(), pos);
+                    itemTemplateId = "fireball_scroll";
                 }
                 else
                 {
                     // 10% chance: scroll of confusion
-                    ConfuserFactory factory;
-                    Spawn(factory.Create(), pos);
+                    itemTemplateId = "confusion_scroll";
                 }
+
+                auto item =
+                    TemplateRegistry::Instance().Create(itemTemplateId, pos);
+                std::cout << "[EntityManager] Spawning item: " << itemTemplateId
+                          << " at (" << pos.x << ", " << pos.y << ")"
+                          << std::endl;
+                Spawn(std::move(item));
             }
         }
     }
