@@ -1,0 +1,26 @@
+{
+    "orc": {
+        "name": "orc",
+        "char": "o",
+        "color": [63, 127, 63],
+        "blocks": true,
+        "faction": "monster",
+        "hp": 10,
+        "maxHp": 10,
+        "defense": 0,
+        "power": 3,
+        "ai": "hostile"
+    },
+    "troll": {
+        "name": "troll",
+        "char": "T",
+        "color": [0, 127, 0],
+        "blocks": true,
+        "faction": "monster",
+        "hp": 16,
+        "maxHp": 16,
+        "defense": 1,
+        "power": 4,
+        "ai": "hostile"
+    }
+}

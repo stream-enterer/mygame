@@ -1,7 +1,4 @@
 {
-  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
-  "dependencies": [
-    "libtcod",
-    "sdl3"
-  ]
+    "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+    "dependencies": ["libtcod", "sdl3", "nlohmann-json"]
 }

@@ -1,0 +1,14 @@
+{
+    "player": {
+        "name": "player",
+        "char": "@",
+        "color": [255, 255, 255],
+        "blocks": true,
+        "faction": "player",
+        "hp": 30,
+        "maxHp": 30,
+        "defense": 2,
+        "power": 5,
+        "ai": "player"
+    }
+}

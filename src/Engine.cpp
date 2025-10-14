@@ -164,6 +164,23 @@ namespace tutorial
 
     void Engine::NewGame()
     {
+        // Load entity templates from JSON
+        try
+        {
+            TemplateRegistry::Instance()
+                .Clear(); // Clear any existing templates
+            TemplateRegistry::Instance().LoadFromDirectory("data/entities");
+            std::cout << "[Engine] Loaded "
+                      << TemplateRegistry::Instance().GetAllIds().size()
+                      << " entity templates" << std::endl;
+        }
+        catch (const std::exception& e)
+        {
+            std::cerr << "[Engine] FATAL: Failed to load entity templates: "
+                      << e.what() << std::endl;
+            throw; // Re-throw, can't continue without templates
+        }
+
         // Clear the entities and message log
         entities_.Clear();
         messageLog_.Clear();

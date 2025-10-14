@@ -49,4 +49,5 @@ endif()
 
 find_package(SDL3 CONFIG REQUIRED)
 find_package(libtcod CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE SDL3::SDL3 libtcod::libtcod)
+find_package(nlohmann_json CONFIG REQUIRED)
+target_link_libraries(${PROJECT_NAME} PRIVATE SDL3::SDL3 libtcod::libtcod nlohmann_json::nlohmann_json)

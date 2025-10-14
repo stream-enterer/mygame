@@ -6,6 +6,7 @@
 #include "InventoryMode.hpp"
 #include "MessageLog.hpp"
 #include "Position.hpp"
+#include "TemplateRegistry.hpp"
 
 #include <SDL3/SDL.h>
 #include <libtcod.h>

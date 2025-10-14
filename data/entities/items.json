@@ -1,0 +1,65 @@
+{
+    "health_potion": {
+        "name": "health potion",
+        "char": "!",
+        "color": [255, 207, 63],
+        "blocks": false,
+        "faction": "neutral",
+        "hp": 1,
+        "maxHp": 1,
+        "defense": 0,
+        "power": 0,
+        "item": {
+            "type": "heal",
+            "amount": 4
+        }
+    },
+    "lightning_scroll": {
+        "name": "scroll of lightning bolt",
+        "char": "#",
+        "color": [63, 159, 255],
+        "blocks": false,
+        "faction": "neutral",
+        "hp": 1,
+        "maxHp": 1,
+        "defense": 0,
+        "power": 0,
+        "item": {
+            "type": "lightning",
+            "range": 5.0,
+            "damage": 20.0
+        }
+    },
+    "fireball_scroll": {
+        "name": "scroll of fireball",
+        "char": "#",
+        "color": [255, 207, 63],
+        "blocks": false,
+        "faction": "neutral",
+        "hp": 1,
+        "maxHp": 1,
+        "defense": 0,
+        "power": 0,
+        "item": {
+            "type": "fireball",
+            "range": 3.0,
+            "damage": 12.0
+        }
+    },
+    "confusion_scroll": {
+        "name": "scroll of confusion",
+        "char": "#",
+        "color": [255, 207, 63],
+        "blocks": false,
+        "faction": "neutral",
+        "hp": 1,
+        "maxHp": 1,
+        "defense": 0,
+        "power": 0,
+        "item": {
+            "type": "confuse",
+            "range": 8.0,
+            "turns": 10
+        }
+    }
+}
