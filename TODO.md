@@ -1,14 +1,28 @@
+## claude.md
+Phase 2: Spawn Tables
+
+Create data/spawn_tables.json
+Implement weighted random selection
+Remove hardcoded spawn percentages from C++
+
+Phase 3: Save System
+
+Delta-based JSON saves
+Leverage template system (only save differences)
+Map state, entities, message log
+
+
+
 ## ezClap
 
 -  Prompt on ESC main menu to quit game
--  Cap potion overheal
--  Let scrolls cast with no target
+-  Let scrolls cast with no target???
 
 ## S-Tier
 
 -  diagnonal movement
 -  autopickup
--  Convert to data-driven design
+-  Convert to data-driven design IN PROGRESS
 
 ## A-Tier
 
