@@ -21,3 +21,4 @@
 -  Height
 - scroll visual radius
 - Realmz-like targeting system
+- Make corpses into items but with lower priority (possibly change rendering layer system)

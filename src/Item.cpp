@@ -74,6 +74,9 @@ namespace tutorial
             "cancel.",
             color::light_azure, false);
 
+        // Close inventory to allow targeting
+        engine.ReturnToMainGame();
+
         int x, y;
         if (!engine.PickATile(&x, &y, range_))
         {
@@ -115,6 +118,9 @@ namespace tutorial
         engine.LogMessage(
             "Left-click an enemy to confuse it, or right-click to cancel.",
             color::light_azure, false);
+
+        // Close inventory to allow targeting
+        engine.ReturnToMainGame();
 
         int x, y;
         if (!engine.PickATile(&x, &y, range_))

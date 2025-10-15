@@ -138,10 +138,10 @@ namespace tutorial
 
         entity.Die();
 
-        // Move entity to front of entity list so that the corpse is
-        // rendered first This prevents live entities from being rendered
-        // underneath a corpse
-        entities_.MoveToFront(entity);
+        // Re-sort entities by render layer since the dead entity's layer
+        // changed Dead entities automatically become RenderLayer::CORPSES
+        // (bottom layer)
+        entities_.SortByRenderLayer();
     }
 
     void Engine::HandleEvents()
@@ -188,18 +188,18 @@ namespace tutorial
 
         this->GenerateMap(config_.width, config_.height - kUiHeight);
 
-        // Place monsters
         auto rooms = map_->GetRooms();
 
-        for (auto it = rooms.begin() + 1; it != rooms.end(); ++it)
-        {
-            entities_.PlaceEntities(*it, kMaxMonstersPerRoom);
-        }
-
-        // Place items
+        // Place items FIRST (so they render on bottom)
         for (auto it = rooms.begin() + 1; it != rooms.end(); ++it)
         {
             entities_.PlaceItems(*it, 2); // Max 2 items per room
+        }
+
+        // Place monsters AFTER items (so they render on top)
+        for (auto it = rooms.begin() + 1; it != rooms.end(); ++it)
+        {
+            entities_.PlaceEntities(*it, kMaxMonstersPerRoom);
         }
 
         // Create player and add them to entity list
@@ -410,40 +410,72 @@ namespace tutorial
     bool Engine::PickATile(int* x, int* y, float maxRange)
     {
         SDL_Event sdlEvent;
+        pos_t lastMousePos{ -1, -1 };
+
+        // Render the base game state ONCE at the start
+        this->Render();
+
+        // Store the original background colors before we modify them
+        std::vector<tcod::ColorRGB> originalColors(map_->GetWidth()
+                                                   * map_->GetHeight());
+        for (int cx = 0; cx < map_->GetWidth(); cx++)
+        {
+            for (int cy = 0; cy < map_->GetHeight(); cy++)
+            {
+                TCOD_color_t tcodCol =
+                    TCOD_console_get_char_background(console_, cx, cy);
+                originalColors[cx + cy * map_->GetWidth()] =
+                    tcod::ColorRGB{ tcodCol.r, tcodCol.g, tcodCol.b };
+            }
+        }
+
+        // Apply range highlighting ONCE
+        for (int cx = 0; cx < map_->GetWidth(); cx++)
+        {
+            for (int cy = 0; cy < map_->GetHeight(); cy++)
+            {
+                if (map_->IsInFov(pos_t{ cx, cy })
+                    && (maxRange == 0.0f
+                        || player_->GetDistance(cx, cy) <= maxRange))
+                {
+                    // Brighten the original color
+                    tcod::ColorRGB col =
+                        originalColors[cx + cy * map_->GetWidth()];
+                    col.r = std::min(255, static_cast<int>(col.r * 1.2f));
+                    col.g = std::min(255, static_cast<int>(col.g * 1.2f));
+                    col.b = std::min(255, static_cast<int>(col.b * 1.2f));
+
+                    TCOD_console_set_char_background(console_, cx, cy, col,
+                                                     TCOD_BKGND_SET);
+                }
+            }
+        }
+
+        // Highlight initial mouse position
+        if (map_->IsInFov(mousePos_)
+            && (maxRange == 0.0f
+                || player_->GetDistance(mousePos_.x, mousePos_.y) <= maxRange))
+        {
+            TCOD_console_set_char_background(console_, mousePos_.x, mousePos_.y,
+                                             color::white, TCOD_BKGND_SET);
+        }
+        lastMousePos = mousePos_;
+
+        // Present the initial frame with highlights
+        TCOD_context_present(context_, console_, nullptr);
 
         while (running_)
         {
-            // Render the current game state
-            this->Render();
-
-            // Highlight valid tiles in range
-            for (int cx = 0; cx < map_->GetWidth(); cx++)
-            {
-                for (int cy = 0; cy < map_->GetHeight(); cy++)
-                {
-                    if (map_->IsInFov(pos_t{ cx, cy })
-                        && (maxRange == 0.0f
-                            || player_->GetDistance(cx, cy) <= maxRange))
-                    {
-                        // Get current background color and brighten it
-                        TCOD_color_t tcodCol =
-                            TCOD_console_get_char_background(console_, cx, cy);
-
-                        // Convert to ColorRGB and brighten
-                        tcod::ColorRGB col{ tcodCol.r, tcodCol.g, tcodCol.b };
-                        col.r = std::min(255, static_cast<int>(col.r * 1.2f));
-                        col.g = std::min(255, static_cast<int>(col.g * 1.2f));
-                        col.b = std::min(255, static_cast<int>(col.b * 1.2f));
-
-                        TCOD_console_set_char_background(console_, cx, cy, col,
-                                                         TCOD_BKGND_SET);
-                    }
-                }
-            }
-
             // Handle mouse/keyboard events
             while (SDL_PollEvent(&sdlEvent))
             {
+                if (sdlEvent.type == SDL_EVENT_QUIT)
+                {
+                    // Allow window manager quit
+                    this->Quit();
+                    return false;
+                }
+
                 if (sdlEvent.type == SDL_EVENT_MOUSE_MOTION)
                 {
                     // Update mouse position
@@ -456,17 +488,52 @@ namespace tutorial
                     int tileY =
                         (sdlEvent.motion.y * config_.height) / windowHeight;
 
-                    mousePos_ = pos_t{ tileX, tileY };
+                    pos_t newMousePos{ tileX, tileY };
 
-                    // Highlight tile under mouse if valid
-                    if (map_->IsInFov(mousePos_)
-                        && (maxRange == 0.0f
-                            || player_->GetDistance(mousePos_.x, mousePos_.y)
-                                   <= maxRange))
+                    // Only update if mouse actually moved to a different tile
+                    if (newMousePos != lastMousePos)
                     {
-                        TCOD_console_set_char_background(
-                            console_, mousePos_.x, mousePos_.y, color::white,
-                            TCOD_BKGND_SET);
+                        // Restore the old mouse tile to range-highlighted color
+                        if (lastMousePos.x >= 0 && lastMousePos.y >= 0
+                            && map_->IsInFov(lastMousePos)
+                            && (maxRange == 0.0f
+                                || player_->GetDistance(lastMousePos.x,
+                                                        lastMousePos.y)
+                                       <= maxRange))
+                        {
+                            // Restore from original color, then brighten
+                            tcod::ColorRGB col =
+                                originalColors[lastMousePos.x
+                                               + lastMousePos.y
+                                                     * map_->GetWidth()];
+                            col.r =
+                                std::min(255, static_cast<int>(col.r * 1.2f));
+                            col.g =
+                                std::min(255, static_cast<int>(col.g * 1.2f));
+                            col.b =
+                                std::min(255, static_cast<int>(col.b * 1.2f));
+                            TCOD_console_set_char_background(
+                                console_, lastMousePos.x, lastMousePos.y, col,
+                                TCOD_BKGND_SET);
+                        }
+
+                        mousePos_ = newMousePos;
+                        lastMousePos = newMousePos;
+
+                        // Highlight new tile under mouse if valid
+                        if (map_->IsInFov(mousePos_)
+                            && (maxRange == 0.0f
+                                || player_->GetDistance(mousePos_.x,
+                                                        mousePos_.y)
+                                       <= maxRange))
+                        {
+                            TCOD_console_set_char_background(
+                                console_, mousePos_.x, mousePos_.y,
+                                color::white, TCOD_BKGND_SET);
+                        }
+
+                        // Present the updated frame
+                        TCOD_context_present(context_, console_, nullptr);
                     }
                 }
 
@@ -491,13 +558,12 @@ namespace tutorial
                     return false;
                 }
 
-                if (sdlEvent.type == SDL_EVENT_KEY_DOWN)
+                if (sdlEvent.type == SDL_EVENT_KEY_DOWN
+                    && sdlEvent.key.key == SDLK_ESCAPE)
                 {
                     return false;
                 }
             }
-
-            TCOD_context_present(context_, console_, nullptr);
         }
 
         return false;

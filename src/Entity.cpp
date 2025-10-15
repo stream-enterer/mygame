@@ -109,6 +109,30 @@ namespace tutorial
     {
         return faction_;
     }
+
+    RenderLayer BaseEntity::GetRenderLayer() const
+    {
+        // Dead entities become floor decoration
+        // When an entity dies, Die() sets defense_ to nullptr
+        if (!defense_)
+        {
+            return RenderLayer::CORPSES;
+        }
+
+        // Determine layer based on faction
+        switch (faction_)
+        {
+            case Faction::PLAYER:
+                return RenderLayer::PLAYER;
+            case Faction::MONSTER:
+                return RenderLayer::ACTORS;
+            case Faction::NEUTRAL:
+                // Neutral entities are typically items
+                return RenderLayer::ITEMS;
+            default:
+                return RenderLayer::ITEMS;
+        }
+    }
 } // namespace tutorial
 
 namespace tutorial

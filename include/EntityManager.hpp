@@ -16,9 +16,9 @@ namespace tutorial
 
     public:
         void Clear();
-        void MoveToFront(Entity& entity);
         void PlaceEntities(const Room& room, int maxMonstersPerRoom);
         void PlaceItems(const Room& room, int maxItemsPerRoom);
+        void SortByRenderLayer();
         Entity_ptr& Spawn(Entity_ptr&& src);
         Entity_ptr& Spawn(Entity_ptr&& src, pos_t pos);
         Entity_ptr& SpawnAtFront(Entity_ptr&& src, pos_t pos);

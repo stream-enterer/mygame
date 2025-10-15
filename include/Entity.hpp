@@ -5,6 +5,7 @@
 #include "Components.hpp"
 #include "Item.hpp"
 #include "Position.hpp"
+#include "RenderLayer.hpp"
 
 #include <memory>
 #include <string>
@@ -44,6 +45,7 @@ namespace tutorial
         virtual bool IsBlocker() const = 0;
         virtual float GetDistance(int cx, int cy) const = 0;
         virtual Faction GetFaction() const = 0;
+        virtual RenderLayer GetRenderLayer() const = 0;
     };
 } // namespace tutorial
 
@@ -73,6 +75,7 @@ namespace tutorial
         virtual bool IsBlocker() const override;
         virtual float GetDistance(int cx, int cy) const override;
         virtual Faction GetFaction() const override;
+        virtual RenderLayer GetRenderLayer() const override;
 
     protected:
         std::string name_;

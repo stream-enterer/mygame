@@ -30,7 +30,7 @@ namespace tutorial
     unsigned int DestructibleComponent::Heal(uint value)
     {
         uint oldHp = hp_;
-        hp_ += std::min<uint>(maxHp_, hp_ + value);
+        hp_ = std::min<uint>(maxHp_, hp_ + value);
         return hp_ - oldHp;
     }
 

@@ -1,6 +1,7 @@
 #include "EntityManager.hpp"
 
 #include "Map.hpp"
+#include "RenderLayer.hpp"
 #include "TemplateRegistry.hpp"
 
 #include <iostream>
@@ -27,18 +28,17 @@ namespace tutorial
         return nullptr;
     }
 
-    void EntityManager::MoveToFront(Entity& entity)
+    void EntityManager::SortByRenderLayer()
     {
-        auto it = std::find_if(entities_.begin(), entities_.end(),
-                               [&entity](const auto& it)
-                               { return (it.get() == &entity); });
-
-        if (it != entities_.end())
-        {
-            auto ent = std::move(*it);
-            entities_.erase(it);
-            entities_.push_front(std::move(ent));
-        }
+        // Sort entities by render layer (lower layers render first/bottom)
+        std::sort(entities_.begin(), entities_.end(),
+                  [](const Entity_ptr& a, const Entity_ptr& b)
+                  {
+                      RenderLayer layerA = a->GetRenderLayer();
+                      RenderLayer layerB = b->GetRenderLayer();
+                      return static_cast<int>(layerA)
+                             < static_cast<int>(layerB);
+                  });
     }
 
     void EntityManager::PlaceEntities(const Room& room, int maxMonstersPerRoom)
@@ -80,19 +80,19 @@ namespace tutorial
 
     std::unique_ptr<Entity>& EntityManager::Spawn(std::unique_ptr<Entity>&& src)
     {
-        return entities_.emplace_back(std::move(src));
+        auto& entity = entities_.emplace_back(std::move(src));
+        // Sort after spawning to maintain proper render order
+        SortByRenderLayer();
+        return entity;
     }
 
     std::unique_ptr<Entity>& EntityManager::Spawn(std::unique_ptr<Entity>&& src,
                                                   pos_t pos)
     {
-        auto& entity = Spawn(std::move(src));
-
-        if (pos != entity->GetPos())
-        {
-            entity->SetPos(pos);
-        }
-
+        src->SetPos(pos);
+        auto& entity = entities_.emplace_back(std::move(src));
+        // Sort after spawning to maintain proper render order
+        SortByRenderLayer();
         return entity;
     }
 
@@ -101,6 +101,8 @@ namespace tutorial
     {
         src->SetPos(pos);
         entities_.push_front(std::move(src));
+        // Sort after spawning to maintain proper render order
+        SortByRenderLayer();
         return entities_.front();
     }
 
