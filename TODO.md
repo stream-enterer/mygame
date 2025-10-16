@@ -1,18 +1,3 @@
-## claude.md
-Phase 2: Spawn Tables
-
-Create data/spawn_tables.json
-Implement weighted random selection
-Remove hardcoded spawn percentages from C++
-
-Phase 3: Save System
-
-Delta-based JSON saves
-Leverage template system (only save differences)
-Map state, entities, message log
-
-
-
 ## ezClap
 
 -  Prompt on ESC main menu to quit game
@@ -36,3 +21,4 @@ Map state, entities, message log
 - scroll visual radius
 - Realmz-like targeting system
 - Make corpses into items but with lower priority (possibly change rendering layer system)
+- Add dice style monster spawn groups (AD&D 2.5 style)

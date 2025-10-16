@@ -1,6 +1,7 @@
 #include "Engine.hpp"
 
 #include "Colors.hpp"
+#include "DynamicSpawnSystem.hpp"
 #include "Entity.hpp"
 #include "Event.hpp"
 #include "EventHandler.hpp"
@@ -27,8 +28,6 @@ namespace tutorial
         constexpr int kMaxRooms = 30;
 
         constexpr int kFovRadius = 10;
-
-        constexpr int kMaxMonstersPerRoom = 3;
     } // namespace
 
     // Public methods
@@ -181,6 +180,20 @@ namespace tutorial
             throw; // Re-throw, can't continue without templates
         }
 
+        // Build spawn tables dynamically from entity templates
+        try
+        {
+            DynamicSpawnSystem::Instance().Clear();
+            DynamicSpawnSystem::Instance().BuildSpawnTables();
+            DynamicSpawnSystem::Instance().ValidateSpawnData();
+        }
+        catch (const std::exception& e)
+        {
+            std::cerr << "[Engine] FATAL: Failed to build spawn tables: "
+                      << e.what() << std::endl;
+            throw;
+        }
+
         // Clear the entities and message log
         entities_.Clear();
         messageLog_.Clear();
@@ -193,13 +206,13 @@ namespace tutorial
         // Place items FIRST (so they render on bottom)
         for (auto it = rooms.begin() + 1; it != rooms.end(); ++it)
         {
-            entities_.PlaceItems(*it, 2); // Max 2 items per room
+            entities_.PlaceItems(*it);
         }
 
         // Place monsters AFTER items (so they render on top)
         for (auto it = rooms.begin() + 1; it != rooms.end(); ++it)
         {
-            entities_.PlaceEntities(*it, kMaxMonstersPerRoom);
+            entities_.PlaceEntities(*it);
         }
 
         // Create player and add them to entity list

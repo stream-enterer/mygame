@@ -13,6 +13,15 @@ namespace tutorial
     class Entity;
     struct pos_t;
 
+    // Spawn location data parsed from JSON
+    struct SpawnData
+    {
+        std::string location; // e.g., "dungeon_1", "cave", "swamp"
+        int weight;           // Spawn weight (higher = more common)
+
+        static SpawnData FromJson(const nlohmann::json& j);
+    };
+
     // Item data parsed from JSON
     struct ItemData
     {
@@ -48,6 +57,9 @@ namespace tutorial
 
         // Optional item data
         std::optional<ItemData> item;
+
+        // Spawn locations (where/when this entity appears)
+        std::vector<SpawnData> spawns;
 
         // Parse from JSON object
         static EntityTemplate FromJson(const std::string& id,

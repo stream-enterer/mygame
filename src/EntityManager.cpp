@@ -1,5 +1,6 @@
 #include "EntityManager.hpp"
 
+#include "DynamicSpawnSystem.hpp"
 #include "Map.hpp"
 #include "RenderLayer.hpp"
 #include "TemplateRegistry.hpp"
@@ -41,10 +42,25 @@ namespace tutorial
                   });
     }
 
-    void EntityManager::PlaceEntities(const Room& room, int maxMonstersPerRoom)
+    void EntityManager::PlaceEntities(const Room& room)
     {
+        // Get the spawn table for this level
+        const SpawnTable* monsterTable =
+            DynamicSpawnSystem::Instance().GetMonsterTable("dungeon_level_1");
+
+        if (!monsterTable)
+        {
+            std::cerr << "[EntityManager] No monster spawn table found for "
+                         "dungeon_level_1"
+                      << std::endl;
+            return;
+        }
+
+        // Get max monsters from spawn table
+        int maxMonsters = monsterTable->GetMaxMonstersPerRoom();
+
         auto* rand = TCODRandom::getInstance();
-        int numMonsters = rand->getInt(0, maxMonstersPerRoom);
+        int numMonsters = rand->getInt(0, maxMonsters);
 
         for (int i = 0; i < numMonsters; ++i)
         {
@@ -60,17 +76,11 @@ namespace tutorial
                 continue;
             }
 
-            // Spawn monster based on template
-            // TODO: Better way of doing this so we don't need all of the spawn
-            // weights in this file
-            std::string templateId;
-            if (rand->getInt(0, 100) < 80)
+            // Roll on spawn table to get monster type
+            std::string templateId = monsterTable->Roll();
+            if (templateId.empty())
             {
-                templateId = "orc";
-            }
-            else
-            {
-                templateId = "troll";
+                continue;
             }
 
             auto entity = TemplateRegistry::Instance().Create(templateId, pos);
@@ -123,10 +133,25 @@ namespace tutorial
 
 namespace tutorial
 {
-    void EntityManager::PlaceItems(const Room& room, int maxItemsPerRoom)
+    void EntityManager::PlaceItems(const Room& room)
     {
+        // Get the spawn table for this level
+        const SpawnTable* itemTable =
+            DynamicSpawnSystem::Instance().GetItemTable("dungeon_level_1");
+
+        if (!itemTable)
+        {
+            std::cerr << "[EntityManager] No item spawn table found for "
+                         "dungeon_level_1"
+                      << std::endl;
+            return;
+        }
+
+        // Get max items from spawn table
+        int maxItems = itemTable->GetMaxItemsPerRoom();
+
         auto* rand = TCODRandom::getInstance();
-        int numItems = rand->getInt(0, maxItemsPerRoom);
+        int numItems = rand->getInt(0, maxItems);
 
         for (int i = 0; i < numItems; ++i)
         {
@@ -149,30 +174,11 @@ namespace tutorial
 
             if (!blocked)
             {
-                // Roll dice to determine item type
-                int dice = rand->getInt(0, 100);
-
-                std::string itemTemplateId;
-
-                if (dice < 70)
+                // Roll on spawn table to get item type
+                std::string itemTemplateId = itemTable->Roll();
+                if (itemTemplateId.empty())
                 {
-                    // 70% chance: health potion
-                    itemTemplateId = "health_potion";
-                }
-                else if (dice < 70 + 10)
-                {
-                    // 10% chance: scroll of lightning bolt
-                    itemTemplateId = "lightning_scroll";
-                }
-                else if (dice < 70 + 10 + 10)
-                {
-                    // 10% chance: scroll of fireball
-                    itemTemplateId = "fireball_scroll";
-                }
-                else
-                {
-                    // 10% chance: scroll of confusion
-                    itemTemplateId = "confusion_scroll";
+                    continue;
                 }
 
                 auto item =

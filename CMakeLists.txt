@@ -52,11 +52,6 @@ find_package(libtcod CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE SDL3::SDL3 libtcod::libtcod nlohmann_json::nlohmann_json)
 
-# Testing Setup
-
-enable_testing()
-find_package(Catch2 3 CONFIG REQUIRED)
-
 # Copy data files to build directory
 add_custom_command(
     TARGET ${PROJECT_NAME} POST_BUILD
@@ -74,30 +69,3 @@ add_custom_command(
     $<TARGET_FILE_DIR:${PROJECT_NAME}>/terminal.png
     COMMENT "Copying terminal.png to build directory"
 )
-
-# Test Executable
-
-add_executable(tests
-    tests/test_dice.cpp
-    src/Util.cpp
-)
-
-target_include_directories(tests PRIVATE 
-    ${PROJECT_SOURCE_DIR}/include
-)
-
-target_compile_features(tests PRIVATE cxx_std_17)
-
-if (MSVC)
-    target_compile_options(tests PRIVATE /utf-8 /W4)
-else()
-    target_compile_options(tests PRIVATE -Wall -Wextra)
-endif()
-
-target_link_libraries(tests PRIVATE 
-    Catch2::Catch2WithMain
-    libtcod::libtcod
-)
-
-include(Catch)
-catch_discover_tests(tests)

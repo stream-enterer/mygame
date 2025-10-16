@@ -7,12 +7,35 @@
 #include "Item.hpp"
 #include "Position.hpp"
 
+#include <iostream>
 #include <stdexcept>
 
 using json = nlohmann::json;
 
 namespace tutorial
 {
+
+    SpawnData SpawnData::FromJson(const json& j)
+    {
+        SpawnData data;
+
+        if (!j.contains("location"))
+        {
+            throw std::runtime_error(
+                "Spawn data missing required 'location' field");
+        }
+        data.location = j["location"];
+
+        if (!j.contains("weight"))
+        {
+            throw std::runtime_error(
+                "Spawn data missing required 'weight' field");
+        }
+        data.weight = j["weight"];
+
+        return data;
+    }
+
     ItemData ItemData::FromJson(const json& j)
     {
         ItemData data;
@@ -139,6 +162,24 @@ namespace tutorial
             tpl.item = ItemData::FromJson(j["item"]);
         }
 
+        // Optional spawn data
+        if (j.contains("spawns") && j["spawns"].is_array())
+        {
+            for (const auto& spawnJson : j["spawns"])
+            {
+                try
+                {
+                    tpl.spawns.push_back(SpawnData::FromJson(spawnJson));
+                }
+                catch (const std::exception& e)
+                {
+                    std::cerr
+                        << "[EntityTemplate] Warning: Invalid spawn data for '"
+                        << id << "': " << e.what() << std::endl;
+                }
+            }
+        }
+
         // Validation: Monsters must have AI
         if (tpl.faction == "monster" && !tpl.aiType.has_value())
         {
@@ -189,6 +230,20 @@ namespace tutorial
                 itemJson["turns"] = item->turns.value();
             }
             j["item"] = itemJson;
+        }
+
+        // Serialize spawn data
+        if (!spawns.empty())
+        {
+            json spawnsArray = json::array();
+            for (const auto& spawn : spawns)
+            {
+                json spawnJson;
+                spawnJson["location"] = spawn.location;
+                spawnJson["weight"] = spawn.weight;
+                spawnsArray.push_back(spawnJson);
+            }
+            j["spawns"] = spawnsArray;
         }
 
         return j;

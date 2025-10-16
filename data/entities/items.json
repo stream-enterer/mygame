@@ -12,7 +12,8 @@
         "item": {
             "type": "heal",
             "amount": 4
-        }
+        },
+        "spawns": [{ "location": "dungeon_level_1", "weight": 70 }]
     },
     "lightning_scroll": {
         "name": "scroll of lightning bolt",
@@ -28,7 +29,8 @@
             "type": "lightning",
             "range": 5.0,
             "damage": 20.0
-        }
+        },
+        "spawns": [{ "location": "dungeon_level_1", "weight": 10 }]
     },
     "fireball_scroll": {
         "name": "scroll of fireball",
@@ -44,7 +46,8 @@
             "type": "fireball",
             "range": 3.0,
             "damage": 12.0
-        }
+        },
+        "spawns": [{ "location": "dungeon_level_1", "weight": 10 }]
     },
     "confusion_scroll": {
         "name": "scroll of confusion",
@@ -60,6 +63,7 @@
             "type": "confuse",
             "range": 8.0,
             "turns": 10
-        }
+        },
+        "spawns": [{ "location": "dungeon_level_1", "weight": 10 }]
     }
 }
