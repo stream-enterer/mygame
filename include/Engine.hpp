@@ -93,9 +93,11 @@ namespace tutorial
         void AddEvent(Event_ptr& event);
         void GenerateMap(int width, int height);
         void HandleEnemyTurns();
+        void ProcessDeferredRemovals();
 
         EntityManager entities_;
         std::deque<Event_ptr> eventQueue_;
+        std::vector<Entity*> entitiesToRemove_;
 
         Configuration config_;
 

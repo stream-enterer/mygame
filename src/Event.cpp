@@ -249,7 +249,7 @@ namespace tutorial
             const auto& actor = *it;
 
             if (actor->GetItem() && actor->GetPos() == entityPos
-                && !actor->IsBlocker())
+                && !actor->IsBlocker() && actor->IsPickable())
             {
                 // Try to pick up the item (only works for Player)
                 if (auto* player = dynamic_cast<Player*>(&entity_))

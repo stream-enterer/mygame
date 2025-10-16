@@ -15,11 +15,13 @@ namespace tutorial
         static const IconRenderable kDeadIcon{ color::dark_red, '%' };
     }
 
+    // BaseEntity Constructor
     BaseEntity::BaseEntity(pos_t pos, const std::string& name, bool blocker,
                            AttackerComponent attack,
                            const DestructibleComponent& defense,
                            const IconRenderable& renderable, Faction faction,
-                           std::unique_ptr<Item> item) :
+                           std::unique_ptr<Item> item, bool pickable,
+                           bool isCorpse) :
         name_(name),
         renderable_(std::make_unique<IconRenderable>(renderable)),
         defense_(std::make_unique<DestructibleComponent>(defense)),
@@ -27,7 +29,9 @@ namespace tutorial
         item_(std::move(item)),
         pos_(pos),
         faction_(faction),
-        blocker_(blocker)
+        blocker_(blocker),
+        pickable_(pickable),
+        isCorpse_(isCorpse)
     {
     }
 
@@ -61,6 +65,16 @@ namespace tutorial
     Item* BaseEntity::GetItem() const
     {
         return item_.get();
+    }
+
+    bool BaseEntity::IsPickable() const
+    {
+        return pickable_;
+    }
+
+    bool BaseEntity::IsCorpse() const
+    {
+        return isCorpse_;
     }
 
     bool BaseEntity::CanAct() const
@@ -112,6 +126,12 @@ namespace tutorial
 
     RenderLayer BaseEntity::GetRenderLayer() const
     {
+        // Explicit corpse flag takes priority
+        if (isCorpse_)
+        {
+            return RenderLayer::CORPSES;
+        }
+
         // Dead entities become floor decoration
         // When an entity dies, Die() sets defense_ to nullptr
         if (!defense_)
@@ -133,6 +153,7 @@ namespace tutorial
                 return RenderLayer::ITEMS;
         }
     }
+
 } // namespace tutorial
 
 namespace tutorial
@@ -140,8 +161,9 @@ namespace tutorial
     Npc::Npc(pos_t pos, const std::string& name, bool blocker,
              AttackerComponent attack, const DestructibleComponent& defense,
              const IconRenderable& renderable, Faction faction,
-             std::unique_ptr<AiComponent> ai) :
-        BaseEntity(pos, name, blocker, attack, defense, renderable, faction),
+             std::unique_ptr<AiComponent> ai, bool pickable, bool isCorpse) :
+        BaseEntity(pos, name, blocker, attack, defense, renderable, faction,
+                   nullptr, pickable, isCorpse),
         ai_(std::move(ai))
     {
     }
@@ -169,8 +191,10 @@ namespace tutorial
     Player::Player(pos_t pos, const std::string& name, bool blocker,
                    AttackerComponent attack,
                    const DestructibleComponent& defense,
-                   const IconRenderable& renderable, Faction faction) :
-        BaseEntity(pos, name, blocker, attack, defense, renderable, faction)
+                   const IconRenderable& renderable, Faction faction,
+                   bool pickable, bool isCorpse) :
+        BaseEntity(pos, name, blocker, attack, defense, renderable, faction,
+                   nullptr, pickable, isCorpse)
     {
     }
 

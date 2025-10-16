@@ -162,6 +162,12 @@ namespace tutorial
             tpl.item = ItemData::FromJson(j["item"]);
         }
 
+        // Pickable flag (defaults to true if not specified)
+        if (j.contains("pickable"))
+        {
+            tpl.pickable = j["pickable"];
+        }
+
         // Optional spawn data
         if (j.contains("spawns") && j["spawns"].is_array())
         {
@@ -320,7 +326,7 @@ namespace tutorial
                 DestructibleComponent{ static_cast<unsigned int>(defense),
                                        static_cast<unsigned int>(maxHp),
                                        static_cast<unsigned int>(hp) },
-                IconRenderable{ color, icon }, factionEnum);
+                IconRenderable{ color, icon }, factionEnum, pickable);
         }
         else if (aiComponent != nullptr)
         {
@@ -332,7 +338,7 @@ namespace tutorial
                                        static_cast<unsigned int>(maxHp),
                                        static_cast<unsigned int>(hp) },
                 IconRenderable{ color, icon }, factionEnum,
-                std::move(aiComponent));
+                std::move(aiComponent), pickable);
         }
         else
         {
@@ -344,7 +350,7 @@ namespace tutorial
                                        static_cast<unsigned int>(maxHp),
                                        static_cast<unsigned int>(hp) },
                 IconRenderable{ color, icon }, factionEnum,
-                std::move(itemComponent));
+                std::move(itemComponent), pickable);
         }
     }
 } // namespace tutorial

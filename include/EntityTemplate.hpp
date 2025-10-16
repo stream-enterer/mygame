@@ -61,6 +61,10 @@ namespace tutorial
         // Spawn locations (where/when this entity appears)
         std::vector<SpawnData> spawns;
 
+        // Can this item be picked up? (defaults to true for items, false for
+        // corpses)
+        bool pickable = true; // ADD THIS LINE
+
         // Parse from JSON object
         static EntityTemplate FromJson(const std::string& id,
                                        const nlohmann::json& j);

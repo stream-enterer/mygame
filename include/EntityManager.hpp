@@ -28,6 +28,9 @@ namespace tutorial
 
         using iterator = std::deque<Entity_ptr>::iterator;
         using const_iterator = std::deque<Entity_ptr>::const_iterator;
+        using reverse_iterator = std::deque<Entity_ptr>::reverse_iterator;
+        using const_reverse_iterator =
+            std::deque<Entity_ptr>::const_reverse_iterator;
 
         iterator begin()
         {
@@ -47,6 +50,27 @@ namespace tutorial
         const_iterator end() const
         {
             return entities_.end();
+        }
+
+        // ADD THESE FOUR METHODS:
+        reverse_iterator rbegin()
+        {
+            return entities_.rbegin();
+        }
+
+        reverse_iterator rend()
+        {
+            return entities_.rend();
+        }
+
+        const_reverse_iterator rbegin() const
+        {
+            return entities_.rbegin();
+        }
+
+        const_reverse_iterator rend() const
+        {
+            return entities_.rend();
         }
 
     private:

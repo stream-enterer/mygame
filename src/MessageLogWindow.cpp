@@ -60,6 +60,7 @@ namespace tutorial
                           TCOD_console_get_height(console_), parent, pos_.x,
                           pos_.y, 1.0f, 1.0f);
     }
+
     void MessageLogWindow::RenderMouseLook(TCOD_Console* parent,
                                            const Engine& engine) const
     {
@@ -75,9 +76,11 @@ namespace tutorial
         char buf[128] = "";
         bool first = true;
 
-        // Scan through all entities
-        for (const auto& entity : engine.GetEntities())
+        // Scan through all entities IN REVERSE (top to bottom render order)
+        const auto& entities = engine.GetEntities();
+        for (auto it = entities.rbegin(); it != entities.rend(); ++it)
         {
+            const auto& entity = *it;
             if (entity->GetPos() == mousePos)
             {
                 if (!first)

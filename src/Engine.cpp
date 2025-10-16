@@ -133,14 +133,16 @@ namespace tutorial
             eventHandler_ = std::make_unique<GameOverEventHandler>(*this);
             eventQueue_.clear();
             gameOver_ = true;
+
+            entity.Die(); // Keep player as dead entity (special case for game
+                          // over screen)
+            entities_.SortByRenderLayer();
+            return;
         }
 
-        entity.Die();
-
-        // Re-sort entities by render layer since the dead entity's layer
-        // changed Dead entities automatically become RenderLayer::CORPSES
-        // (bottom layer)
-        entities_.SortByRenderLayer();
+        // For non-player entities: mark for deferred removal
+        // Don't remove immediately - event system still has references!
+        entitiesToRemove_.push_back(&entity);
     }
 
     void Engine::HandleEvents()
@@ -153,6 +155,9 @@ namespace tutorial
         }
 
         eventQueue_.clear();
+
+        // Process any entities that died during event processing
+        ProcessDeferredRemovals();
     }
 
     void Engine::LogMessage(const std::string& text, tcod::ColorRGB color,
@@ -695,5 +700,37 @@ namespace tutorial
                 std::make_unique<AiAction>(*this, *entity);
             this->AddEvent(event);
         }
+    }
+
+    void Engine::ProcessDeferredRemovals()
+    {
+        for (Entity* entity : entitiesToRemove_)
+        {
+            // Get entity info before removing
+            std::string corpseName = "remains of " + entity->GetName();
+            pos_t corpsePos = entity->GetPos();
+
+            // Create corpse item (non-pickable, renders on CORPSES layer)
+            auto corpse = std::make_unique<BaseEntity>(
+                corpsePos, corpseName,
+                false,                            // doesn't block movement
+                AttackerComponent{ 0 },           // no attack
+                DestructibleComponent{ 0, 1, 1 }, // minimal hp (not used)
+                IconRenderable{ color::dark_red, '%' }, // red % symbol
+                Faction::NEUTRAL,
+                nullptr, // no item component
+                false,   // NOT pickable
+                true     // IS a corpse (renders on CORPSES layer)
+            );
+
+            // Spawn corpse at front (bottom render layer)
+            SpawnEntity(std::move(corpse), corpsePos, true);
+
+            // Now safe to remove the entity
+            RemoveEntity(entity);
+        }
+
+        // Clear the removal queue
+        entitiesToRemove_.clear();
     }
 } // namespace tutorial

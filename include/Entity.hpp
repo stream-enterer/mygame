@@ -35,7 +35,8 @@ namespace tutorial
         virtual void Use(Engine& engine) = 0;
         virtual void SetPos(pos_t pos) = 0;
         virtual Item* GetItem() const = 0;
-
+        virtual bool IsPickable() const = 0;
+        virtual bool IsCorpse() const = 0;
         virtual bool CanAct() const = 0;
         virtual AttackerComponent* GetAttacker() const = 0;
         virtual DestructibleComponent* GetDestructible() const = 0;
@@ -58,14 +59,16 @@ namespace tutorial
                    AttackerComponent attack,
                    const DestructibleComponent& defense,
                    const IconRenderable& renderable, Faction faction,
-                   std::unique_ptr<Item> item = nullptr);
+                   std::unique_ptr<Item> item = nullptr, bool pickable = true,
+                   bool isCorpse = false);
 
         virtual void Act(Engine& engine) override;
         virtual void Die() override;
         virtual void Use(Engine& engine) override;
         virtual void SetPos(pos_t pos) override;
         virtual Item* GetItem() const override;
-
+        virtual bool IsPickable() const override;
+        virtual bool IsCorpse() const override;
         virtual bool CanAct() const override;
         virtual AttackerComponent* GetAttacker() const override;
         virtual DestructibleComponent* GetDestructible() const override;
@@ -86,6 +89,8 @@ namespace tutorial
         pos_t pos_;
         Faction faction_;
         bool blocker_;
+        bool pickable_;
+        bool isCorpse_;
     };
 } // namespace tutorial
 
@@ -97,7 +102,8 @@ namespace tutorial
         Npc(pos_t pos, const std::string& name, bool blocker,
             AttackerComponent attack, const DestructibleComponent& defense,
             const IconRenderable& renderable, Faction faction,
-            std::unique_ptr<AiComponent> ai);
+            std::unique_ptr<AiComponent> ai, bool pickable = true,
+            bool isCorpse = false);
 
         void Act(Engine& engine) override;
         std::unique_ptr<AiComponent> SwapAi(std::unique_ptr<AiComponent> newAi);
@@ -114,7 +120,8 @@ namespace tutorial
     public:
         Player(pos_t pos, const std::string& name, bool blocker,
                AttackerComponent attack, const DestructibleComponent& defense,
-               const IconRenderable& renderable, Faction faction);
+               const IconRenderable& renderable, Faction faction,
+               bool pickable = true, bool isCorpse = false);
 
         void Use(Engine& engine) override;
         bool AddToInventory(std::unique_ptr<Entity> item);
