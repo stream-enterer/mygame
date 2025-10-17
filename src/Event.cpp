@@ -5,6 +5,7 @@
 #include "Colors.hpp"
 #include "Engine.hpp"
 #include "Entity.hpp"
+#include "StringTable.hpp"
 #include "Util.hpp"
 
 namespace tutorial
@@ -94,13 +95,16 @@ namespace tutorial
 
         if (engine_.IsPlayer(entity_))
         {
-            engine_.LogMessage("You died!", color::dark_red, false);
+            auto msg =
+                StringTable::Instance().GetMessage("messages.death.player");
+            engine_.LogMessage(msg.text, msg.color, msg.stack);
         }
         else
         {
-            engine_.LogMessage(
-                util::capitalize(entity_.GetName()) + " has died!",
-                color::dark_red, true);
+            auto msg = StringTable::Instance().GetMessage(
+                "messages.death.npc",
+                { { "name", util::capitalize(entity_.GetName()) } });
+            engine_.LogMessage(msg.text, msg.color, msg.stack);
         }
 
         engine_.HandleDeathEvent(entity_);
@@ -181,20 +185,22 @@ namespace tutorial
 
             if (damage > 0)
             {
-                engine_.LogMessage(util::capitalize(entity_.GetName())
-                                       + " attacks " + target->GetName()
-                                       + " for " + std::to_string(damage)
-                                       + " hit points.",
-                                   color::red, true);
+                auto msg = StringTable::Instance().GetMessage(
+                    "messages.combat.attack_hit",
+                    { { "attacker", util::capitalize(entity_.GetName()) },
+                      { "target", target->GetName() },
+                      { "damage", std::to_string(damage) } });
+                engine_.LogMessage(msg.text, msg.color, msg.stack);
 
                 engine_.DealDamage(*target, damage);
             }
             else
             {
-                engine_.LogMessage(util::capitalize(entity_.GetName())
-                                       + " attacks " + target->GetName()
-                                       + " but does no damage.",
-                                   color::red, true);
+                auto msg = StringTable::Instance().GetMessage(
+                    "messages.combat.attack_miss",
+                    { { "attacker", util::capitalize(entity_.GetName()) },
+                      { "target", target->GetName() } });
+                engine_.LogMessage(msg.text, msg.color, msg.stack);
             }
         }
     }
@@ -260,15 +266,18 @@ namespace tutorial
                     if (player->AddToInventory(
                             engine_.RemoveEntity(actor.get())))
                     {
-                        engine_.LogMessage("You pick up the " + actorName + ".",
-                                           color::light_azure, false);
+                        auto msg = StringTable::Instance().GetMessage(
+                            "messages.pickup.success",
+                            { { "item", actorName } });
+                        engine_.LogMessage(msg.text, msg.color, msg.stack);
                         found = true;
                         break;
                     }
                     else
                     {
-                        engine_.LogMessage("Your inventory is full.",
-                                           color::red, false);
+                        auto msg = StringTable::Instance().GetMessage(
+                            "messages.pickup.inventory_full");
+                        engine_.LogMessage(msg.text, msg.color, msg.stack);
                         found = true;
                         break;
                     }
@@ -278,8 +287,9 @@ namespace tutorial
 
         if (!found)
         {
-            engine_.LogMessage("There's nothing here that you can pick up.",
-                               color::white, false);
+            auto msg =
+                StringTable::Instance().GetMessage("messages.pickup.fail");
+            engine_.LogMessage(msg.text, msg.color, msg.stack);
         }
     }
 } // namespace tutorial
@@ -339,8 +349,10 @@ namespace tutorial
                     // Spawn back into world at player's position
                     engine_.SpawnEntity(std::move(extractedItem),
                                         player->GetPos(), true);
-                    engine_.LogMessage("You drop the " + itemName + ".",
-                                       color::light_azure, false);
+
+                    auto msg = StringTable::Instance().GetMessage(
+                        "messages.drop.success", { { "item", itemName } });
+                    engine_.LogMessage(msg.text, msg.color, msg.stack);
 
                     // Return to main game after dropping
                     engine_.ReturnToMainGame();

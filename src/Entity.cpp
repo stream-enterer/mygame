@@ -3,6 +3,7 @@
 #include "AiComponent.hpp"
 #include "Colors.hpp"
 #include "Components.hpp"
+#include "ConfigManager.hpp"
 #include "Engine.hpp"
 #include "Util.hpp"
 
@@ -207,7 +208,10 @@ namespace tutorial
 
     bool Player::AddToInventory(std::unique_ptr<Entity> item)
     {
-        if (inventory_.size() >= kMaxInventorySize)
+        size_t maxSize = static_cast<size_t>(
+            ConfigManager::Instance().GetMaxInventorySize());
+
+        if (inventory_.size() >= maxSize)
         {
             return false;
         }

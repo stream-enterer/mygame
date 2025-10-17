@@ -3,6 +3,7 @@
 #include "Colors.hpp"
 #include "Engine.hpp"
 #include "Entity.hpp"
+#include "StringTable.hpp"
 
 namespace tutorial
 {
@@ -18,15 +19,17 @@ namespace tutorial
             unsigned int amountHealed = destructible->Heal(amount_);
             if (amountHealed > 0)
             {
-                engine.LogMessage("You use the health potion and recover "
-                                      + std::to_string(amountHealed) + " HP.",
-                                  color::green, false);
+                auto msg = StringTable::Instance().GetMessage(
+                    "items.health_potion.use_success",
+                    { { "amount", std::to_string(amountHealed) } });
+                engine.LogMessage(msg.text, msg.color, msg.stack);
                 return true;
             }
             else
             {
-                engine.LogMessage("You are already at full health!",
-                                  color::white, false);
+                auto msg = StringTable::Instance().GetMessage(
+                    "items.health_potion.use_fail");
+                engine.LogMessage(msg.text, msg.color, msg.stack);
                 return false;
             }
         }
@@ -45,20 +48,20 @@ namespace tutorial
 
         if (!closestMonster)
         {
-            engine.LogMessage("No enemy is close enough to strike.",
-                              color::white, false);
+            auto msg = StringTable::Instance().GetMessage(
+                "items.lightning_scroll.use_fail");
+            engine.LogMessage(msg.text, msg.color, msg.stack);
             return false;
         }
 
         // Hit closest monster
-        engine.LogMessage(
-            "A lightning bolt strikes the " + closestMonster->GetName()
-                + " with a loud thunder! The damage is "
-                + std::to_string(static_cast<int>(damage_)) + " hit points.",
-            color::light_azure, false);
+        auto msg = StringTable::Instance().GetMessage(
+            "items.lightning_scroll.use_success",
+            { { "target", closestMonster->GetName() },
+              { "damage", std::to_string(static_cast<int>(damage_)) } });
+        engine.LogMessage(msg.text, msg.color, msg.stack);
 
         engine.DealDamage(*closestMonster, static_cast<unsigned int>(damage_));
-
         return true;
     }
 
@@ -69,10 +72,9 @@ namespace tutorial
 
     bool Fireball::Use(Entity& owner, Engine& engine)
     {
-        engine.LogMessage(
-            "Left-click a target tile for the fireball, or right-click to "
-            "cancel.",
-            color::light_azure, false);
+        auto promptMsg =
+            StringTable::Instance().GetMessage("items.fireball_scroll.prompt");
+        engine.LogMessage(promptMsg.text, promptMsg.color, promptMsg.stack);
 
         // Close inventory to allow targeting
         engine.ReturnToMainGame();
@@ -84,10 +86,11 @@ namespace tutorial
         }
 
         // Burn everything in range (including player)
-        engine.LogMessage("The fireball explodes, burning everything within "
-                              + std::to_string(static_cast<int>(range_))
-                              + " tiles!",
-                          color::red, false);
+        auto explosionMsg = StringTable::Instance().GetMessage(
+            "items.fireball_scroll.explosion",
+            { { "radius", std::to_string(static_cast<int>(range_)) } });
+        engine.LogMessage(explosionMsg.text, explosionMsg.color,
+                          explosionMsg.stack);
 
         for (const auto& entity : engine.GetEntities())
         {
@@ -95,11 +98,12 @@ namespace tutorial
                 && !entity->GetDestructible()->IsDead()
                 && entity->GetDistance(x, y) <= range_)
             {
-                engine.LogMessage(
-                    "The " + entity->GetName() + " gets burned for "
-                        + std::to_string(static_cast<int>(damage_))
-                        + " hit points.",
-                    color::red, false);
+                auto hitMsg = StringTable::Instance().GetMessage(
+                    "items.fireball_scroll.hit",
+                    { { "target", entity->GetName() },
+                      { "damage",
+                        std::to_string(static_cast<int>(damage_)) } });
+                engine.LogMessage(hitMsg.text, hitMsg.color, hitMsg.stack);
 
                 engine.DealDamage(*entity, static_cast<unsigned int>(damage_));
             }
@@ -115,9 +119,9 @@ namespace tutorial
 
     bool Confuser::Use(Entity& owner, Engine& engine)
     {
-        engine.LogMessage(
-            "Left-click an enemy to confuse it, or right-click to cancel.",
-            color::light_azure, false);
+        auto promptMsg =
+            StringTable::Instance().GetMessage("items.confusion_scroll.prompt");
+        engine.LogMessage(promptMsg.text, promptMsg.color, promptMsg.stack);
 
         // Close inventory to allow targeting
         engine.ReturnToMainGame();
@@ -131,18 +135,20 @@ namespace tutorial
         Entity* target = engine.GetActor(x, y);
         if (!target)
         {
-            engine.LogMessage("No enemy at that location.", color::white,
-                              false);
+            auto msg = StringTable::Instance().GetMessage(
+                "items.confusion_scroll.use_fail");
+            engine.LogMessage(msg.text, msg.color, msg.stack);
             return false;
         }
 
         // Only NPCs can be confused
         if (auto* npc = dynamic_cast<Npc*>(target))
         {
-            engine.LogMessage(
-                "The eyes of the " + target->GetName()
-                    + " look vacant, as he starts to stumble around!",
-                color::light_azure, false);
+            auto successMsg = StringTable::Instance().GetMessage(
+                "items.confusion_scroll.use_success",
+                { { "target", target->GetName() } });
+            engine.LogMessage(successMsg.text, successMsg.color,
+                              successMsg.stack);
 
             // Swap in confused AI, storing the old one
             auto confusedAi = std::make_unique<ConfusedMonsterAi>(
@@ -151,7 +157,9 @@ namespace tutorial
         }
         else
         {
-            engine.LogMessage("You cannot confuse that!", color::white, false);
+            auto msg = StringTable::Instance().GetMessage(
+                "items.confusion_scroll.invalid_target");
+            engine.LogMessage(msg.text, msg.color, msg.stack);
             return false;
         }
 

@@ -133,7 +133,7 @@ namespace tutorial
 
     private:
         std::vector<std::unique_ptr<Entity>> inventory_;
-        static constexpr size_t kMaxInventorySize = 26;
+        // Max inventory size moved to game.json config
     };
 } // namespace tutorial
 

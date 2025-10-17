@@ -1,6 +1,7 @@
 #ifndef ENGINE_HPP
 #define ENGINE_HPP
 
+#include "ConfigManager.hpp"
 #include "Configuration.hpp"
 #include "EntityManager.hpp"
 #include "InventoryMode.hpp"

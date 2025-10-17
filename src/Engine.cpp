@@ -11,6 +11,7 @@
 #include "MapGenerator.hpp"
 #include "MessageHistoryWindow.hpp"
 #include "MessageLogWindow.hpp"
+#include "StringTable.hpp"
 
 #include <iostream>
 #include <memory>
@@ -21,24 +22,22 @@ namespace tutorial
 {
     inline namespace
     {
-        constexpr int kUiHeight = 5;
-
+        // Map generation constants moved to level config (Phase 3)
+        // Will be removed in Phase 3 when we implement LevelConfig
         constexpr int kRoomMinSize = 6;
         constexpr int kRoomMaxSize = 10;
         constexpr int kMaxRooms = 30;
-
-        constexpr int kFovRadius = 10;
     } // namespace
 
     // Public methods
     Engine::Engine(const Configuration& config) :
         config_(config),
         eventHandler_(std::make_unique<MainGameEventHandler>(*this)),
-        map_(std::make_unique<Map>(config.width, config.height - kUiHeight)),
+        map_(nullptr), // Initialize to nullptr, create in NewGame()
         messageHistoryWindow_(std::make_unique<MessageHistoryWindow>(
             config.width, config.height, pos_t{ 0, 0 }, messageLog_)),
-        messageLogWindow_(std::make_unique<MessageLogWindow>(
-            40, 5, pos_t{ 21, 45 }, messageLog_)),
+        messageLogWindow_(
+            nullptr), // Initialize to nullptr, create in NewGame()
         player_(nullptr),
         healthBar_(nullptr),
         context_(nullptr),
@@ -107,7 +106,8 @@ namespace tutorial
 
     void Engine::ComputeFOV()
     {
-        map_->ComputeFov(player_->GetPos(), kFovRadius);
+        int fovRadius = ConfigManager::Instance().GetPlayerFOVRadius();
+        map_->ComputeFov(player_->GetPos(), fovRadius);
         map_->Update();
     }
 
@@ -168,6 +168,32 @@ namespace tutorial
 
     void Engine::NewGame()
     {
+        // Load configuration files (first time only)
+        static bool configLoaded = false;
+        if (!configLoaded)
+        {
+            ConfigManager::Instance().LoadAll();
+            configLoaded = true;
+        }
+
+        // Create map if not yet created (first NewGame call)
+        if (!map_)
+        {
+            auto& cfg = ConfigManager::Instance();
+            map_ = std::make_unique<Map>(
+                config_.width, config_.height - cfg.GetMapHeightOffset());
+        }
+
+        // Create message log window if not yet created
+        if (!messageLogWindow_)
+        {
+            auto& cfg = ConfigManager::Instance();
+            messageLogWindow_ = std::make_unique<MessageLogWindow>(
+                cfg.GetMessageLogWidth(), cfg.GetMessageLogHeight(),
+                pos_t{ cfg.GetMessageLogX(), cfg.GetMessageLogY() },
+                messageLog_);
+        }
+
         // Load entity templates from JSON
         try
         {
@@ -204,7 +230,8 @@ namespace tutorial
         messageLog_.Clear();
         eventQueue_.clear();
 
-        this->GenerateMap(config_.width, config_.height - kUiHeight);
+        // Map already has correct size, just generate content
+        this->GenerateMap(map_->GetWidth(), map_->GetHeight());
 
         auto rooms = map_->GetRooms();
 
@@ -225,19 +252,38 @@ namespace tutorial
             TemplateRegistry::Instance().Create("player", rooms[0].GetCenter());
         player_ = entities_.Spawn(std::move(playerEntity)).get();
 
-        // Create health bar
-        healthBar_ =
-            std::make_unique<HealthBar>(20, 1, pos_t{ 0, 45 }, *player_);
+        // Create health bar from config
+        auto& cfg = ConfigManager::Instance();
+        healthBar_ = std::make_unique<HealthBar>(
+            cfg.GetHealthBarWidth(), cfg.GetHealthBarHeight(),
+            pos_t{ cfg.GetHealthBarX(), cfg.GetHealthBarY() }, *player_);
 
-        // Create inventory window
+        // Create inventory window from config
+        int invWidth = cfg.GetInventoryWindowWidth();
+        int invHeight = cfg.GetInventoryWindowHeight();
+        pos_t invPos;
+
+        if (cfg.GetInventoryCenterOnScreen())
+        {
+            invPos = pos_t{ config_.width / 2 - invWidth / 2,
+                            config_.height / 2 - invHeight / 2 };
+        }
+        else
+        {
+            invPos =
+                pos_t{ 0,
+                       0 }; // Could add explicit position in config if needed
+        }
+
         inventoryWindow_ = std::make_unique<InventoryWindow>(
-            50, 28, pos_t{ config_.width / 2 - 25, config_.height / 2 - 14 },
-            *player_);
+            invWidth, invHeight, invPos, *player_);
 
         this->ComputeFOV();
 
-        messageLog_.AddMessage("Hello and welcome to the C++ libtcod dungeon!",
-                               color::light_azure, false);
+        // Show welcome message
+        auto welcomeMsg = StringTable::Instance().GetMessage("game.welcome");
+        messageLog_.AddMessage(welcomeMsg.text, welcomeMsg.color,
+                               welcomeMsg.stack);
 
         windowState_ = MainGame;
 

@@ -1,24 +1,20 @@
-## ezClap
-
+- Please remove specific spell effects from item.cpp, and genericize them. As well as confuse state in AiComponents.cpp.
 -  Prompt on ESC main menu to quit game
 -  Let scrolls cast with no target???
-
-## S-Tier
-
+-  Bugfix: Let dropped items order render based on order dropped (latest drop appears on top)
+-  Stack dropped/carried items (e.g. 1x 2x Health Potion)
 -  diagnonal movement
 -  autopickup
 -  Convert to data-driven design IN PROGRESS
-
-## A-Tier
-
+-  Click to move
+-  Numpad movement
+-  Rebindable hotkeys
 -  autoexplore
 -  number munchers
 -  samurai kirby (arcade reflexes, smoother graphics)
 -  tileset
 -  sound
--  Exile-like spell effects
+-  Exile-like spell effects/targeting lines
 -  Height
-- scroll visual radius
-- Realmz-like targeting system
-- Make corpses into items but with lower priority (possibly change rendering layer system)
-- Add dice style monster spawn groups (AD&D 2.5 style)
+-  Realmz-like targeting system
+-  Add dice style monster spawn groups (AD&D 2.5 style)

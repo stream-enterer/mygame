@@ -2,14 +2,18 @@
 
 #include "Colors.hpp"
 #include "Components.hpp"
+#include "ConfigManager.hpp"
 
 namespace tutorial
 {
     HealthBar::HealthBar(unsigned int width, unsigned int height, pos_t pos,
-                         const Entity& entity)
-        : UiWindowBase(width, height, pos), entity_(entity)
+                         const Entity& entity) :
+        UiWindowBase(width, height, pos), entity_(entity)
     {
-        // Fill the background with dark red
+        // Fill the background with empty health bar color from config
+        tcod::ColorRGB emptyColor =
+            ConfigManager::Instance().GetHealthBarEmptyColor();
+
         TCOD_console_rect(console_, 0, 0, TCOD_console_get_width(console_),
                           TCOD_console_get_height(console_), true,
                           TCOD_BKGND_SET);
@@ -18,8 +22,8 @@ namespace tutorial
         {
             for (int y = 0; y < TCOD_console_get_height(console_); ++y)
             {
-                TCOD_console_set_char_background(
-                    console_, x, y, color::dark_red, TCOD_BKGND_SET);
+                TCOD_console_set_char_background(console_, x, y, emptyColor,
+                                                 TCOD_BKGND_SET);
             }
         }
     }
@@ -38,11 +42,14 @@ namespace tutorial
 
             if (width > 0)
             {
+                tcod::ColorRGB fullColor =
+                    ConfigManager::Instance().GetHealthBarFullColor();
+
                 for (int i = 0; i < width; ++i)
                 {
                     TCOD_console_set_char_background(
                         console_, i, TCOD_console_get_height(console_) - 1,
-                        color::green, TCOD_BKGND_SET);
+                        fullColor, TCOD_BKGND_SET);
                 }
             }
 

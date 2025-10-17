@@ -4,6 +4,7 @@
 #include "Entity.hpp"
 #include "Event.hpp"
 #include "Position.hpp"
+#include "StringTable.hpp"
 
 #include <libtcod/bresenham.hpp>
 
@@ -179,9 +180,10 @@ namespace tutorial
         nbTurns_--;
         if (nbTurns_ <= 0)
         {
-            engine.LogMessage(
-                "The " + entity.GetName() + " is no longer confused!",
-                color::red, false);
+            auto msg = StringTable::Instance().GetMessage(
+                "items.confusion_scroll.wears_off",
+                { { "name", entity.GetName() } });
+            engine.LogMessage(msg.text, msg.color, msg.stack);
 
             // Restore the original AI
             if (auto* npc = dynamic_cast<Npc*>(&entity))

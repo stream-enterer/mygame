@@ -1,0 +1,145 @@
+{
+    "locale": "en_US",
+    "language": "English",
+
+    "game": {
+        "welcome": {
+            "text": "Hello and welcome to the C++/JSON libtcod dungeon!",
+            "color": [63, 159, 255],
+            "stack": false
+        }
+    },
+
+    "messages": {
+        "death": {
+            "player": {
+                "text": "You died!",
+                "color": [191, 0, 0],
+                "stack": false
+            },
+            "npc": {
+                "text": "The {name} has died!",
+                "color": [191, 0, 0],
+                "stack": true
+            }
+        },
+        "combat": {
+            "attack_hit": {
+                "text": "{attacker} attacks {target} for {damage} hit points.",
+                "color": [255, 60, 0],
+                "stack": true
+            },
+            "attack_miss": {
+                "text": "{attacker} attacks {target} but does no damage.",
+                "color": [255, 60, 0],
+                "stack": true
+            }
+        },
+        "pickup": {
+            "success": {
+                "text": "You pick up the {item}.",
+                "color": [63, 159, 255],
+                "stack": false
+            },
+            "fail": {
+                "text": "There's nothing here that you can pick up.",
+                "color": [255, 255, 255],
+                "stack": false
+            },
+            "inventory_full": {
+                "text": "Your inventory is full.",
+                "color": [255, 60, 0],
+                "stack": false
+            }
+        },
+        "drop": {
+            "success": {
+                "text": "You drop the {item}.",
+                "color": [63, 159, 255],
+                "stack": false
+            }
+        }
+    },
+
+    "items": {
+        "health_potion": {
+            "name": "health potion",
+            "use_success": {
+                "text": "You use the health potion and recover {amount} HP.",
+                "color": [0, 60, 0],
+                "stack": false
+            },
+            "use_fail": {
+                "text": "You are already at full health!",
+                "color": [255, 255, 255],
+                "stack": false
+            }
+        },
+        "lightning_scroll": {
+            "name": "scroll of lightning bolt",
+            "use_success": {
+                "text": "A lightning bolt strikes the {target} with a loud thunder! The damage is {damage} hit points.",
+                "color": [63, 159, 255],
+                "stack": false
+            },
+            "use_fail": {
+                "text": "No enemy is close enough to strike.",
+                "color": [255, 255, 255],
+                "stack": false
+            }
+        },
+        "fireball_scroll": {
+            "name": "scroll of fireball",
+            "prompt": {
+                "text": "Left-click a target tile for the fireball, or right-click to cancel.",
+                "color": [63, 159, 255],
+                "stack": false
+            },
+            "explosion": {
+                "text": "The fireball explodes, burning everything within {radius} tiles!",
+                "color": [255, 60, 0],
+                "stack": false
+            },
+            "hit": {
+                "text": "The {target} gets burned for {damage} hit points.",
+                "color": [255, 60, 0],
+                "stack": false
+            }
+        },
+        "confusion_scroll": {
+            "name": "scroll of confusion",
+            "prompt": {
+                "text": "Left-click an enemy to confuse it, or right-click to cancel.",
+                "color": [63, 159, 255],
+                "stack": false
+            },
+            "use_success": {
+                "text": "The eyes of the {target} look vacant, as he starts to stumble around!",
+                "color": [63, 159, 255],
+                "stack": false
+            },
+            "use_fail": {
+                "text": "No enemy at that location.",
+                "color": [255, 255, 255],
+                "stack": false
+            },
+            "invalid_target": {
+                "text": "You cannot confuse that!",
+                "color": [255, 255, 255],
+                "stack": false
+            },
+            "wears_off": {
+                "text": "The {name} is no longer confused!",
+                "color": [255, 60, 0],
+                "stack": false
+            }
+        }
+    },
+
+    "ui": {
+        "health_bar": "HP: {current}/{max}",
+        "inventory_title": "Inventory",
+        "inventory_drop_title": "Drop which item?",
+        "inventory_empty": "(empty)"
+    }
+}
