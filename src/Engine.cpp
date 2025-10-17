@@ -7,6 +7,7 @@
 #include "EventHandler.hpp"
 #include "HealthBar.hpp"
 #include "InventoryWindow.hpp"
+#include "LevelConfig.hpp"
 #include "Map.hpp"
 #include "MapGenerator.hpp"
 #include "MessageHistoryWindow.hpp"
@@ -20,15 +21,6 @@
 
 namespace tutorial
 {
-    inline namespace
-    {
-        // Map generation constants moved to level config (Phase 3)
-        // Will be removed in Phase 3 when we implement LevelConfig
-        constexpr int kRoomMinSize = 6;
-        constexpr int kRoomMaxSize = 10;
-        constexpr int kMaxRooms = 30;
-    } // namespace
-
     // Public methods
     Engine::Engine(const Configuration& config) :
         config_(config),
@@ -194,6 +186,9 @@ namespace tutorial
                 messageLog_);
         }
 
+        // Load current level configuration
+        currentLevel_ = LevelConfig::LoadFromFile("data/levels/dungeon_1.json");
+
         // Load entity templates from JSON
         try
         {
@@ -211,11 +206,12 @@ namespace tutorial
             throw; // Re-throw, can't continue without templates
         }
 
-        // Build spawn tables dynamically from entity templates
+        // Build spawn tables dynamically from level config
         try
         {
             DynamicSpawnSystem::Instance().Clear();
-            DynamicSpawnSystem::Instance().BuildSpawnTables();
+            DynamicSpawnSystem::Instance().BuildSpawnTablesForLevel(
+                currentLevel_);
             DynamicSpawnSystem::Instance().ValidateSpawnData();
         }
         catch (const std::exception& e)
@@ -230,21 +226,24 @@ namespace tutorial
         messageLog_.Clear();
         eventQueue_.clear();
 
-        // Map already has correct size, just generate content
-        this->GenerateMap(map_->GetWidth(), map_->GetHeight());
+        // Generate map using level config parameters
+        this->GenerateMap(currentLevel_.generation.width,
+                          currentLevel_.generation.height);
 
         auto rooms = map_->GetRooms();
 
         // Place items FIRST (so they render on bottom)
         for (auto it = rooms.begin() + 1; it != rooms.end(); ++it)
         {
-            entities_.PlaceItems(*it);
+            entities_.PlaceItems(*it, currentLevel_.itemSpawning,
+                                 currentLevel_.id);
         }
 
         // Place monsters AFTER items (so they render on top)
         for (auto it = rooms.begin() + 1; it != rooms.end(); ++it)
         {
-            entities_.PlaceEntities(*it);
+            entities_.PlaceEntities(*it, currentLevel_.monsterSpawning,
+                                    currentLevel_.id);
         }
 
         // Create player and add them to entity list
@@ -721,8 +720,10 @@ namespace tutorial
 
     void Engine::GenerateMap(int width, int height)
     {
-        Map::Generator generator(
-            { kMaxRooms, kRoomMinSize, kRoomMaxSize, width, height });
+        Map::Generator generator({ currentLevel_.generation.maxRooms,
+                                   currentLevel_.generation.minRoomSize,
+                                   currentLevel_.generation.maxRoomSize, width,
+                                   height });
 
         map_->Generate(generator);
         map_->Update();

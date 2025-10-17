@@ -1,6 +1,7 @@
 #ifndef DYNAMIC_SPAWN_SYSTEM_HPP
 #define DYNAMIC_SPAWN_SYSTEM_HPP
 
+#include "LevelConfig.hpp"
 #include "SpawnTable.hpp"
 
 #include <string>
@@ -15,8 +16,8 @@ namespace tutorial
         // Get singleton instance
         static DynamicSpawnSystem& Instance();
 
-        // Build spawn tables from all loaded entity templates
-        void BuildSpawnTables();
+        // Build spawn tables from a level configuration
+        void BuildSpawnTablesForLevel(const LevelConfig& level);
 
         // Get spawn table for a location
         const SpawnTable* GetMonsterTable(const std::string& location) const;

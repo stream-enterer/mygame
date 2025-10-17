@@ -1,0 +1,37 @@
+{
+    "id": "dungeon_level_2",
+    "name_key": "levels.dungeon_2.name",
+    "description_key": "levels.dungeon_2.description",
+
+    "generation": {
+        "width": 80,
+        "height": 45,
+        "algorithm": "rooms_and_corridors",
+        "params": {
+            "max_rooms": 20,
+            "min_room_size": 8,
+            "max_room_size": 14
+        }
+    },
+
+    "spawning": {
+        "monsters": {
+            "max_per_room": 5,
+            "spawn_chance": 0.95,
+            "spawn_table": [
+                { "id": "orc", "weight": 50 },
+                { "id": "troll", "weight": 50 }
+            ]
+        },
+        "items": {
+            "max_per_room": 1,
+            "spawn_chance": 0.4,
+            "spawn_table": [
+                { "id": "health_potion", "weight": 50 },
+                { "id": "lightning_scroll", "weight": 15 },
+                { "id": "fireball_scroll", "weight": 20 },
+                { "id": "confusion_scroll", "weight": 15 }
+            ]
+        }
+    }
+}

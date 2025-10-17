@@ -5,6 +5,7 @@
 #include "Configuration.hpp"
 #include "EntityManager.hpp"
 #include "InventoryMode.hpp"
+#include "LevelConfig.hpp"
 #include "MessageLog.hpp"
 #include "Position.hpp"
 #include "TemplateRegistry.hpp"
@@ -101,6 +102,7 @@ namespace tutorial
         std::vector<Entity*> entitiesToRemove_;
 
         Configuration config_;
+        LevelConfig currentLevel_;
 
         MessageLog messageLog_;
 

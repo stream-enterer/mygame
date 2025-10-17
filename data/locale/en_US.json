@@ -141,5 +141,16 @@
         "inventory_title": "Inventory",
         "inventory_drop_title": "Drop which item?",
         "inventory_empty": "(empty)"
+    },
+
+    "levels": {
+        "dungeon_1": {
+            "name": "The Forgotten Dungeon - Level 1",
+            "description": "Dank stone walls drip with moisture. The air smells of decay."
+        },
+        "dungeon_2": {
+            "name": "The Forgotten Dungeon - Level 2",
+            "description": "Deeper into darkness. The air grows thick and oppressive."
+        }
     }
 }

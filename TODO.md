@@ -18,3 +18,12 @@
 -  Height
 -  Realmz-like targeting system
 -  Add dice style monster spawn groups (AD&D 2.5 style)
+-  JSON lists (JSON levels can include batch spawn lists)
+-  Vaults
+
+BUGGLES
+- Move targeting reticule with keyboard (implement)
+- Opening inventory and then closing it uses a turn
+- Opening inventory, targeting a scroll, and then cancelling it loses a turn
+- When player dies (for example AOEing an orc with a fireball spell that inflicts friendly fire), player dies but monster doesn't (just for visual consistency)
+- Make level-loading order data-driven

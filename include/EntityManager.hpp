@@ -5,6 +5,11 @@
 #include "Position.hpp"
 #include "Room.hpp"
 
+namespace tutorial
+{
+    struct SpawnConfig;
+}
+
 #include <deque>
 #include <memory>
 
@@ -16,8 +21,10 @@ namespace tutorial
 
     public:
         void Clear();
-        void PlaceEntities(const Room& room);
-        void PlaceItems(const Room& room);
+        void PlaceEntities(const Room& room, const SpawnConfig& spawnConfig,
+                           const std::string& levelId);
+        void PlaceItems(const Room& room, const SpawnConfig& spawnConfig,
+                        const std::string& levelId);
         void SortByRenderLayer();
         Entity_ptr& Spawn(Entity_ptr&& src);
         Entity_ptr& Spawn(Entity_ptr&& src, pos_t pos);

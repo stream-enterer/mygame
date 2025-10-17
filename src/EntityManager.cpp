@@ -1,6 +1,7 @@
 #include "EntityManager.hpp"
 
 #include "DynamicSpawnSystem.hpp"
+#include "LevelConfig.hpp"
 #include "Map.hpp"
 #include "RenderLayer.hpp"
 #include "TemplateRegistry.hpp"
@@ -42,24 +43,31 @@ namespace tutorial
                   });
     }
 
-    void EntityManager::PlaceEntities(const Room& room)
+    void EntityManager::PlaceEntities(const Room& room,
+                                      const SpawnConfig& spawnConfig,
+                                      const std::string& levelId)
     {
+        auto* rand = TCODRandom::getInstance();
+
+        // Check spawn chance - should we spawn monsters in this room at all?
+        if (rand->getFloat(0.0f, 1.0f) > spawnConfig.spawnChance)
+        {
+            return; // Skip spawning in this room
+        }
+
         // Get the spawn table for this level
         const SpawnTable* monsterTable =
-            DynamicSpawnSystem::Instance().GetMonsterTable("dungeon_level_1");
+            DynamicSpawnSystem::Instance().GetMonsterTable(levelId);
 
         if (!monsterTable)
         {
             std::cerr << "[EntityManager] No monster spawn table found for "
-                         "dungeon_level_1"
-                      << std::endl;
+                      << levelId << std::endl;
             return;
         }
 
-        // Get max monsters from spawn table
-        int maxMonsters = monsterTable->GetMaxMonstersPerRoom();
-
-        auto* rand = TCODRandom::getInstance();
+        // Get max monsters from spawn config
+        int maxMonsters = spawnConfig.maxPerRoom;
         int numMonsters = rand->getInt(0, maxMonsters);
 
         for (int i = 0; i < numMonsters; ++i)
@@ -133,24 +141,31 @@ namespace tutorial
 
 namespace tutorial
 {
-    void EntityManager::PlaceItems(const Room& room)
+    void EntityManager::PlaceItems(const Room& room,
+                                   const SpawnConfig& spawnConfig,
+                                   const std::string& levelId)
     {
+        auto* rand = TCODRandom::getInstance();
+
+        // Check spawn chance - should we spawn items in this room at all?
+        if (rand->getFloat(0.0f, 1.0f) > spawnConfig.spawnChance)
+        {
+            return; // Skip spawning in this room
+        }
+
         // Get the spawn table for this level
         const SpawnTable* itemTable =
-            DynamicSpawnSystem::Instance().GetItemTable("dungeon_level_1");
+            DynamicSpawnSystem::Instance().GetItemTable(levelId);
 
         if (!itemTable)
         {
             std::cerr << "[EntityManager] No item spawn table found for "
-                         "dungeon_level_1"
-                      << std::endl;
+                      << levelId << std::endl;
             return;
         }
 
-        // Get max items from spawn table
-        int maxItems = itemTable->GetMaxItemsPerRoom();
-
-        auto* rand = TCODRandom::getInstance();
+        // Get max items from spawn config
+        int maxItems = spawnConfig.maxPerRoom;
         int numItems = rand->getInt(0, maxItems);
 
         for (int i = 0; i < numItems; ++i)

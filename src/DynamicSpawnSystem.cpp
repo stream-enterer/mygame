@@ -12,75 +12,54 @@ namespace tutorial
         return instance;
     }
 
-    void DynamicSpawnSystem::BuildSpawnTables()
+    void DynamicSpawnSystem::BuildSpawnTablesForLevel(const LevelConfig& level)
     {
         Clear();
 
-        // Get all entity templates
-        auto allIds = TemplateRegistry::Instance().GetAllIds();
+        std::cout << "[DynamicSpawnSystem] Building spawn tables for level: "
+                  << level.id << std::endl;
 
-        std::cout << "[DynamicSpawnSystem] Building spawn tables from "
-                  << allIds.size() << " entity templates..." << std::endl;
-
-        for (const auto& id : allIds)
+        // Build monster spawn table from level config
+        if (!level.monsterSpawning.spawnTable.empty())
         {
-            const auto* tpl = TemplateRegistry::Instance().Get(id);
-            if (!tpl || tpl->spawns.empty())
+            SpawnTable monsterTable;
+
+            for (const auto& [id, weight] : level.monsterSpawning.spawnTable)
             {
-                continue; // Skip entities with no spawn data
+                monsterTable.AddEntry(id, weight);
             }
 
-            // Determine if this is a monster or item
-            bool isMonster = (tpl->faction == "monster");
-            bool isItem = (tpl->item.has_value());
+            monsterTable.SetMaxMonstersPerRoom(
+                level.monsterSpawning.maxPerRoom);
+            monsterTables_[level.id] = monsterTable;
 
-            // Add to appropriate spawn tables
-            for (const auto& spawn : tpl->spawns)
+            std::cout << "  - Built monster table with "
+                      << level.monsterSpawning.spawnTable.size()
+                      << " entries, max per room: "
+                      << level.monsterSpawning.maxPerRoom << std::endl;
+        }
+
+        // Build item spawn table from level config
+        if (!level.itemSpawning.spawnTable.empty())
+        {
+            SpawnTable itemTable;
+
+            for (const auto& [id, weight] : level.itemSpawning.spawnTable)
             {
-                if (isMonster)
-                {
-                    // Add to monster table for this location
-                    auto& table = monsterTables_[spawn.location];
-                    table.AddEntry(id, spawn.weight);
-
-                    // Set default max monsters if not set
-                    if (table.GetMaxMonstersPerRoom() == 0)
-                    {
-                        table.SetMaxMonstersPerRoom(3); // Default
-                    }
-                }
-                else if (isItem)
-                {
-                    // Add to item table for this location
-                    auto& table = itemTables_[spawn.location];
-                    table.AddEntry(id, spawn.weight);
-
-                    // Set default max items if not set
-                    if (table.GetMaxItemsPerRoom() == 0)
-                    {
-                        table.SetMaxItemsPerRoom(2); // Default
-                    }
-                }
+                itemTable.AddEntry(id, weight);
             }
+
+            itemTable.SetMaxItemsPerRoom(level.itemSpawning.maxPerRoom);
+            itemTables_[level.id] = itemTable;
+
+            std::cout << "  - Built item table with "
+                      << level.itemSpawning.spawnTable.size()
+                      << " entries, max per room: "
+                      << level.itemSpawning.maxPerRoom << std::endl;
         }
 
-        std::cout << "[DynamicSpawnSystem] Built " << monsterTables_.size()
-                  << " monster tables and " << itemTables_.size()
-                  << " item tables" << std::endl;
-
-        // Log what was built
-        for (const auto& [location, table] : monsterTables_)
-        {
-            std::cout << "  - Monster table '" << location
-                      << "': " << table.GetTotalWeight() << " total weight"
-                      << std::endl;
-        }
-        for (const auto& [location, table] : itemTables_)
-        {
-            std::cout << "  - Item table '" << location
-                      << "': " << table.GetTotalWeight() << " total weight"
-                      << std::endl;
-        }
+        std::cout << "[DynamicSpawnSystem] Spawn tables built successfully"
+                  << std::endl;
     }
 
     const SpawnTable* DynamicSpawnSystem::GetMonsterTable(
