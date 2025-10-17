@@ -19,6 +19,16 @@
 
 namespace tutorial
 {
+    class Command;
+    class Entity;
+    class Event;
+    class EventHandler;
+    class HealthBar;
+    class Map;
+    class MessageHistoryWindow;
+    class MessageLogWindow;
+    class InventoryWindow;
+
     enum Window
     {
         MainGame,
@@ -45,7 +55,7 @@ namespace tutorial
 
         void AddEventFront(Event_ptr& event);
         void ComputeFOV();
-        void GetInput();
+        std::unique_ptr<Command> GetInput();
         void HandleDeathEvent(Entity& entity);
         void HandleEvents();
         void LogMessage(const std::string& text, tcod::ColorRGB color,
@@ -88,13 +98,22 @@ namespace tutorial
         bool IsPlayer(const Entity& entity) const;
         bool IsRunning() const;
         bool IsValid(Entity& entity) const;
+        bool IsGameOver() const
+        {
+            return gameOver_;
+        }
         bool IsWall(pos_t pos) const;
         void Render();
 
     private:
+        friend class TurnManager;
+        friend class MoveCommand;
+        friend class WaitCommand;
+        friend class PickupCommand;
+        friend class UseItemCommand;
+        friend class DropItemCommand;
         void AddEvent(Event_ptr& event);
         void GenerateMap(int width, int height);
-        void HandleEnemyTurns();
         void ProcessDeferredRemovals();
 
         EntityManager entities_;

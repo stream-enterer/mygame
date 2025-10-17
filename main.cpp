@@ -1,7 +1,9 @@
+#include "Command.hpp"
 #include "ConfigManager.hpp"
 #include "Configuration.hpp"
 #include "Engine.hpp"
 #include "StringTable.hpp"
+#include "TurnManager.hpp"
 
 #include <string>
 
@@ -16,10 +18,12 @@ int main()
     static const tutorial::Configuration config{ "libtcod C++ tutorial 8", 80,
                                                  50, 60 };
     tutorial::Engine engine{ config };
+    tutorial::TurnManager turnManager;
+
     while (engine.IsRunning())
     {
-        engine.GetInput();
-        engine.HandleEvents();
+        auto command = engine.GetInput();
+        turnManager.ProcessCommand(std::move(command), engine);
         engine.Render();
     }
 

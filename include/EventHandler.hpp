@@ -1,6 +1,7 @@
 #ifndef EVENT_HANDLER_HPP
 #define EVENT_HANDLER_HPP
 
+#include "Command.hpp"
 #include "Event.hpp"
 #include "InventoryMode.hpp"
 #include "KeyPress.hpp"
@@ -36,7 +37,7 @@ namespace tutorial
         virtual void SetKeyMap(
             const std::unordered_map<KeyPress, Actions, KeyPressHash>&
                 keyMap) = 0;
-        virtual std::unique_ptr<Event> Dispatch() const = 0;
+        virtual std::unique_ptr<Command> Dispatch() const = 0;
     };
 
     class BaseEventHandler : public EventHandler
@@ -47,7 +48,7 @@ namespace tutorial
         void SetKeyMap(const std::unordered_map<KeyPress, Actions,
                                                 KeyPressHash>& keyMap) override;
 
-        std::unique_ptr<Event> Dispatch() const override;
+        std::unique_ptr<Command> Dispatch() const override;
 
     protected:
         std::unordered_map<KeyPress, Actions, KeyPressHash> keyMap_;
@@ -77,7 +78,7 @@ namespace tutorial
     public:
         InventoryEventHandler(Engine& engine);
 
-        std::unique_ptr<Event> Dispatch() const override;
+        std::unique_ptr<Command> Dispatch() const override;
         void SetMode(InventoryMode mode)
         {
             mode_ = mode;

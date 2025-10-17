@@ -1,0 +1,145 @@
+#ifndef COMMAND_HPP
+#define COMMAND_HPP
+
+#include <memory>
+
+namespace tutorial
+{
+    class Engine;
+
+    // Base command interface
+    class Command
+    {
+    public:
+        virtual ~Command() = default;
+
+        // Execute the command
+        virtual void Execute(Engine& engine) = 0;
+
+        // Does this command consume a turn?
+        virtual bool ConsumesTurn() const = 0;
+    };
+
+    // UI commands that don't consume turns
+    class OpenInventoryCommand final : public Command
+    {
+    public:
+        void Execute(Engine& engine) override;
+        bool ConsumesTurn() const override
+        {
+            return false;
+        }
+    };
+
+    class OpenDropInventoryCommand final : public Command
+    {
+    public:
+        void Execute(Engine& engine) override;
+        bool ConsumesTurn() const override
+        {
+            return false;
+        }
+    };
+
+    class OpenMessageHistoryCommand final : public Command
+    {
+    public:
+        void Execute(Engine& engine) override;
+        bool ConsumesTurn() const override
+        {
+            return false;
+        }
+    };
+
+    class CloseUICommand final : public Command
+    {
+    public:
+        void Execute(Engine& engine) override;
+        bool ConsumesTurn() const override
+        {
+            return false;
+        }
+    };
+
+    class NewGameCommand final : public Command
+    {
+    public:
+        void Execute(Engine& engine) override;
+        bool ConsumesTurn() const override
+        {
+            return false;
+        }
+    };
+
+    class QuitCommand final : public Command
+    {
+    public:
+        void Execute(Engine& engine) override;
+        bool ConsumesTurn() const override
+        {
+            return false;
+        }
+    };
+
+    // Gameplay commands that consume turns
+    class ActionCommand : public Command
+    {
+    public:
+        bool ConsumesTurn() const override
+        {
+            return true;
+        }
+    };
+
+    class MoveCommand final : public ActionCommand
+    {
+    public:
+        MoveCommand(int dx, int dy) : dx_(dx), dy_(dy)
+        {
+        }
+        void Execute(Engine& engine) override;
+
+    private:
+        int dx_;
+        int dy_;
+    };
+
+    class WaitCommand final : public ActionCommand
+    {
+    public:
+        void Execute(Engine& engine) override;
+    };
+
+    class PickupCommand final : public ActionCommand
+    {
+    public:
+        void Execute(Engine& engine) override;
+    };
+
+    class UseItemCommand final : public ActionCommand
+    {
+    public:
+        UseItemCommand(size_t itemIndex) : itemIndex_(itemIndex)
+        {
+        }
+        void Execute(Engine& engine) override;
+
+    private:
+        size_t itemIndex_;
+    };
+
+    class DropItemCommand final : public ActionCommand
+    {
+    public:
+        DropItemCommand(size_t itemIndex) : itemIndex_(itemIndex)
+        {
+        }
+        void Execute(Engine& engine) override;
+
+    private:
+        size_t itemIndex_;
+    };
+
+} // namespace tutorial
+
+#endif // COMMAND_HPP

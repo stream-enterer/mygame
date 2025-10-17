@@ -82,6 +82,7 @@ namespace tutorial
         int x, y;
         if (!engine.PickATile(&x, &y, range_))
         {
+            engine.ShowInventory();
             return false;
         }
 
@@ -129,6 +130,7 @@ namespace tutorial
         int x, y;
         if (!engine.PickATile(&x, &y, range_))
         {
+            engine.ShowInventory();
             return false;
         }
 

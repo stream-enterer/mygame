@@ -103,19 +103,9 @@ namespace tutorial
         map_->Update();
     }
 
-    void Engine::GetInput()
+    std::unique_ptr<Command> Engine::GetInput()
     {
-        auto action = eventHandler_->Dispatch();
-
-        if (action.get() != nullptr)
-        {
-            this->AddEvent(action);
-
-            if (!gameOver_)
-            {
-                this->HandleEnemyTurns();
-            }
-        }
+        return eventHandler_->Dispatch();
     }
 
     void Engine::HandleDeathEvent(Entity& entity)
@@ -626,6 +616,96 @@ namespace tutorial
                 {
                     return false;
                 }
+
+                if (sdlEvent.type == SDL_EVENT_KEY_DOWN)
+                {
+                    SDL_Keycode key = sdlEvent.key.key;
+                    pos_t delta{ 0, 0 };
+
+                    // Map keys to movement (matching MainGameEventHandler
+                    // pattern)
+                    if (key == SDLK_UP)
+                    {
+                        delta = pos_t{ 0, -1 };
+                    }
+                    else if (key == SDLK_DOWN)
+                    {
+                        delta = pos_t{ 0, 1 };
+                    }
+                    else if (key == SDLK_LEFT)
+                    {
+                        delta = pos_t{ -1, 0 };
+                    }
+                    else if (key == SDLK_RIGHT)
+                    {
+                        delta = pos_t{ 1, 0 };
+                    }
+                    else if (key == SDLK_RETURN || key == SDLK_SPACE)
+                    {
+                        // Confirm selection with Enter or Space
+                        if (map_->IsInFov(mousePos_)
+                            && (maxRange == 0.0f
+                                || player_->GetDistance(mousePos_.x,
+                                                        mousePos_.y)
+                                       <= maxRange))
+                        {
+                            *x = mousePos_.x;
+                            *y = mousePos_.y;
+                            return true;
+                        }
+                    }
+
+                    // If we got a movement delta, update cursor position
+                    if (delta.x != 0 || delta.y != 0)
+                    {
+                        pos_t newPos = mousePos_ + delta;
+
+                        // Clamp to map bounds
+                        if (map_->IsInBounds(newPos))
+                        {
+                            // Restore old position to range-highlighted color
+                            if (lastMousePos.x >= 0 && lastMousePos.y >= 0
+                                && map_->IsInFov(lastMousePos)
+                                && (maxRange == 0.0f
+                                    || player_->GetDistance(lastMousePos.x,
+                                                            lastMousePos.y)
+                                           <= maxRange))
+                            {
+                                tcod::ColorRGB col =
+                                    originalColors[lastMousePos.x
+                                                   + lastMousePos.y
+                                                         * map_->GetWidth()];
+                                col.r = std::min(
+                                    255, static_cast<int>(col.r * 1.2f));
+                                col.g = std::min(
+                                    255, static_cast<int>(col.g * 1.2f));
+                                col.b = std::min(
+                                    255, static_cast<int>(col.b * 1.2f));
+                                TCOD_console_set_char_background(
+                                    console_, lastMousePos.x, lastMousePos.y,
+                                    col, TCOD_BKGND_SET);
+                            }
+
+                            mousePos_ = newPos;
+                            lastMousePos = newPos;
+
+                            // Highlight new position
+                            if (map_->IsInFov(mousePos_)
+                                && (maxRange == 0.0f
+                                    || player_->GetDistance(mousePos_.x,
+                                                            mousePos_.y)
+                                           <= maxRange))
+                            {
+                                TCOD_console_set_char_background(
+                                    console_, mousePos_.x, mousePos_.y,
+                                    color::white, TCOD_BKGND_SET);
+                            }
+
+                            // Present the updated frame
+                            TCOD_context_present(context_, console_, nullptr);
+                        }
+                    }
+                }
             }
         }
 
@@ -727,26 +807,6 @@ namespace tutorial
 
         map_->Generate(generator);
         map_->Update();
-    }
-
-    void Engine::HandleEnemyTurns()
-    {
-        for (auto& entity : entities_)
-        {
-            if (IsPlayer(*entity.get()))
-            {
-                continue;
-            }
-
-            if (!entity->CanAct())
-            {
-                continue;
-            }
-
-            std::unique_ptr<Event> event =
-                std::make_unique<AiAction>(*this, *entity);
-            this->AddEvent(event);
-        }
     }
 
     void Engine::ProcessDeferredRemovals()
