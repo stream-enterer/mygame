@@ -18,7 +18,7 @@ namespace tutorial
         virtual void Execute(Engine& engine) = 0;
 
         // Does this command consume a turn?
-        virtual bool ConsumesTurn() const = 0;
+        virtual bool ConsumesTurn() = 0;
     };
 
     // UI commands that don't consume turns
@@ -26,7 +26,7 @@ namespace tutorial
     {
     public:
         void Execute(Engine& engine) override;
-        bool ConsumesTurn() const override
+        bool ConsumesTurn() override
         {
             return false;
         }
@@ -36,7 +36,7 @@ namespace tutorial
     {
     public:
         void Execute(Engine& engine) override;
-        bool ConsumesTurn() const override
+        bool ConsumesTurn() override
         {
             return false;
         }
@@ -46,7 +46,7 @@ namespace tutorial
     {
     public:
         void Execute(Engine& engine) override;
-        bool ConsumesTurn() const override
+        bool ConsumesTurn() override
         {
             return false;
         }
@@ -56,7 +56,7 @@ namespace tutorial
     {
     public:
         void Execute(Engine& engine) override;
-        bool ConsumesTurn() const override
+        bool ConsumesTurn() override
         {
             return false;
         }
@@ -66,7 +66,7 @@ namespace tutorial
     {
     public:
         void Execute(Engine& engine) override;
-        bool ConsumesTurn() const override
+        bool ConsumesTurn() override
         {
             return false;
         }
@@ -76,7 +76,7 @@ namespace tutorial
     {
     public:
         void Execute(Engine& engine) override;
-        bool ConsumesTurn() const override
+        bool ConsumesTurn() override
         {
             return false;
         }
@@ -86,7 +86,7 @@ namespace tutorial
     class ActionCommand : public Command
     {
     public:
-        bool ConsumesTurn() const override
+        bool ConsumesTurn() override
         {
             return true;
         }
@@ -99,7 +99,7 @@ namespace tutorial
         {
         }
         void Execute(Engine& engine) override;
-        bool ConsumesTurn() const override;
+        bool ConsumesTurn() override;
 
     private:
         int dx_;
@@ -131,16 +131,22 @@ namespace tutorial
         Entity* item_;
     };
 
-    class UseItemCommand final : public ActionCommand
+    class UseItemCommand final : public Command
     {
     public:
-        UseItemCommand(size_t itemIndex) : itemIndex_(itemIndex)
+        explicit UseItemCommand(size_t itemIndex) :
+            itemIndex_(itemIndex), consumedTurn_(true)
         {
         }
         void Execute(Engine& engine) override;
+        bool ConsumesTurn() override
+        {
+            return consumedTurn_;
+        }
 
     private:
         size_t itemIndex_;
+        bool consumedTurn_;
     };
 
     class DropItemCommand final : public ActionCommand

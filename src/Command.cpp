@@ -60,7 +60,7 @@ namespace tutorial
         engine.AddEventFront(action);
     }
 
-    bool MoveCommand::ConsumesTurn() const
+    bool MoveCommand::ConsumesTurn()
     {
         return consumesTurn_;
     }
@@ -88,9 +88,27 @@ namespace tutorial
 
     void UseItemCommand::Execute(Engine& engine)
     {
-        std::unique_ptr<Event> action = std::make_unique<UseItemAction>(
-            engine, *engine.GetPlayer(), itemIndex_);
-        engine.AddEventFront(action);
+        consumedTurn_ = false; // Default to not consuming
+
+        if (auto* player = dynamic_cast<Player*>(engine.GetPlayer()))
+        {
+            if (Entity* item = player->GetInventoryItem(itemIndex_))
+            {
+                if (item->GetItem())
+                {
+                    // Execute item use directly to get return value
+                    bool itemUsed = item->GetItem()->Use(*player, engine);
+
+                    if (itemUsed)
+                    {
+                        // Item was consumed
+                        player->RemoveFromInventory(itemIndex_);
+                        consumedTurn_ = true;
+                    }
+                    // else: item use failed/canceled, turn not consumed
+                }
+            }
+        }
     }
 
     void DropItemCommand::Execute(Engine& engine)

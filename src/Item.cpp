@@ -23,6 +23,7 @@ namespace tutorial
                     "items.health_potion.use_success",
                     { { "amount", std::to_string(amountHealed) } });
                 engine.LogMessage(msg.text, msg.color, msg.stack);
+                engine.ReturnToMainGame();
                 return true;
             }
             else
@@ -62,6 +63,7 @@ namespace tutorial
         engine.LogMessage(msg.text, msg.color, msg.stack);
 
         engine.DealDamage(*closestMonster, static_cast<unsigned int>(damage_));
+        engine.ReturnToMainGame();
         return true;
     }
 
