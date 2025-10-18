@@ -6,6 +6,7 @@
 namespace tutorial
 {
     class Engine;
+    class Entity;
 
     // Base command interface
     class Command
@@ -91,17 +92,19 @@ namespace tutorial
         }
     };
 
-    class MoveCommand final : public ActionCommand
+    class MoveCommand final : public Command
     {
     public:
         MoveCommand(int dx, int dy) : dx_(dx), dy_(dy)
         {
         }
         void Execute(Engine& engine) override;
+        bool ConsumesTurn() const override;
 
     private:
         int dx_;
         int dy_;
+        mutable bool consumesTurn_ = true;
     };
 
     class WaitCommand final : public ActionCommand
@@ -114,6 +117,18 @@ namespace tutorial
     {
     public:
         void Execute(Engine& engine) override;
+    };
+
+    class PickupItemCommand final : public ActionCommand
+    {
+    public:
+        PickupItemCommand(Entity* item) : item_(item)
+        {
+        }
+        void Execute(Engine& engine) override;
+
+    private:
+        Entity* item_;
     };
 
     class UseItemCommand final : public ActionCommand

@@ -157,6 +157,17 @@ namespace tutorial
         void Execute() override;
     };
 
+    class PickupItemAction final : public Action
+    {
+    public:
+        PickupItemAction(Engine& engine, Entity& entity, Entity* item);
+
+        void Execute() override;
+
+    private:
+        Entity* item_;
+    };
+
     class UseItemAction final : public Action
     {
     public:

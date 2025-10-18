@@ -47,6 +47,8 @@ namespace tutorial
         virtual float GetDistance(int cx, int cy) const = 0;
         virtual Faction GetFaction() const = 0;
         virtual RenderLayer GetRenderLayer() const = 0;
+        virtual int GetRenderPriority() const = 0;
+        virtual void SetRenderPriority(int priority) = 0;
     };
 } // namespace tutorial
 
@@ -79,6 +81,8 @@ namespace tutorial
         virtual float GetDistance(int cx, int cy) const override;
         virtual Faction GetFaction() const override;
         virtual RenderLayer GetRenderLayer() const override;
+        virtual int GetRenderPriority() const override;
+        virtual void SetRenderPriority(int priority) override;
 
     protected:
         std::string name_;
@@ -91,6 +95,7 @@ namespace tutorial
         bool blocker_;
         bool pickable_;
         bool isCorpse_;
+        int renderPriority_;  // Higher = renders later (on top)
     };
 } // namespace tutorial
 
@@ -133,7 +138,6 @@ namespace tutorial
 
     private:
         std::vector<std::unique_ptr<Entity>> inventory_;
-        // Max inventory size moved to game.json config
     };
 } // namespace tutorial
 

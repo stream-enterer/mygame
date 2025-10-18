@@ -28,7 +28,6 @@ namespace tutorial
         void SortByRenderLayer();
         Entity_ptr& Spawn(Entity_ptr&& src);
         Entity_ptr& Spawn(Entity_ptr&& src, pos_t pos);
-        Entity_ptr& SpawnAtFront(Entity_ptr&& src, pos_t pos);
 
         Entity* GetBlockingEntity(pos_t pos) const;
         std::unique_ptr<Entity> Remove(Entity* entity);

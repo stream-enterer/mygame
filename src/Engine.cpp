@@ -7,6 +7,7 @@
 #include "EventHandler.hpp"
 #include "HealthBar.hpp"
 #include "InventoryWindow.hpp"
+#include "ItemSelectionWindow.hpp"
 #include "LevelConfig.hpp"
 #include "Map.hpp"
 #include "MapGenerator.hpp"
@@ -25,11 +26,10 @@ namespace tutorial
     Engine::Engine(const Configuration& config) :
         config_(config),
         eventHandler_(std::make_unique<MainGameEventHandler>(*this)),
-        map_(nullptr), // Initialize to nullptr, create in NewGame()
+        map_(nullptr),
         messageHistoryWindow_(std::make_unique<MessageHistoryWindow>(
             config.width, config.height, pos_t{ 0, 0 }, messageLog_)),
-        messageLogWindow_(
-            nullptr), // Initialize to nullptr, create in NewGame()
+        messageLogWindow_(nullptr),
         player_(nullptr),
         healthBar_(nullptr),
         context_(nullptr),
@@ -41,7 +41,6 @@ namespace tutorial
         mousePos_{ 0, 0 },
         inventoryMode_(InventoryMode::Use)
     {
-        // Create console - this is the display buffer we'll draw to
         console_ = TCOD_console_new(config.width, config.height);
         if (!console_)
         {
@@ -49,21 +48,15 @@ namespace tutorial
             throw std::runtime_error("Failed to create console");
         }
 
-        // Create context parameters - this sets up how the console will be
-        // displayed
         TCOD_ContextParams params = {};
-        params.tcod_version =
-            TCOD_COMPILEDVERSION;  // Tell libtcod which version we compiled
-                                   // against
-        params.console = console_; // The console buffer to display
-        params.window_title = config.title.c_str();     // Window title
-        params.sdl_window_flags = SDL_WINDOW_RESIZABLE; // Make window resizable
-        params.vsync = 1;                               // Enable vsync
+        params.tcod_version = TCOD_COMPILEDVERSION;
+        params.console = console_;
+        params.window_title = config.title.c_str();
+        params.sdl_window_flags = SDL_WINDOW_RESIZABLE;
+        params.vsync = 1;
         params.argc = 0;
         params.argv = nullptr;
 
-        // Actually create the context - this creates the SDL window and
-        // rendering setup
         if (TCOD_context_new(&params, &context_) != TCOD_E_OK)
         {
             TCOD_console_delete(console_);
@@ -71,7 +64,6 @@ namespace tutorial
             throw std::runtime_error("Failed to create context");
         }
 
-        // Get the SDL window from the context so we can work with it if needed
         window_ = TCOD_context_get_sdl_window(context_);
 
         this->NewGame();
@@ -79,7 +71,6 @@ namespace tutorial
 
     Engine::~Engine()
     {
-        // Clean up in reverse order of creation
         if (context_)
         {
             TCOD_context_delete(context_);
@@ -110,21 +101,17 @@ namespace tutorial
 
     void Engine::HandleDeathEvent(Entity& entity)
     {
+        // For both player and non-player: mark for deferred removal
+        // This ensures corpse spawning happens consistently
+        entitiesToRemove_.push_back(&entity);
+
+        // Player-specific handling
         if (this->IsPlayer(entity))
         {
             eventHandler_ = std::make_unique<GameOverEventHandler>(*this);
             eventQueue_.clear();
             gameOver_ = true;
-
-            entity.Die(); // Keep player as dead entity (special case for game
-                          // over screen)
-            entities_.SortByRenderLayer();
-            return;
         }
-
-        // For non-player entities: mark for deferred removal
-        // Don't remove immediately - event system still has references!
-        entitiesToRemove_.push_back(&entity);
     }
 
     void Engine::HandleEvents()
@@ -137,8 +124,6 @@ namespace tutorial
         }
 
         eventQueue_.clear();
-
-        // Process any entities that died during event processing
         ProcessDeferredRemovals();
     }
 
@@ -150,7 +135,6 @@ namespace tutorial
 
     void Engine::NewGame()
     {
-        // Load configuration files (first time only)
         static bool configLoaded = false;
         if (!configLoaded)
         {
@@ -158,7 +142,6 @@ namespace tutorial
             configLoaded = true;
         }
 
-        // Create map if not yet created (first NewGame call)
         if (!map_)
         {
             auto& cfg = ConfigManager::Instance();
@@ -166,7 +149,6 @@ namespace tutorial
                 config_.width, config_.height - cfg.GetMapHeightOffset());
         }
 
-        // Create message log window if not yet created
         if (!messageLogWindow_)
         {
             auto& cfg = ConfigManager::Instance();
@@ -176,14 +158,11 @@ namespace tutorial
                 messageLog_);
         }
 
-        // Load current level configuration
         currentLevel_ = LevelConfig::LoadFromFile("data/levels/dungeon_1.json");
 
-        // Load entity templates from JSON
         try
         {
-            TemplateRegistry::Instance()
-                .Clear(); // Clear any existing templates
+            TemplateRegistry::Instance().Clear();
             TemplateRegistry::Instance().LoadFromDirectory("data/entities");
             std::cout << "[Engine] Loaded "
                       << TemplateRegistry::Instance().GetAllIds().size()
@@ -193,10 +172,9 @@ namespace tutorial
         {
             std::cerr << "[Engine] FATAL: Failed to load entity templates: "
                       << e.what() << std::endl;
-            throw; // Re-throw, can't continue without templates
+            throw;
         }
 
-        // Build spawn tables dynamically from level config
         try
         {
             DynamicSpawnSystem::Instance().Clear();
@@ -211,43 +189,36 @@ namespace tutorial
             throw;
         }
 
-        // Clear the entities and message log
         entities_.Clear();
         messageLog_.Clear();
         eventQueue_.clear();
 
-        // Generate map using level config parameters
         this->GenerateMap(currentLevel_.generation.width,
                           currentLevel_.generation.height);
 
         auto rooms = map_->GetRooms();
 
-        // Place items FIRST (so they render on bottom)
         for (auto it = rooms.begin() + 1; it != rooms.end(); ++it)
         {
             entities_.PlaceItems(*it, currentLevel_.itemSpawning,
                                  currentLevel_.id);
         }
 
-        // Place monsters AFTER items (so they render on top)
         for (auto it = rooms.begin() + 1; it != rooms.end(); ++it)
         {
             entities_.PlaceEntities(*it, currentLevel_.monsterSpawning,
                                     currentLevel_.id);
         }
 
-        // Create player and add them to entity list
         auto playerEntity =
             TemplateRegistry::Instance().Create("player", rooms[0].GetCenter());
         player_ = entities_.Spawn(std::move(playerEntity)).get();
 
-        // Create health bar from config
         auto& cfg = ConfigManager::Instance();
         healthBar_ = std::make_unique<HealthBar>(
             cfg.GetHealthBarWidth(), cfg.GetHealthBarHeight(),
             pos_t{ cfg.GetHealthBarX(), cfg.GetHealthBarY() }, *player_);
 
-        // Create inventory window from config
         int invWidth = cfg.GetInventoryWindowWidth();
         int invHeight = cfg.GetInventoryWindowHeight();
         pos_t invPos;
@@ -259,9 +230,7 @@ namespace tutorial
         }
         else
         {
-            invPos =
-                pos_t{ 0,
-                       0 }; // Could add explicit position in config if needed
+            invPos = pos_t{ 0, 0 };
         }
 
         inventoryWindow_ = std::make_unique<InventoryWindow>(
@@ -269,15 +238,12 @@ namespace tutorial
 
         this->ComputeFOV();
 
-        // Show welcome message
         auto welcomeMsg = StringTable::Instance().GetMessage("game.welcome");
         messageLog_.AddMessage(welcomeMsg.text, welcomeMsg.color,
                                welcomeMsg.stack);
 
         windowState_ = MainGame;
-
         eventHandler_ = std::make_unique<MainGameEventHandler>(*this);
-
         gameOver_ = false;
     }
 
@@ -287,6 +253,7 @@ namespace tutorial
         {
             eventHandler_ = std::make_unique<MainGameEventHandler>(*this);
             windowState_ = MainGame;
+            itemSelectionList_.clear();
         }
     }
 
@@ -306,13 +273,11 @@ namespace tutorial
             eventHandler_ = std::make_unique<InventoryEventHandler>(*this);
             windowState_ = Inventory;
 
-            // Apply the current inventory mode to the handler
             if (auto* invHandler =
                     dynamic_cast<InventoryEventHandler*>(eventHandler_.get()))
             {
                 invHandler->SetMode(inventoryMode_);
 
-                // Set window title based on mode
                 if (inventoryMode_ == InventoryMode::Drop)
                 {
                     inventoryWindow_->SetTitle("Drop which item?");
@@ -323,8 +288,36 @@ namespace tutorial
                 }
             }
 
-            // Reset mode to Use for next time
             inventoryMode_ = InventoryMode::Use;
+        }
+    }
+
+    void Engine::ShowItemSelection(const std::vector<Entity*>& items)
+    {
+        if (windowState_ != ItemSelection)
+        {
+            itemSelectionList_ = items;
+
+            auto& cfg = ConfigManager::Instance();
+            int width = cfg.GetInventoryWindowWidth();
+            int height = cfg.GetInventoryWindowHeight();
+            pos_t pos;
+
+            if (cfg.GetInventoryCenterOnScreen())
+            {
+                pos = pos_t{ config_.width / 2 - width / 2,
+                             config_.height / 2 - height / 2 };
+            }
+            else
+            {
+                pos = pos_t{ 0, 0 };
+            }
+
+            itemSelectionWindow_ = std::make_unique<ItemSelectionWindow>(
+                width, height, pos, itemSelectionList_, "Pick up which item?");
+
+            eventHandler_ = std::make_unique<ItemSelectionEventHandler>(*this);
+            windowState_ = ItemSelection;
         }
     }
 
@@ -343,14 +336,9 @@ namespace tutorial
         return entities_.Remove(entity);
     }
 
-    Entity* Engine::SpawnEntity(std::unique_ptr<Entity> entity, pos_t pos,
-                                bool atFront)
+    Entity* Engine::SpawnEntity(std::unique_ptr<Entity> entity, pos_t pos)
     {
         entity->SetPos(pos);
-        if (atFront)
-        {
-            return entities_.SpawnAtFront(std::move(entity), pos).get();
-        }
         return entities_.Spawn(std::move(entity), pos).get();
     }
 
@@ -416,7 +404,6 @@ namespace tutorial
 
     bool Engine::IsRunning() const
     {
-        // Check if window is still open and we haven't quit
         return running_ && window_ != nullptr;
     }
 
@@ -441,7 +428,6 @@ namespace tutorial
 
         for (const auto& entity : entities_)
         {
-            // Only target monsters (not player, items, or neutral)
             if (entity->GetFaction() == Faction::MONSTER
                 && entity->GetDestructible()
                 && !entity->GetDestructible()->IsDead())
@@ -465,10 +451,8 @@ namespace tutorial
         SDL_Event sdlEvent;
         pos_t lastMousePos{ -1, -1 };
 
-        // Render the base game state ONCE at the start
         this->Render();
 
-        // Store the original background colors before we modify them
         std::vector<tcod::ColorRGB> originalColors(map_->GetWidth()
                                                    * map_->GetHeight());
         for (int cx = 0; cx < map_->GetWidth(); cx++)
@@ -482,7 +466,6 @@ namespace tutorial
             }
         }
 
-        // Apply range highlighting ONCE
         for (int cx = 0; cx < map_->GetWidth(); cx++)
         {
             for (int cy = 0; cy < map_->GetHeight(); cy++)
@@ -491,7 +474,6 @@ namespace tutorial
                     && (maxRange == 0.0f
                         || player_->GetDistance(cx, cy) <= maxRange))
                 {
-                    // Brighten the original color
                     tcod::ColorRGB col =
                         originalColors[cx + cy * map_->GetWidth()];
                     col.r = std::min(255, static_cast<int>(col.r * 1.2f));
@@ -504,7 +486,38 @@ namespace tutorial
             }
         }
 
-        // Highlight initial mouse position
+        // Clamp initial mouse position to range
+        if (maxRange > 0.0f
+            && player_->GetDistance(mousePos_.x, mousePos_.y) > maxRange)
+        {
+            // Find closest valid position to mouse
+            int bestX = mousePos_.x;
+            int bestY = mousePos_.y;
+            float bestDist = 1e6f;
+
+            for (int cx = 0; cx < map_->GetWidth(); cx++)
+            {
+                for (int cy = 0; cy < map_->GetHeight(); cy++)
+                {
+                    if (map_->IsInFov(pos_t{ cx, cy })
+                        && player_->GetDistance(cx, cy) <= maxRange)
+                    {
+                        int dx = cx - mousePos_.x;
+                        int dy = cy - mousePos_.y;
+                        float dist = std::sqrt(dx * dx + dy * dy);
+                        if (dist < bestDist)
+                        {
+                            bestDist = dist;
+                            bestX = cx;
+                            bestY = cy;
+                        }
+                    }
+                }
+            }
+
+            mousePos_ = pos_t{ bestX, bestY };
+        }
+
         if (map_->IsInFov(mousePos_)
             && (maxRange == 0.0f
                 || player_->GetDistance(mousePos_.x, mousePos_.y) <= maxRange))
@@ -514,24 +527,20 @@ namespace tutorial
         }
         lastMousePos = mousePos_;
 
-        // Present the initial frame with highlights
         TCOD_context_present(context_, console_, nullptr);
 
         while (running_)
         {
-            // Handle mouse/keyboard events
             while (SDL_PollEvent(&sdlEvent))
             {
                 if (sdlEvent.type == SDL_EVENT_QUIT)
                 {
-                    // Allow window manager quit
                     this->Quit();
                     return false;
                 }
 
                 if (sdlEvent.type == SDL_EVENT_MOUSE_MOTION)
                 {
-                    // Update mouse position
                     SDL_Window* window = TCOD_context_get_sdl_window(context_);
                     int windowWidth, windowHeight;
                     SDL_GetWindowSize(window, &windowWidth, &windowHeight);
@@ -543,10 +552,41 @@ namespace tutorial
 
                     pos_t newMousePos{ tileX, tileY };
 
-                    // Only update if mouse actually moved to a different tile
+                    // Clamp to range
+                    if (maxRange > 0.0f
+                        && player_->GetDistance(newMousePos.x, newMousePos.y)
+                               > maxRange)
+                    {
+                        // Find closest valid position
+                        int bestX = newMousePos.x;
+                        int bestY = newMousePos.y;
+                        float bestDist = 1e6f;
+
+                        for (int cx = 0; cx < map_->GetWidth(); cx++)
+                        {
+                            for (int cy = 0; cy < map_->GetHeight(); cy++)
+                            {
+                                if (map_->IsInFov(pos_t{ cx, cy })
+                                    && player_->GetDistance(cx, cy) <= maxRange)
+                                {
+                                    int dx = cx - newMousePos.x;
+                                    int dy = cy - newMousePos.y;
+                                    float dist = std::sqrt(dx * dx + dy * dy);
+                                    if (dist < bestDist)
+                                    {
+                                        bestDist = dist;
+                                        bestX = cx;
+                                        bestY = cy;
+                                    }
+                                }
+                            }
+                        }
+
+                        newMousePos = pos_t{ bestX, bestY };
+                    }
+
                     if (newMousePos != lastMousePos)
                     {
-                        // Restore the old mouse tile to range-highlighted color
                         if (lastMousePos.x >= 0 && lastMousePos.y >= 0
                             && map_->IsInFov(lastMousePos)
                             && (maxRange == 0.0f
@@ -554,7 +594,6 @@ namespace tutorial
                                                         lastMousePos.y)
                                        <= maxRange))
                         {
-                            // Restore from original color, then brighten
                             tcod::ColorRGB col =
                                 originalColors[lastMousePos.x
                                                + lastMousePos.y
@@ -573,7 +612,6 @@ namespace tutorial
                         mousePos_ = newMousePos;
                         lastMousePos = newMousePos;
 
-                        // Highlight new tile under mouse if valid
                         if (map_->IsInFov(mousePos_)
                             && (maxRange == 0.0f
                                 || player_->GetDistance(mousePos_.x,
@@ -585,7 +623,6 @@ namespace tutorial
                                 color::white, TCOD_BKGND_SET);
                         }
 
-                        // Present the updated frame
                         TCOD_context_present(context_, console_, nullptr);
                     }
                 }
@@ -593,7 +630,6 @@ namespace tutorial
                 if (sdlEvent.type == SDL_EVENT_MOUSE_BUTTON_DOWN
                     && sdlEvent.button.button == SDL_BUTTON_LEFT)
                 {
-                    // Check if clicked tile is valid
                     if (map_->IsInFov(mousePos_)
                         && (maxRange == 0.0f
                             || player_->GetDistance(mousePos_.x, mousePos_.y)
@@ -622,8 +658,6 @@ namespace tutorial
                     SDL_Keycode key = sdlEvent.key.key;
                     pos_t delta{ 0, 0 };
 
-                    // Map keys to movement (matching MainGameEventHandler
-                    // pattern)
                     if (key == SDLK_UP)
                     {
                         delta = pos_t{ 0, -1 };
@@ -642,7 +676,6 @@ namespace tutorial
                     }
                     else if (key == SDLK_RETURN || key == SDLK_SPACE)
                     {
-                        // Confirm selection with Enter or Space
                         if (map_->IsInFov(mousePos_)
                             && (maxRange == 0.0f
                                 || player_->GetDistance(mousePos_.x,
@@ -655,54 +688,58 @@ namespace tutorial
                         }
                     }
 
-                    // If we got a movement delta, update cursor position
                     if (delta.x != 0 || delta.y != 0)
                     {
                         pos_t newPos = mousePos_ + delta;
 
-                        // Clamp to map bounds
+                        // Clamp to both map bounds AND range
                         if (map_->IsInBounds(newPos))
                         {
-                            // Restore old position to range-highlighted color
-                            if (lastMousePos.x >= 0 && lastMousePos.y >= 0
-                                && map_->IsInFov(lastMousePos)
-                                && (maxRange == 0.0f
-                                    || player_->GetDistance(lastMousePos.x,
-                                                            lastMousePos.y)
-                                           <= maxRange))
+                            // Check if new position is in range
+                            if (maxRange == 0.0f
+                                || player_->GetDistance(newPos.x, newPos.y)
+                                       <= maxRange)
                             {
-                                tcod::ColorRGB col =
-                                    originalColors[lastMousePos.x
-                                                   + lastMousePos.y
-                                                         * map_->GetWidth()];
-                                col.r = std::min(
-                                    255, static_cast<int>(col.r * 1.2f));
-                                col.g = std::min(
-                                    255, static_cast<int>(col.g * 1.2f));
-                                col.b = std::min(
-                                    255, static_cast<int>(col.b * 1.2f));
-                                TCOD_console_set_char_background(
-                                    console_, lastMousePos.x, lastMousePos.y,
-                                    col, TCOD_BKGND_SET);
+                                // Restore old position
+                                if (lastMousePos.x >= 0 && lastMousePos.y >= 0
+                                    && map_->IsInFov(lastMousePos)
+                                    && (maxRange == 0.0f
+                                        || player_->GetDistance(lastMousePos.x,
+                                                                lastMousePos.y)
+                                               <= maxRange))
+                                {
+                                    tcod::ColorRGB col = originalColors
+                                        [lastMousePos.x
+                                         + lastMousePos.y * map_->GetWidth()];
+                                    col.r = std::min(
+                                        255, static_cast<int>(col.r * 1.2f));
+                                    col.g = std::min(
+                                        255, static_cast<int>(col.g * 1.2f));
+                                    col.b = std::min(
+                                        255, static_cast<int>(col.b * 1.2f));
+                                    TCOD_console_set_char_background(
+                                        console_, lastMousePos.x,
+                                        lastMousePos.y, col, TCOD_BKGND_SET);
+                                }
+
+                                mousePos_ = newPos;
+                                lastMousePos = newPos;
+
+                                if (map_->IsInFov(mousePos_)
+                                    && (maxRange == 0.0f
+                                        || player_->GetDistance(mousePos_.x,
+                                                                mousePos_.y)
+                                               <= maxRange))
+                                {
+                                    TCOD_console_set_char_background(
+                                        console_, mousePos_.x, mousePos_.y,
+                                        color::white, TCOD_BKGND_SET);
+                                }
+
+                                TCOD_context_present(context_, console_,
+                                                     nullptr);
                             }
-
-                            mousePos_ = newPos;
-                            lastMousePos = newPos;
-
-                            // Highlight new position
-                            if (map_->IsInFov(mousePos_)
-                                && (maxRange == 0.0f
-                                    || player_->GetDistance(mousePos_.x,
-                                                            mousePos_.y)
-                                           <= maxRange))
-                            {
-                                TCOD_console_set_char_background(
-                                    console_, mousePos_.x, mousePos_.y,
-                                    color::white, TCOD_BKGND_SET);
-                            }
-
-                            // Present the updated frame
-                            TCOD_context_present(context_, console_, nullptr);
+                            // If out of range, don't move the cursor
                         }
                     }
                 }
@@ -726,6 +763,20 @@ namespace tutorial
         return nullptr;
     }
 
+    int Engine::GetMaxRenderPriorityAtPosition(pos_t pos) const
+    {
+        int maxPriority = 0;
+        for (const auto& entity : entities_)
+        {
+            if (entity->GetPos() == pos)
+            {
+                maxPriority =
+                    std::max(maxPriority, entity->GetRenderPriority());
+            }
+        }
+        return maxPriority;
+    }
+
     void Engine::DealDamage(Entity& target, unsigned int damage)
     {
         target.GetDestructible()->TakeDamage(damage);
@@ -740,13 +791,10 @@ namespace tutorial
 
     void Engine::Render()
     {
-        // Clear the console - this is our drawing buffer
         TCOD_console_clear(console_);
         if (windowState_ == MainGame)
         {
-            // Render the map to the console
             map_->Render(console_);
-            // Show all entities' positions if in fov
             for (const auto& entity : entities_)
             {
                 const auto pos = entity->GetPos();
@@ -756,7 +804,6 @@ namespace tutorial
                     renderable->Render(console_, pos);
                 }
             }
-            // Render UI elements on top
             healthBar_->Render(console_);
             messageLogWindow_->Render(console_);
             messageLogWindow_->RenderMouseLook(console_, *this);
@@ -767,7 +814,6 @@ namespace tutorial
         }
         else if (windowState_ == Inventory)
         {
-            // Render game state underneath
             map_->Render(console_);
 
             for (const auto& entity : entities_)
@@ -780,15 +826,31 @@ namespace tutorial
                 }
             }
 
-            // Render UI elements
             healthBar_->Render(console_);
             messageLogWindow_->Render(console_);
 
-            // Render inventory on top
             inventoryWindow_->Render(console_);
         }
-        // Present the console to the screen - this actually shows what we
-        // drew
+        else if (windowState_ == ItemSelection)
+        {
+            map_->Render(console_);
+
+            for (const auto& entity : entities_)
+            {
+                const auto pos = entity->GetPos();
+                if (map_->IsInFov(pos))
+                {
+                    const auto& renderable = entity->GetRenderable();
+                    renderable->Render(console_, pos);
+                }
+            }
+
+            healthBar_->Render(console_);
+            messageLogWindow_->Render(console_);
+
+            itemSelectionWindow_->Render(console_);
+        }
+
         TCOD_context_present(context_, console_, nullptr);
     }
 
@@ -813,31 +875,25 @@ namespace tutorial
     {
         for (Entity* entity : entitiesToRemove_)
         {
-            // Get entity info before removing
             std::string corpseName = "remains of " + entity->GetName();
             pos_t corpsePos = entity->GetPos();
 
-            // Create corpse item (non-pickable, renders on CORPSES layer)
+            // Create corpse (non-pickable, renders on CORPSES layer)
             auto corpse = std::make_unique<BaseEntity>(
-                corpsePos, corpseName,
-                false,                            // doesn't block movement
-                AttackerComponent{ 0 },           // no attack
-                DestructibleComponent{ 0, 1, 1 }, // minimal hp (not used)
-                IconRenderable{ color::dark_red, '%' }, // red % symbol
-                Faction::NEUTRAL,
-                nullptr, // no item component
-                false,   // NOT pickable
-                true     // IS a corpse (renders on CORPSES layer)
-            );
+                corpsePos, corpseName, false, AttackerComponent{ 0 },
+                DestructibleComponent{ 0, 1, 1 },
+                IconRenderable{ color::dark_red, '%' }, Faction::NEUTRAL,
+                nullptr, false, true);
 
-            // Spawn corpse at front (bottom render layer)
-            SpawnEntity(std::move(corpse), corpsePos, true);
+            // Corpses go to CORPSES layer (priority 0), sorting handles
+            // placement
+            SpawnEntity(std::move(corpse), corpsePos);
 
             // Now safe to remove the entity
             RemoveEntity(entity);
         }
 
-        // Clear the removal queue
         entitiesToRemove_.clear();
     }
 } // namespace tutorial
+

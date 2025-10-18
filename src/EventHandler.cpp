@@ -24,75 +24,75 @@ namespace tutorial
                 // Up
                 [](auto& engine)
                 {
-                    (void)engine; // Unused
+                    (void)engine;
                     return std::make_unique<tutorial::MoveCommand>(0, -1);
                 },
                 // Down
                 [](auto& engine)
                 {
-                    (void)engine; // Unused
+                    (void)engine;
                     return std::make_unique<tutorial::MoveCommand>(0, 1);
                 },
                 // Left
                 [](auto& engine)
                 {
-                    (void)engine; // Unused
+                    (void)engine;
                     return std::make_unique<tutorial::MoveCommand>(-1, 0);
                 },
                 // Right
                 [](auto& engine)
                 {
-                    (void)engine; // Unused
+                    (void)engine;
                     return std::make_unique<tutorial::MoveCommand>(1, 0);
                 },
                 // Wait action
                 [](auto& engine)
                 {
-                    (void)engine; // Unused
+                    (void)engine;
                     return std::make_unique<tutorial::WaitCommand>();
                 },
                 // Pickup action
                 [](auto& engine)
                 {
-                    (void)engine; // Unused
+                    (void)engine;
                     return std::make_unique<tutorial::PickupCommand>();
                 },
                 // Inventory event
                 [](auto& engine)
                 {
-                    (void)engine; // Unused
+                    (void)engine;
                     return std::make_unique<tutorial::OpenInventoryCommand>();
                 },
                 // Drop item event
                 [](auto& engine)
                 {
-                    (void)engine; // Unused
+                    (void)engine;
                     return std::make_unique<
                         tutorial::OpenDropInventoryCommand>();
                 },
                 // Message history event
                 [](auto& engine)
                 {
-                    (void)engine; // Unused
+                    (void)engine;
                     return std::make_unique<
                         tutorial::OpenMessageHistoryCommand>();
                 },
                 // Return to game event
                 [](auto& engine)
                 {
-                    (void)engine; // Unused
+                    (void)engine;
                     return std::make_unique<tutorial::CloseUICommand>();
                 },
                 // New game
                 [](auto& engine)
                 {
-                    (void)engine; // Unused
+                    (void)engine;
                     return std::make_unique<tutorial::NewGameCommand>();
                 },
                 // Exit
                 [](auto& engine)
                 {
-                    (void)engine; // Unused
+                    (void)engine;
                     return std::make_unique<tutorial::QuitCommand>();
                 }
             };
@@ -113,46 +113,35 @@ namespace tutorial
     std::unique_ptr<tutorial::Command> tutorial::BaseEventHandler::Dispatch()
         const
     {
-        // Use SDL3's event system instead of deprecated TCOD events
         SDL_Event sdlEvent;
-
         std::unique_ptr<tutorial::Command> command{ nullptr };
 
-        // Poll all pending events
         while (SDL_PollEvent(&sdlEvent))
         {
-            // Check if it's a quit event (user closed window)
             if (sdlEvent.type == SDL_EVENT_QUIT)
             {
                 return std::make_unique<tutorial::QuitCommand>();
             }
 
-            // Handle mouse motion
             if (sdlEvent.type == SDL_EVENT_MOUSE_MOTION)
             {
-                // Get window size in pixels
                 SDL_Window* window =
                     TCOD_context_get_sdl_window(engine_.GetContext());
                 int windowWidth, windowHeight;
                 SDL_GetWindowSize(window, &windowWidth, &windowHeight);
 
-                // Convert pixel coordinates to tile coordinates
                 int tileX = (sdlEvent.motion.x * engine_.GetConfig().width)
                             / windowWidth;
                 int tileY = (sdlEvent.motion.y * engine_.GetConfig().height)
                             / windowHeight;
 
-                // Store in engine
                 engine_.SetMousePos(tutorial::pos_t{ tileX, tileY });
             }
 
-            // Check if it's a key press
             if (sdlEvent.type == SDL_EVENT_KEY_DOWN)
             {
-                // Convert SDL keycode to our KeyPress format
                 SDL_Keycode sdlKey = sdlEvent.key.key;
 
-                // Map SDL keycodes to TCOD keycodes for compatibility
                 TCOD_keycode_t tcodKey = TCODK_NONE;
                 char character = '\0';
 
@@ -180,7 +169,6 @@ namespace tutorial
                         tcodKey = TCODK_ESCAPE;
                         break;
                     default:
-                        // For letter keys, check if it's a printable character
                         if (sdlKey >= SDLK_A && sdlKey <= SDLK_Z)
                         {
                             tcodKey = TCODK_CHAR;
@@ -195,7 +183,6 @@ namespace tutorial
                     auto action = keyMap_.at(keypress);
                     command = kGameActions.at(action)(engine_);
 
-                    // Return the first valid event we find
                     if (command != nullptr)
                     {
                         return command;
@@ -233,8 +220,10 @@ namespace tutorial
 
     static const std::unordered_map<tutorial::KeyPress, tutorial::Actions,
                                     tutorial::KeyPressHash>
-        MessageHistoryKeyMap{ { { TCODK_CHAR, 'v' },
-                                tutorial::Actions::RETURN_TO_GAME } };
+        MessageHistoryKeyMap{
+            { { TCODK_CHAR, 'v' }, tutorial::Actions::RETURN_TO_GAME },
+            { TCODK_ESCAPE, tutorial::Actions::RETURN_TO_GAME }
+        };
 
     tutorial::MessageHistoryEventHandler::MessageHistoryEventHandler(
         Engine& engine) :
@@ -257,7 +246,6 @@ namespace tutorial
     tutorial::InventoryEventHandler::InventoryEventHandler(Engine& engine) :
         BaseEventHandler(engine), mode_(InventoryMode::Use)
     {
-        // No specific key map needed - handles a-z directly
     }
 
     std::unique_ptr<tutorial::Command>
@@ -273,13 +261,19 @@ namespace tutorial
                 return std::make_unique<QuitCommand>();
             }
 
+            // Right-click to close without consuming a turn
+            if (sdlEvent.type == SDL_EVENT_MOUSE_BUTTON_DOWN
+                && sdlEvent.button.button == SDL_BUTTON_RIGHT)
+            {
+                return std::make_unique<tutorial::CloseUICommand>();
+            }
+
             if (sdlEvent.type == SDL_EVENT_KEY_DOWN)
             {
                 SDL_Keycode sdlKey = sdlEvent.key.key;
 
                 // Escape or 'i' or 'd' returns to game WITHOUT using a turn
-                if (sdlKey == SDLK_ESCAPE || sdlKey == SDLK_I
-                    || sdlKey == SDLK_D)
+                if (sdlKey == SDLK_ESCAPE || sdlKey == SDLK_I)
                 {
                     return std::make_unique<tutorial::CloseUICommand>();
                 }
@@ -298,6 +292,62 @@ namespace tutorial
                         return std::make_unique<tutorial::UseItemCommand>(
                             itemIndex);
                     }
+                }
+            }
+        }
+
+        return command;
+    }
+
+    tutorial::ItemSelectionEventHandler::ItemSelectionEventHandler(
+        Engine& engine) :
+        BaseEventHandler(engine)
+    {
+    }
+
+    std::unique_ptr<tutorial::Command>
+    tutorial::ItemSelectionEventHandler::Dispatch() const
+    {
+        SDL_Event sdlEvent;
+        std::unique_ptr<tutorial::Command> command{ nullptr };
+
+        while (SDL_PollEvent(&sdlEvent))
+        {
+            if (sdlEvent.type == SDL_EVENT_QUIT)
+            {
+                return std::make_unique<QuitCommand>();
+            }
+
+            // Right-click to close without consuming a turn
+            if (sdlEvent.type == SDL_EVENT_MOUSE_BUTTON_DOWN
+                && sdlEvent.button.button == SDL_BUTTON_RIGHT)
+            {
+                return std::make_unique<tutorial::CloseUICommand>();
+            }
+
+            if (sdlEvent.type == SDL_EVENT_KEY_DOWN)
+            {
+                SDL_Keycode sdlKey = sdlEvent.key.key;
+
+                // Escape closes menu without consuming a turn
+                if (sdlKey == SDLK_ESCAPE)
+                {
+                    return std::make_unique<tutorial::CloseUICommand>();
+                }
+
+                // Check for a-z keys for item selection
+                if (sdlKey >= SDLK_A && sdlKey <= SDLK_Z)
+                {
+                    size_t itemIndex = sdlKey - SDLK_A;
+                    const auto& items = engine_.GetItemSelectionList();
+
+                    // Only accept valid item indices
+                    if (itemIndex < items.size())
+                    {
+                        return std::make_unique<tutorial::PickupItemCommand>(
+                            items[itemIndex]);
+                    }
+                    // Invalid key - don't do anything, don't close menu
                 }
             }
         }

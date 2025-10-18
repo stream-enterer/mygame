@@ -32,7 +32,8 @@ namespace tutorial
         faction_(faction),
         blocker_(blocker),
         pickable_(pickable),
-        isCorpse_(isCorpse)
+        isCorpse_(isCorpse),
+        renderPriority_(0)  // Default priority
     {
     }
 
@@ -125,22 +126,28 @@ namespace tutorial
         return faction_;
     }
 
+    int BaseEntity::GetRenderPriority() const
+    {
+        return renderPriority_;
+    }
+
+    void BaseEntity::SetRenderPriority(int priority)
+    {
+        renderPriority_ = priority;
+    }
+
     RenderLayer BaseEntity::GetRenderLayer() const
     {
-        // Explicit corpse flag takes priority
         if (isCorpse_)
         {
             return RenderLayer::CORPSES;
         }
 
-        // Dead entities become floor decoration
-        // When an entity dies, Die() sets defense_ to nullptr
         if (!defense_)
         {
             return RenderLayer::CORPSES;
         }
 
-        // Determine layer based on faction
         switch (faction_)
         {
             case Faction::PLAYER:
@@ -148,7 +155,6 @@ namespace tutorial
             case Faction::MONSTER:
                 return RenderLayer::ACTORS;
             case Faction::NEUTRAL:
-                // Neutral entities are typically items
                 return RenderLayer::ITEMS;
             default:
                 return RenderLayer::ITEMS;

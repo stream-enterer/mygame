@@ -1,6 +1,7 @@
 #include "Event.hpp"
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "Colors.hpp"
 #include "Engine.hpp"
@@ -246,8 +247,8 @@ namespace tutorial
 
         auto entityPos = entity_.GetPos();
 
-        // Look for pickable items at the entity's position
-        bool found = false;
+        // Collect all pickable items at this position
+        std::vector<Entity*> itemsHere;
         const auto& entities = engine_.GetEntities();
 
         for (auto it = entities.begin(); it != entities.end(); ++it)
@@ -257,39 +258,75 @@ namespace tutorial
             if (actor->GetItem() && actor->GetPos() == entityPos
                 && !actor->IsBlocker() && actor->IsPickable())
             {
-                // Try to pick up the item (only works for Player)
-                if (auto* player = dynamic_cast<Player*>(&entity_))
-                {
-                    auto actorName = actor->GetName();
-
-                    // Remove from world and add to inventory
-                    if (player->AddToInventory(
-                            engine_.RemoveEntity(actor.get())))
-                    {
-                        auto msg = StringTable::Instance().GetMessage(
-                            "messages.pickup.success",
-                            { { "item", actorName } });
-                        engine_.LogMessage(msg.text, msg.color, msg.stack);
-                        found = true;
-                        break;
-                    }
-                    else
-                    {
-                        auto msg = StringTable::Instance().GetMessage(
-                            "messages.pickup.inventory_full");
-                        engine_.LogMessage(msg.text, msg.color, msg.stack);
-                        found = true;
-                        break;
-                    }
-                }
+                itemsHere.push_back(actor.get());
             }
         }
 
-        if (!found)
+        if (itemsHere.empty())
         {
             auto msg =
                 StringTable::Instance().GetMessage("messages.pickup.fail");
             engine_.LogMessage(msg.text, msg.color, msg.stack);
+            return;
+        }
+
+        // If only one item, pick it up directly
+        if (itemsHere.size() == 1)
+        {
+            auto action = PickupItemAction(engine_, entity_, itemsHere[0]);
+            std::unique_ptr<Event> event =
+                std::make_unique<PickupItemAction>(action);
+            engine_.AddEventFront(event);
+        }
+        else
+        {
+            // Multiple items - show selection menu
+            engine_.ShowItemSelection(itemsHere);
+        }
+    }
+} // namespace tutorial
+
+namespace tutorial
+{
+    PickupItemAction::PickupItemAction(Engine& engine, Entity& entity,
+                                       Entity* item) :
+        Action(engine, entity), item_(item)
+    {
+    }
+
+    void PickupItemAction::Execute()
+    {
+        Action::Execute();
+
+        if (!item_)
+        {
+            return;
+        }
+
+        // Try to pick up the item (only works for Player)
+        if (auto* player = dynamic_cast<Player*>(&entity_))
+        {
+            auto actorName = item_->GetName();
+
+            // Remove from world and add to inventory
+            if (player->AddToInventory(engine_.RemoveEntity(item_)))
+            {
+                auto msg = StringTable::Instance().GetMessage(
+                    "messages.pickup.success", { { "item", actorName } });
+                engine_.LogMessage(msg.text, msg.color, msg.stack);
+
+                // Close the item selection menu after successful pickup
+                engine_.ReturnToMainGame();
+            }
+            else
+            {
+                auto msg = StringTable::Instance().GetMessage(
+                    "messages.pickup.inventory_full");
+                engine_.LogMessage(msg.text, msg.color, msg.stack);
+
+                // Close menu even if inventory is full
+                engine_.ReturnToMainGame();
+            }
         }
     }
 } // namespace tutorial
@@ -339,22 +376,24 @@ namespace tutorial
         {
             if (Entity* item = player->GetInventoryItem(itemIndex_))
             {
-                // Save the name before we move the item
                 std::string itemName = item->GetName();
 
-                // Extract from inventory (transfers ownership)
                 auto extractedItem = player->ExtractFromInventory(itemIndex_);
                 if (extractedItem)
                 {
-                    // Spawn back into world at player's position
-                    engine_.SpawnEntity(std::move(extractedItem),
-                                        player->GetPos(), true);
+                    pos_t dropPos = player->GetPos();
+                    
+                    // Auto-assign render priority: higher than anything at this position
+                    int newPriority = engine_.GetMaxRenderPriorityAtPosition(dropPos) + 1;
+                    extractedItem->SetRenderPriority(newPriority);
+                    
+                    // Spawn with proper priority (sorting handles placement)
+                    engine_.SpawnEntity(std::move(extractedItem), dropPos);
 
                     auto msg = StringTable::Instance().GetMessage(
                         "messages.drop.success", { { "item", itemName } });
                     engine_.LogMessage(msg.text, msg.color, msg.stack);
 
-                    // Return to main game after dropping
                     engine_.ReturnToMainGame();
                 }
             }

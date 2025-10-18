@@ -91,6 +91,14 @@ namespace tutorial
     private:
         InventoryMode mode_;
     };
+
+    class ItemSelectionEventHandler final : public BaseEventHandler
+    {
+    public:
+        ItemSelectionEventHandler(Engine& engine);
+
+        std::unique_ptr<Command> Dispatch() const override;
+    };
 } // namespace tutorial
 
 #endif // EVENT_HANDLER_HPP

@@ -28,12 +28,14 @@ namespace tutorial
     class MessageHistoryWindow;
     class MessageLogWindow;
     class InventoryWindow;
+    class ItemSelectionWindow;
 
     enum Window
     {
         MainGame,
         MessageHistory,
-        Inventory
+        Inventory,
+        ItemSelection
     };
 
     class Entity;
@@ -44,6 +46,7 @@ namespace tutorial
     class MessageHistoryWindow;
     class MessageLogWindow;
     class InventoryWindow;
+    class ItemSelectionWindow;
 
     class Engine
     {
@@ -63,12 +66,13 @@ namespace tutorial
         void DealDamage(Entity& target, unsigned int damage);
         void NewGame();
         Entity* GetClosestMonster(int x, int y, float range) const;
-        bool PickATile(int* x, int* y, float maxRanger = 0.0f);
+        bool PickATile(int* x, int* y, float maxRange = 0.0f);
         Entity* GetActor(int x, int y) const;
         void ReturnToMainGame();
         void SetMousePos(pos_t pos);
         void ShowMessageHistory();
         void ShowInventory();
+        void ShowItemSelection(const std::vector<Entity*>& items);
         void SetInventoryMode(InventoryMode mode)
         {
             inventoryMode_ = mode;
@@ -77,10 +81,13 @@ namespace tutorial
         {
             return inventoryMode_;
         }
+        const std::vector<Entity*>& GetItemSelectionList() const
+        {
+            return itemSelectionList_;
+        }
         void Quit();
         std::unique_ptr<Entity> RemoveEntity(Entity* entity);
-        Entity* SpawnEntity(std::unique_ptr<Entity> entity, pos_t pos,
-                            bool atFront = false);
+        Entity* SpawnEntity(std::unique_ptr<Entity> entity, pos_t pos);
 
         Entity* GetBlockingEntity(pos_t pos) const;
         Entity* GetPlayer() const;
@@ -92,6 +99,7 @@ namespace tutorial
         {
             return eventHandler_.get();
         }
+        int GetMaxRenderPriorityAtPosition(pos_t pos) const;
         bool IsBlocker(pos_t pos) const;
         bool IsInBounds(pos_t pos) const;
         bool IsInFov(pos_t pos) const;
@@ -110,6 +118,7 @@ namespace tutorial
         friend class MoveCommand;
         friend class WaitCommand;
         friend class PickupCommand;
+        friend class PickupItemCommand;
         friend class UseItemCommand;
         friend class DropItemCommand;
         void AddEvent(Event_ptr& event);
@@ -130,6 +139,7 @@ namespace tutorial
         std::unique_ptr<MessageHistoryWindow> messageHistoryWindow_;
         std::unique_ptr<MessageLogWindow> messageLogWindow_;
         std::unique_ptr<InventoryWindow> inventoryWindow_;
+        std::unique_ptr<ItemSelectionWindow> itemSelectionWindow_;
 
         Entity* player_;
         std::unique_ptr<HealthBar> healthBar_;
@@ -145,6 +155,7 @@ namespace tutorial
 
         pos_t mousePos_;
         InventoryMode inventoryMode_;
+        std::vector<Entity*> itemSelectionList_;
     };
 } // namespace tutorial
 

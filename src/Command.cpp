@@ -45,9 +45,24 @@ namespace tutorial
 
     void MoveCommand::Execute(Engine& engine)
     {
+        auto targetPos = engine.GetPlayer()->GetPos() + pos_t{ dx_, dy_ };
+
+        // Don't create action if moving into wall or out of bounds
+        if (engine.IsWall(targetPos) || !engine.IsInBounds(targetPos))
+        {
+            consumesTurn_ = false;
+            return;
+        }
+
+        consumesTurn_ = true;
         std::unique_ptr<Event> action = std::make_unique<BumpAction>(
             engine, *engine.GetPlayer(), pos_t{ dx_, dy_ });
         engine.AddEventFront(action);
+    }
+
+    bool MoveCommand::ConsumesTurn() const
+    {
+        return consumesTurn_;
     }
 
     void WaitCommand::Execute(Engine& engine)
@@ -61,6 +76,13 @@ namespace tutorial
     {
         std::unique_ptr<Event> action =
             std::make_unique<PickupAction>(engine, *engine.GetPlayer());
+        engine.AddEventFront(action);
+    }
+
+    void PickupItemCommand::Execute(Engine& engine)
+    {
+        std::unique_ptr<Event> action = std::make_unique<PickupItemAction>(
+            engine, *engine.GetPlayer(), item_);
         engine.AddEventFront(action);
     }
 
