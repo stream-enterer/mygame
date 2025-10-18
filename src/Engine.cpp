@@ -804,7 +804,13 @@ namespace tutorial
                     renderable->Render(console_, pos);
                 }
             }
-            healthBar_->Render(console_);
+
+            // Only render health bar if player exists
+            if (player_ && healthBar_)
+            {
+                healthBar_->Render(console_);
+            }
+
             messageLogWindow_->Render(console_);
             messageLogWindow_->RenderMouseLook(console_, *this);
         }
@@ -826,7 +832,12 @@ namespace tutorial
                 }
             }
 
-            healthBar_->Render(console_);
+            // Only render health bar if player exists
+            if (player_ && healthBar_)
+            {
+                healthBar_->Render(console_);
+            }
+
             messageLogWindow_->Render(console_);
 
             inventoryWindow_->Render(console_);
@@ -845,7 +856,12 @@ namespace tutorial
                 }
             }
 
-            healthBar_->Render(console_);
+            // Only render health bar if player exists
+            if (player_ && healthBar_)
+            {
+                healthBar_->Render(console_);
+            }
+
             messageLogWindow_->Render(console_);
 
             itemSelectionWindow_->Render(console_);
@@ -889,6 +905,12 @@ namespace tutorial
             // placement
             SpawnEntity(std::move(corpse), corpsePos);
 
+            // CRITICAL FIX: Nullify player pointer if we're removing the player
+            if (entity == player_)
+            {
+                player_ = nullptr;
+            }
+
             // Now safe to remove the entity
             RemoveEntity(entity);
         }
@@ -896,4 +918,3 @@ namespace tutorial
         entitiesToRemove_.clear();
     }
 } // namespace tutorial
-
