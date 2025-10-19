@@ -6,6 +6,7 @@
 #include "Colors.hpp"
 #include "Engine.hpp"
 #include "Entity.hpp"
+#include "SaveManager.hpp"
 #include "StringTable.hpp"
 #include "Util.hpp"
 
@@ -90,6 +91,7 @@ namespace tutorial
     {
     }
 
+    // In DieAction::Execute() - modify to trigger save wipe
     void DieAction::Execute()
     {
         Action::Execute();
@@ -99,6 +101,9 @@ namespace tutorial
             auto msg =
                 StringTable::Instance().GetMessage("messages.death.player");
             engine_.LogMessage(msg.text, msg.color, msg.stack);
+
+            // Wipe save on player death (which triggers game over)
+            SaveManager::Instance().DeleteSave();
         }
         else
         {
@@ -382,11 +387,13 @@ namespace tutorial
                 if (extractedItem)
                 {
                     pos_t dropPos = player->GetPos();
-                    
-                    // Auto-assign render priority: higher than anything at this position
-                    int newPriority = engine_.GetMaxRenderPriorityAtPosition(dropPos) + 1;
+
+                    // Auto-assign render priority: higher than anything at this
+                    // position
+                    int newPriority =
+                        engine_.GetMaxRenderPriorityAtPosition(dropPos) + 1;
                     extractedItem->SetRenderPriority(newPriority);
-                    
+
                     // Spawn with proper priority (sorting handles placement)
                     engine_.SpawnEntity(std::move(extractedItem), dropPos);
 

@@ -99,6 +99,7 @@ namespace tutorial
         {
             return eventHandler_.get();
         }
+        std::string GetCurrentLevelId() const;
         int GetMaxRenderPriorityAtPosition(pos_t pos) const;
         bool IsBlocker(pos_t pos) const;
         bool IsInBounds(pos_t pos) const;
@@ -121,9 +122,13 @@ namespace tutorial
         friend class PickupItemCommand;
         friend class UseItemCommand;
         friend class DropItemCommand;
+        friend class SaveManager;
         void AddEvent(Event_ptr& event);
         void GenerateMap(int width, int height);
         void ProcessDeferredRemovals();
+
+        int turnsSinceLastAutosave_;
+        static constexpr int kAutosaveInterval = 100;
 
         EntityManager entities_;
         std::deque<Event_ptr> eventQueue_;

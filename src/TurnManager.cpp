@@ -4,6 +4,7 @@
 #include "Engine.hpp"
 #include "Entity.hpp"
 #include "Event.hpp"
+#include "SaveManager.hpp"
 
 namespace tutorial
 {
@@ -52,6 +53,15 @@ namespace tutorial
 
         // Process all enemy actions
         engine.HandleEvents();
+
+        if (engine.turnsSinceLastAutosave_ >= Engine::kAutosaveInterval)
+        {
+            SaveManager::Instance().SaveGame(engine, SaveType::Auto);
+            // Optional: Add message to game log
+            // engine.LogMessage("Game autosaved", tcod::ColorRGB{100, 100,
+            // 100}, false);
+            engine.turnsSinceLastAutosave_ = 0;
+        }
     }
 
 } // namespace tutorial

@@ -5,6 +5,7 @@
 #include "Event.hpp"
 #include "InventoryMode.hpp"
 #include "Position.hpp"
+#include "SaveManager.hpp"
 
 namespace tutorial
 {
@@ -38,6 +39,12 @@ namespace tutorial
 
     void QuitCommand::Execute(Engine& engine)
     {
+        // Save game unless it's game over
+        if (!engine.IsGameOver())
+        {
+            SaveManager::Instance().SaveGame(engine, SaveType::Manual);
+        }
+
         engine.Quit();
     }
 

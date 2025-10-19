@@ -57,6 +57,15 @@ namespace tutorial
 
         void Render(TCOD_Console* parent, pos_t pos) const override;
 
+        char GetIcon() const
+        {
+            return icon_;
+        }
+        tcod::ColorRGB GetColor() const
+        {
+            return color_;
+        }
+
     private:
         tcod::ColorRGB color_; // Changed from TCODColor
         char icon_;

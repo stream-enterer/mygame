@@ -39,7 +39,8 @@ namespace tutorial
         gameOver_(false),
         running_(true),
         mousePos_{ 0, 0 },
-        inventoryMode_(InventoryMode::Use)
+        inventoryMode_(InventoryMode::Use),
+        turnsSinceLastAutosave_(0)
     {
         console_ = TCOD_console_new(config.width, config.height);
         if (!console_)
@@ -245,6 +246,7 @@ namespace tutorial
         windowState_ = MainGame;
         eventHandler_ = std::make_unique<MainGameEventHandler>(*this);
         gameOver_ = false;
+        turnsSinceLastAutosave_ = 0;
     }
 
     void Engine::ReturnToMainGame()
@@ -370,6 +372,11 @@ namespace tutorial
     const EntityManager& Engine::GetEntities() const
     {
         return entities_;
+    }
+
+    std::string Engine::GetCurrentLevelId() const
+    {
+        return currentLevel_.id;
     }
 
     bool Engine::IsBlocker(pos_t pos) const
