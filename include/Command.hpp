@@ -82,6 +82,47 @@ namespace tutorial
         }
     };
 
+    // Menu navigation commands
+    class MenuNavigateUpCommand final : public Command
+    {
+    public:
+        void Execute(Engine& engine) override;
+        bool ConsumesTurn() override
+        {
+            return false;
+        }
+    };
+
+    class MenuNavigateDownCommand final : public Command
+    {
+    public:
+        void Execute(Engine& engine) override;
+        bool ConsumesTurn() override
+        {
+            return false;
+        }
+    };
+
+    class MenuConfirmCommand final : public Command
+    {
+    public:
+        void Execute(Engine& engine) override;
+        bool ConsumesTurn() override
+        {
+            return false;
+        }
+    };
+
+    class OpenPauseMenuCommand final : public Command
+    {
+    public:
+        void Execute(Engine& engine) override;
+        bool ConsumesTurn() override
+        {
+            return false;
+        }
+    };
+
     // Gameplay commands that consume turns
     class ActionCommand : public Command
     {

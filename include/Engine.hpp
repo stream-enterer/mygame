@@ -32,10 +32,12 @@ namespace tutorial
 
     enum Window
     {
+        StartMenu,
         MainGame,
         MessageHistory,
         Inventory,
-        ItemSelection
+        ItemSelection,
+        PauseMenu
     };
 
     class Entity;
@@ -47,6 +49,7 @@ namespace tutorial
     class MessageLogWindow;
     class InventoryWindow;
     class ItemSelectionWindow;
+    class MenuWindow;
 
     class Engine
     {
@@ -73,6 +76,11 @@ namespace tutorial
         void ShowMessageHistory();
         void ShowInventory();
         void ShowItemSelection(const std::vector<Entity*>& items);
+        void ShowPauseMenu();
+        void ShowStartMenu();
+        void MenuNavigateUp();
+        void MenuNavigateDown();
+        void MenuConfirm();
         void SetInventoryMode(InventoryMode mode)
         {
             inventoryMode_ = mode;
@@ -126,6 +134,7 @@ namespace tutorial
         void AddEvent(Event_ptr& event);
         void GenerateMap(int width, int height);
         void ProcessDeferredRemovals();
+        void EnsureInitialized();
 
         int turnsSinceLastAutosave_;
         static constexpr int kAutosaveInterval = 100;
@@ -145,6 +154,7 @@ namespace tutorial
         std::unique_ptr<MessageLogWindow> messageLogWindow_;
         std::unique_ptr<InventoryWindow> inventoryWindow_;
         std::unique_ptr<ItemSelectionWindow> itemSelectionWindow_;
+        std::unique_ptr<MenuWindow> menuWindow_;
 
         Entity* player_;
         std::unique_ptr<HealthBar> healthBar_;

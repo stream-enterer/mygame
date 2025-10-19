@@ -24,7 +24,8 @@ namespace tutorial
         MESSAGE_HISTORY,
         RETURN_TO_GAME,
         NEW_GAME,
-        QUIT
+        QUIT,
+        OPEN_PAUSE_MENU
     };
 
     class Engine;
@@ -71,6 +72,22 @@ namespace tutorial
     {
     public:
         GameOverEventHandler(Engine& engine);
+    };
+
+    class PauseMenuEventHandler final : public BaseEventHandler
+    {
+    public:
+        PauseMenuEventHandler(Engine& engine);
+
+        std::unique_ptr<Command> Dispatch() const override;
+    };
+
+    class StartMenuEventHandler final : public BaseEventHandler
+    {
+    public:
+        StartMenuEventHandler(Engine& engine);
+
+        std::unique_ptr<Command> Dispatch() const override;
     };
 
     class InventoryEventHandler final : public BaseEventHandler

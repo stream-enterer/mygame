@@ -7,6 +7,8 @@
 #include "Engine.hpp"
 #include "Entity.hpp"
 #include "EventHandler.hpp"
+#include "HealthBar.hpp"
+#include "InventoryWindow.hpp"
 #include "LevelConfig.hpp"
 #include "Map.hpp"
 #include "StringTable.hpp"
@@ -278,8 +280,7 @@ namespace tutorial
     {
         try
         {
-            std::cout << "[SaveManager] Restoring game state..." << std::endl;
-
+            engine.EnsureInitialized();
             // Step 1: Load the level configuration
             std::string levelId = j["level"]["id"].get<std::string>();
             std::string levelPath = "data/levels/" + levelId + ".json";
@@ -294,6 +295,38 @@ namespace tutorial
 
             LevelConfig levelConfig = LevelConfig::LoadFromFile(levelPath);
             engine.currentLevel_ = levelConfig; // Store in engine
+
+            // Initialize entity templates and spawn tables
+            try
+            {
+                TemplateRegistry::Instance().Clear();
+                TemplateRegistry::Instance().LoadFromDirectory("data/entities");
+                std::cout << "[SaveManager] Loaded "
+                          << TemplateRegistry::Instance().GetAllIds().size()
+                          << " entity templates" << std::endl;
+            }
+            catch (const std::exception& e)
+            {
+                std::cerr
+                    << "[SaveManager] FATAL: Failed to load entity templates: "
+                    << e.what() << std::endl;
+                throw;
+            }
+
+            try
+            {
+                DynamicSpawnSystem::Instance().Clear();
+                DynamicSpawnSystem::Instance().BuildSpawnTablesForLevel(
+                    levelConfig);
+                DynamicSpawnSystem::Instance().ValidateSpawnData();
+            }
+            catch (const std::exception& e)
+            {
+                std::cerr
+                    << "[SaveManager] FATAL: Failed to build spawn tables: "
+                    << e.what() << std::endl;
+                throw;
+            }
 
             // Step 2: Initialize the engine with fresh state
             // Clear existing entities and message log
@@ -341,6 +374,33 @@ namespace tutorial
                           << engine.player_->GetPos().x << ", "
                           << engine.player_->GetPos().y << ") "
                           << "(placed at first room center)" << std::endl;
+
+                // Step 4.5: Create UI components that depend on player
+                auto& cfg = ConfigManager::Instance();
+
+                engine.healthBar_ = std::make_unique<HealthBar>(
+                    cfg.GetHealthBarWidth(), cfg.GetHealthBarHeight(),
+                    pos_t{ cfg.GetHealthBarX(), cfg.GetHealthBarY() },
+                    *engine.player_);
+
+                int invWidth = cfg.GetInventoryWindowWidth();
+                int invHeight = cfg.GetInventoryWindowHeight();
+                pos_t invPos;
+
+                if (cfg.GetInventoryCenterOnScreen())
+                {
+                    invPos = pos_t{ static_cast<int>(engine.config_.width) / 2
+                                        - invWidth / 2,
+                                    static_cast<int>(engine.config_.height) / 2
+                                        - invHeight / 2 };
+                }
+                else
+                {
+                    invPos = pos_t{ 0, 0 };
+                }
+
+                engine.inventoryWindow_ = std::make_unique<InventoryWindow>(
+                    invWidth, invHeight, invPos, *engine.player_);
             }
             else
             {
@@ -387,7 +447,6 @@ namespace tutorial
             auto msg = StringTable::Instance().GetMessage("game.welcome");
             engine.messageLog_.AddMessage("Welcome back, adventurer!",
                                           msg.color, false);
-
             std::cout << "[SaveManager] Game state restored successfully"
                       << std::endl;
             return true;
@@ -463,11 +522,19 @@ namespace tutorial
         // Item component (if entity is an item)
         if (const auto* item = entity.GetItem())
         {
-            // Mark this entity as having an item component
-            // We don't need to serialize item details since items will be
-            // recreated from templates when the game loads
-            // The inventory restoration will handle re-adding them
             j["hasItem"] = true;
+
+            // Store template ID so we can recreate with proper Item component
+            auto allIds = TemplateRegistry::Instance().GetAllIds();
+            for (const auto& id : allIds)
+            {
+                const auto* tpl = TemplateRegistry::Instance().Get(id);
+                if (tpl && tpl->name == entity.GetName())
+                {
+                    j["templateId"] = id;
+                    break;
+                }
+            }
         }
 
         // Special handling for NPCs with AI
@@ -623,7 +690,49 @@ namespace tutorial
             }
             else
             {
-                // Create basic entity (items, corpses, etc.)
+                // Check if this entity has an item component
+                if (j.contains("hasItem") && j["hasItem"].get<bool>())
+                {
+                    // Check if we have a template ID
+                    std::string templateId = j.value("templateId", "");
+
+                    if (!templateId.empty()
+                        && TemplateRegistry::Instance().Get(templateId))
+                    {
+                        // Create from template to get proper Item component
+                        auto entity = TemplateRegistry::Instance().Create(
+                            templateId, pos);
+
+                        // Restore HP if it was modified (for damaged items)
+                        if (entity->GetDestructible()
+                            && j.contains("destructible"))
+                        {
+                            unsigned int hp =
+                                j["destructible"]["hp"].get<unsigned int>();
+                            unsigned int maxHp =
+                                j["destructible"]["maxHp"].get<unsigned int>();
+
+                            if (hp < maxHp)
+                            {
+                                entity->GetDestructible()->TakeDamage(maxHp
+                                                                      - hp);
+                            }
+                        }
+
+                        entity->SetRenderPriority(renderPriority);
+                        return entity;
+                    }
+                    else
+                    {
+                        std::cerr
+                            << "[SaveManager] WARNING: Could not restore item: "
+                            << name << " (template ID: " << templateId << ")"
+                            << std::endl;
+                    }
+                }
+
+                // Create basic entity (corpses, or items that couldn't be
+                // restored)
                 auto entity = std::make_unique<BaseEntity>(
                     pos, name, blocker, attacker, destructible, renderable,
                     faction, nullptr, pickable, isCorpse);

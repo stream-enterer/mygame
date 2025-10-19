@@ -11,8 +11,10 @@
 #include "LevelConfig.hpp"
 #include "Map.hpp"
 #include "MapGenerator.hpp"
+#include "MenuWindow.hpp"
 #include "MessageHistoryWindow.hpp"
 #include "MessageLogWindow.hpp"
+#include "SaveManager.hpp"
 #include "StringTable.hpp"
 
 #include <iostream>
@@ -25,7 +27,7 @@ namespace tutorial
     // Public methods
     Engine::Engine(const Configuration& config) :
         config_(config),
-        eventHandler_(std::make_unique<MainGameEventHandler>(*this)),
+        eventHandler_(nullptr),
         map_(nullptr),
         messageHistoryWindow_(std::make_unique<MessageHistoryWindow>(
             config.width, config.height, pos_t{ 0, 0 }, messageLog_)),
@@ -35,7 +37,8 @@ namespace tutorial
         context_(nullptr),
         console_(nullptr),
         window_(nullptr),
-        windowState_(MainGame),
+        menuWindow_(nullptr),
+        windowState_(StartMenu),
         gameOver_(false),
         running_(true),
         mousePos_{ 0, 0 },
@@ -67,7 +70,7 @@ namespace tutorial
 
         window_ = TCOD_context_get_sdl_window(context_);
 
-        this->NewGame();
+        this->ShowStartMenu();
     }
 
     Engine::~Engine()
@@ -134,6 +137,30 @@ namespace tutorial
         messageLog_.AddMessage(text, color, stack);
     }
 
+    void Engine::EnsureInitialized()
+    {
+        // Initialize components that are needed regardless of whether
+        // we're starting a new game or loading a saved one
+
+        auto& cfg = ConfigManager::Instance();
+
+        // Initialize map if not already created
+        if (!map_)
+        {
+            map_ = std::make_unique<Map>(
+                config_.width, config_.height - cfg.GetMapHeightOffset());
+        }
+
+        // Initialize message log window if not already created
+        if (!messageLogWindow_)
+        {
+            messageLogWindow_ = std::make_unique<MessageLogWindow>(
+                cfg.GetMessageLogWidth(), cfg.GetMessageLogHeight(),
+                pos_t{ cfg.GetMessageLogX(), cfg.GetMessageLogY() },
+                messageLog_);
+        }
+    }
+
     void Engine::NewGame()
     {
         static bool configLoaded = false;
@@ -143,23 +170,29 @@ namespace tutorial
             configLoaded = true;
         }
 
-        if (!map_)
-        {
-            auto& cfg = ConfigManager::Instance();
-            map_ = std::make_unique<Map>(
-                config_.width, config_.height - cfg.GetMapHeightOffset());
-        }
+        // Ensure basic components are initialized
+        EnsureInitialized();
 
-        if (!messageLogWindow_)
-        {
-            auto& cfg = ConfigManager::Instance();
-            messageLogWindow_ = std::make_unique<MessageLogWindow>(
-                cfg.GetMessageLogWidth(), cfg.GetMessageLogHeight(),
-                pos_t{ cfg.GetMessageLogX(), cfg.GetMessageLogY() },
-                messageLog_);
-        }
+        // OLD CODE TO REMOVE - Delete these blocks:
+        // if (!map_)
+        // {
+        //     auto& cfg = ConfigManager::Instance();
+        //     map_ = std::make_unique<Map>(
+        //         config_.width, config_.height - cfg.GetMapHeightOffset());
+        // }
+        //
+        // if (!messageLogWindow_)
+        // {
+        //     auto& cfg = ConfigManager::Instance();
+        //     messageLogWindow_ = std::make_unique<MessageLogWindow>(
+        //         cfg.GetMessageLogWidth(), cfg.GetMessageLogHeight(),
+        //         pos_t{ cfg.GetMessageLogX(), cfg.GetMessageLogY() },
+        //         messageLog_);
+        // }
 
         currentLevel_ = LevelConfig::LoadFromFile("data/levels/dungeon_1.json");
+
+        // ... rest of NewGame() stays the same
 
         try
         {
@@ -226,8 +259,9 @@ namespace tutorial
 
         if (cfg.GetInventoryCenterOnScreen())
         {
-            invPos = pos_t{ config_.width / 2 - invWidth / 2,
-                            config_.height / 2 - invHeight / 2 };
+            invPos =
+                pos_t{ static_cast<int>(config_.width) / 2 - invWidth / 2,
+                       static_cast<int>(config_.height) / 2 - invHeight / 2 };
         }
         else
         {
@@ -307,8 +341,9 @@ namespace tutorial
 
             if (cfg.GetInventoryCenterOnScreen())
             {
-                pos = pos_t{ config_.width / 2 - width / 2,
-                             config_.height / 2 - height / 2 };
+                pos =
+                    pos_t{ static_cast<int>(config_.width / 2) - width / 2,
+                           static_cast<int>(config_.height / 2) - height / 2 };
             }
             else
             {
@@ -320,6 +355,144 @@ namespace tutorial
 
             eventHandler_ = std::make_unique<ItemSelectionEventHandler>(*this);
             windowState_ = ItemSelection;
+        }
+    }
+
+    void Engine::ShowPauseMenu()
+    {
+        if (windowState_ != PauseMenu)
+        {
+            // Save game before showing menu
+            SaveManager::Instance().SaveGame(*this, SaveType::Manual);
+
+            // Create menu window centered on screen
+            int width = 40;
+            int height = 20;
+            pos_t pos{ static_cast<int>(config_.width) / 2 - width / 2,
+                       static_cast<int>(config_.height) / 2 - height / 2 };
+
+            menuWindow_ =
+                std::make_unique<MenuWindow>(width, height, pos, "Game Menu");
+
+            // Build menu based on game state
+            menuWindow_->Clear();
+            menuWindow_->AddItem(MenuAction::Continue, "Resume Game");
+            menuWindow_->AddItem(MenuAction::NewGame, "New Game");
+            menuWindow_->AddItem(MenuAction::SaveAndQuit, "Save and Quit");
+
+            eventHandler_ = std::make_unique<PauseMenuEventHandler>(*this);
+            windowState_ = PauseMenu;
+        }
+    }
+
+    void Engine::ShowStartMenu()
+    {
+        // Create menu window centered on screen
+        int width = 40;
+        int height = 20;
+        pos_t pos{ static_cast<int>(config_.width) / 2 - width / 2,
+                   static_cast<int>(config_.height) / 2 - height / 2 };
+
+        menuWindow_ =
+            std::make_unique<MenuWindow>(width, height, pos, "Main Menu");
+
+        // Build start menu options
+        menuWindow_->Clear();
+        menuWindow_->AddItem(MenuAction::NewGame, "New Game");
+
+        // Only show "Continue" if a save file exists
+        if (SaveManager::Instance().HasSave())
+        {
+            menuWindow_->AddItem(MenuAction::Continue, "Continue");
+        }
+
+        menuWindow_->AddItem(MenuAction::Quit, "Exit");
+
+        eventHandler_ = std::make_unique<StartMenuEventHandler>(*this);
+        windowState_ = StartMenu;
+    }
+
+    void Engine::MenuNavigateUp()
+    {
+        if (menuWindow_)
+        {
+            menuWindow_->SelectPrevious();
+        }
+    }
+
+    void Engine::MenuNavigateDown()
+    {
+        if (menuWindow_)
+        {
+            menuWindow_->SelectNext();
+        }
+    }
+
+    void Engine::MenuConfirm()
+    {
+        if (!menuWindow_)
+        {
+            return;
+        }
+
+        MenuAction action = menuWindow_->GetSelectedAction();
+
+        // Handle differently based on which menu we're in
+        if (windowState_ == StartMenu)
+        {
+            // Start Menu actions
+            switch (action)
+            {
+                case MenuAction::NewGame:
+                    NewGame();
+                    ReturnToMainGame();
+                    break;
+
+                case MenuAction::Continue:
+                    if (SaveManager::Instance().LoadGame(*this))
+                    {
+                        ReturnToMainGame();
+                    }
+                    else
+                    {
+                        // Load failed, start new game
+                        NewGame();
+                        ReturnToMainGame();
+                    }
+                    break;
+
+                case MenuAction::Quit:
+                    Quit();
+                    break;
+
+                case MenuAction::None:
+                default:
+                    break;
+            }
+        }
+        else if (windowState_ == PauseMenu)
+        {
+            // Pause Menu actions
+            switch (action)
+            {
+                case MenuAction::Continue:
+                    ReturnToMainGame();
+                    break;
+
+                case MenuAction::NewGame:
+                    NewGame();
+                    ReturnToMainGame();
+                    break;
+
+                case MenuAction::SaveAndQuit:
+                    SaveManager::Instance().SaveGame(*this, SaveType::Manual);
+                    Quit();
+                    break;
+
+                case MenuAction::None:
+                default:
+                    break;
+            }
         }
     }
 
@@ -799,9 +972,20 @@ namespace tutorial
     void Engine::Render()
     {
         TCOD_console_clear(console_);
-        if (windowState_ == MainGame)
+
+        if (windowState_ == StartMenu)
+        {
+            // Start menu - only render the menu on black background
+            if (menuWindow_)
+            {
+                menuWindow_->Render(console_);
+            }
+        }
+        else if (windowState_ == MainGame)
         {
             map_->Render(console_);
+
+            // Render all entities in FOV
             for (const auto& entity : entities_)
             {
                 const auto pos = entity->GetPos();
@@ -872,6 +1056,34 @@ namespace tutorial
             messageLogWindow_->Render(console_);
 
             itemSelectionWindow_->Render(console_);
+        }
+        else if (windowState_ == PauseMenu)
+        {
+            // Render game in background
+            map_->Render(console_);
+
+            for (const auto& entity : entities_)
+            {
+                const auto pos = entity->GetPos();
+                if (map_->IsInFov(pos))
+                {
+                    const auto& renderable = entity->GetRenderable();
+                    renderable->Render(console_, pos);
+                }
+            }
+
+            if (player_ && healthBar_)
+            {
+                healthBar_->Render(console_);
+            }
+
+            messageLogWindow_->Render(console_);
+
+            // Render menu on top
+            if (menuWindow_)
+            {
+                menuWindow_->Render(console_);
+            }
         }
 
         TCOD_context_present(context_, console_, nullptr);

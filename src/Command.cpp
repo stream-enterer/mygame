@@ -48,6 +48,26 @@ namespace tutorial
         engine.Quit();
     }
 
+    void MenuNavigateUpCommand::Execute(Engine& engine)
+    {
+        engine.MenuNavigateUp();
+    }
+
+    void MenuNavigateDownCommand::Execute(Engine& engine)
+    {
+        engine.MenuNavigateDown();
+    }
+
+    void MenuConfirmCommand::Execute(Engine& engine)
+    {
+        engine.MenuConfirm();
+    }
+
+    void OpenPauseMenuCommand::Execute(Engine& engine)
+    {
+        engine.ShowPauseMenu();
+    }
+
     // Gameplay Commands (consume turns)
 
     void MoveCommand::Execute(Engine& engine)
