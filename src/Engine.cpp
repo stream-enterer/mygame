@@ -97,6 +97,8 @@ namespace tutorial
     {
         int fovRadius = ConfigManager::Instance().GetPlayerFOVRadius();
         map_->ComputeFov(player_->GetPos(), fovRadius);
+        map_->UpdateScent(
+            player_->GetPos()); // Update scent field after FOV computation
         map_->Update();
     }
 

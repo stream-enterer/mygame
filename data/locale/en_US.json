@@ -77,7 +77,7 @@
         },
         "lightning_scroll": {
             "name": "scroll of lightning bolt",
-            "use_success": {
+            "hit": {
                 "text": "A lightning bolt strikes the {target} with a loud thunder! The damage is {damage} hit points.",
                 "color": [63, 159, 255],
                 "stack": false
@@ -131,6 +131,33 @@
             "wears_off": {
                 "text": "The {name} is no longer confused!",
                 "color": [255, 60, 0],
+                "stack": false
+            }
+        },
+        "targeting": {
+            "select_target": {
+                "text": "Left-click to select a target, or right-click to cancel.",
+                "color": [63, 159, 255],
+                "stack": false
+            },
+            "select_tile": {
+                "text": "Left-click to select a tile, or right-click to cancel.",
+                "color": [63, 159, 255],
+                "stack": false
+            },
+            "no_enemy_in_range": {
+                "text": "No enemy is close enough.",
+                "color": [255, 255, 255],
+                "stack": false
+            },
+            "no_target_at_location": {
+                "text": "There is no target at that location.",
+                "color": [255, 255, 255],
+                "stack": false
+            },
+            "no_targets_in_area": {
+                "text": "There are no targets in that area.",
+                "color": [255, 255, 255],
                 "stack": false
             }
         }

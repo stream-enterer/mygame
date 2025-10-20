@@ -8,6 +8,10 @@ namespace tutorial
     class Engine;
     class Entity;
 
+    // After 20 turns, monsters cannot smell the scent anymore
+    // This constant is also used to initialize Map::currentScentValue_
+    static constexpr unsigned int SCENT_THRESHOLD = 20;
+
     class AiComponent
     {
     public:
@@ -28,7 +32,7 @@ namespace tutorial
         void Perform(Engine& engine, Entity& entity) override;
     };
 
-    class ConfusedMonsterAi : public AiComponent // ADD THIS CLASS
+    class ConfusedMonsterAi : public AiComponent
     {
     public:
         ConfusedMonsterAi(int nbTurns, std::unique_ptr<AiComponent> oldAi);

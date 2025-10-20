@@ -10,8 +10,16 @@
         "defense": 0,
         "power": 0,
         "item": {
-            "type": "heal",
-            "amount": 4
+            "targeting": {
+                "type": "self"
+            },
+            "effects": [
+                {
+                    "type": "health",
+                    "amount": 4,
+                    "messageKey": "items.health_potion.use_success"
+                }
+            ]
         }
     },
     "lightning_scroll": {
@@ -25,9 +33,17 @@
         "defense": 0,
         "power": 0,
         "item": {
-            "type": "lightning",
-            "range": 5.0,
-            "damage": 20.0
+            "targeting": {
+                "type": "closest_enemy",
+                "range": 5.0
+            },
+            "effects": [
+                {
+                    "type": "health",
+                    "amount": -20,
+                    "messageKey": "items.lightning_scroll.hit"
+                }
+            ]
         }
     },
     "fireball_scroll": {
@@ -41,9 +57,18 @@
         "defense": 0,
         "power": 0,
         "item": {
-            "type": "fireball",
-            "range": 3.0,
-            "damage": 12.0
+            "targeting": {
+                "type": "area",
+                "range": 5.0,
+                "radius": 3.0
+            },
+            "effects": [
+                {
+                    "type": "health",
+                    "amount": -12,
+                    "messageKey": "items.fireball_scroll.hit"
+                }
+            ]
         }
     },
     "confusion_scroll": {
@@ -57,9 +82,18 @@
         "defense": 0,
         "power": 0,
         "item": {
-            "type": "confuse",
-            "range": 8.0,
-            "turns": 10
+            "targeting": {
+                "type": "single",
+                "range": 8.0
+            },
+            "effects": [
+                {
+                    "type": "ai_change",
+                    "aiType": "confused",
+                    "duration": 10,
+                    "messageKey": "items.confusion_scroll.use_success"
+                }
+            ]
         }
     }
 }

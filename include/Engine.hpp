@@ -109,6 +109,10 @@ namespace tutorial
             return eventHandler_.get();
         }
         std::string GetCurrentLevelId() const;
+        const Map& GetMap() const
+        {
+            return *map_;
+        }
         int GetMaxRenderPriorityAtPosition(pos_t pos) const;
         bool IsBlocker(pos_t pos) const;
         bool IsInBounds(pos_t pos) const;

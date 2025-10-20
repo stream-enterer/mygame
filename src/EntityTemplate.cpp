@@ -3,9 +3,11 @@
 #include "AiComponent.hpp"
 #include "Colors.hpp"
 #include "Components.hpp"
+#include "Effect.hpp"
 #include "Entity.hpp"
 #include "Item.hpp"
 #include "Position.hpp"
+#include "TargetSelector.hpp"
 
 #include <iostream>
 #include <stdexcept>
@@ -36,33 +38,77 @@ namespace tutorial
         return data;
     }
 
-    ItemData ItemData::FromJson(const json& j)
+    EffectData EffectData::FromJson(const json& j)
     {
-        ItemData data;
+        EffectData data;
 
-        // Type is required
         if (!j.contains("type"))
         {
-            throw std::runtime_error("Item data missing required 'type' field");
+            throw std::runtime_error("Effect missing required 'type' field");
         }
         data.type = j["type"];
 
-        // Optional fields based on item type
         if (j.contains("amount"))
         {
             data.amount = j["amount"];
         }
+        if (j.contains("aiType"))
+        {
+            data.aiType = j["aiType"];
+        }
+        if (j.contains("duration"))
+        {
+            data.duration = j["duration"];
+        }
+        if (j.contains("messageKey"))
+        {
+            data.messageKey = j["messageKey"];
+        }
+
+        return data;
+    }
+
+    TargetingData TargetingData::FromJson(const json& j)
+    {
+        TargetingData data;
+
+        if (!j.contains("type"))
+        {
+            throw std::runtime_error("Targeting missing required 'type' field");
+        }
+        data.type = j["type"];
+
         if (j.contains("range"))
         {
             data.range = j["range"];
         }
-        if (j.contains("damage"))
+        if (j.contains("radius"))
         {
-            data.damage = j["damage"];
+            data.radius = j["radius"];
         }
-        if (j.contains("turns"))
+
+        return data;
+    }
+
+    ItemData ItemData::FromJson(const json& j)
+    {
+        ItemData data;
+
+        if (!j.contains("targeting"))
         {
-            data.turns = j["turns"];
+            throw std::runtime_error("Item missing required 'targeting' field");
+        }
+        data.targeting = TargetingData::FromJson(j["targeting"]);
+
+        if (!j.contains("effects") || !j["effects"].is_array())
+        {
+            throw std::runtime_error(
+                "Item missing required 'effects' array field");
+        }
+
+        for (const auto& effectJson : j["effects"])
+        {
+            data.effects.push_back(EffectData::FromJson(effectJson));
         }
 
         return data;
@@ -221,23 +267,46 @@ namespace tutorial
         if (item.has_value())
         {
             json itemJson;
-            itemJson["type"] = item->type;
-            if (item->amount.has_value())
+
+            // Serialize targeting
+            json targetingJson;
+            targetingJson["type"] = item->targeting.type;
+            if (item->targeting.range.has_value())
             {
-                itemJson["amount"] = item->amount.value();
+                targetingJson["range"] = item->targeting.range.value();
             }
-            if (item->range.has_value())
+            if (item->targeting.radius.has_value())
             {
-                itemJson["range"] = item->range.value();
+                targetingJson["radius"] = item->targeting.radius.value();
             }
-            if (item->damage.has_value())
+            itemJson["targeting"] = targetingJson;
+
+            // Serialize effects array
+            json effectsArray = json::array();
+            for (const auto& effect : item->effects)
             {
-                itemJson["damage"] = item->damage.value();
+                json effectJson;
+                effectJson["type"] = effect.type;
+                if (effect.amount.has_value())
+                {
+                    effectJson["amount"] = effect.amount.value();
+                }
+                if (effect.aiType.has_value())
+                {
+                    effectJson["aiType"] = effect.aiType.value();
+                }
+                if (effect.duration.has_value())
+                {
+                    effectJson["duration"] = effect.duration.value();
+                }
+                if (effect.messageKey.has_value())
+                {
+                    effectJson["messageKey"] = effect.messageKey.value();
+                }
+                effectsArray.push_back(effectJson);
             }
-            if (item->turns.has_value())
-            {
-                itemJson["turns"] = item->turns.value();
-            }
+            itemJson["effects"] = effectsArray;
+
             j["item"] = itemJson;
         }
 
@@ -281,28 +350,66 @@ namespace tutorial
         {
             const auto& itemData = item.value();
 
-            if (itemData.type == "heal")
+            // Create target selector
+            std::unique_ptr<TargetSelector> selector;
+            const auto& targeting = itemData.targeting;
+
+            if (targeting.type == "self")
             {
-                itemComponent =
-                    std::make_unique<HealthPotion>(itemData.amount.value_or(4));
+                selector = std::make_unique<SelfTargetSelector>();
             }
-            else if (itemData.type == "lightning")
+            else if (targeting.type == "closest_enemy")
             {
-                itemComponent = std::make_unique<LightningBolt>(
-                    itemData.range.value_or(5.0f),
-                    itemData.damage.value_or(20.0f));
+                float range = targeting.range.value_or(5.0f);
+                selector = std::make_unique<ClosestEnemySelector>(range);
             }
-            else if (itemData.type == "fireball")
+            else if (targeting.type == "single")
             {
-                itemComponent =
-                    std::make_unique<Fireball>(itemData.range.value_or(3.0f),
-                                               itemData.damage.value_or(12.0f));
+                float range = targeting.range.value_or(8.0f);
+                selector = std::make_unique<SingleTargetSelector>(range);
             }
-            else if (itemData.type == "confuse")
+            else if (targeting.type == "area")
             {
-                itemComponent = std::make_unique<Confuser>(
-                    itemData.turns.value_or(10), itemData.range.value_or(8.0f));
+                float range = targeting.range.value_or(3.0f);
+                float radius = targeting.radius.value_or(3.0f);
+                selector = std::make_unique<AreaTargetSelector>(range, radius);
             }
+            else
+            {
+                throw std::runtime_error("Unknown targeting type: "
+                                         + targeting.type);
+            }
+
+            // Create effects
+            std::vector<std::unique_ptr<Effect>> effects;
+            for (const auto& effectData : itemData.effects)
+            {
+                if (effectData.type == "health")
+                {
+                    int amount = effectData.amount.value_or(0);
+                    std::string msgKey =
+                        effectData.messageKey.value_or(std::string());
+                    effects.push_back(
+                        std::make_unique<HealthEffect>(amount, msgKey));
+                }
+                else if (effectData.type == "ai_change")
+                {
+                    std::string aiType = effectData.aiType.value_or("confused");
+                    int duration = effectData.duration.value_or(10);
+                    std::string msgKey =
+                        effectData.messageKey.value_or(std::string());
+                    effects.push_back(std::make_unique<AiChangeEffect>(
+                        aiType, duration, msgKey));
+                }
+                else
+                {
+                    throw std::runtime_error("Unknown effect type: "
+                                             + effectData.type);
+                }
+            }
+
+            itemComponent =
+                std::make_unique<Item>(std::move(selector), std::move(effects));
         }
 
         // Create AI component based on type (if AI type is specified)

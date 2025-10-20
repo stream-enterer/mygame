@@ -3,6 +3,7 @@
 #include "Engine.hpp"
 #include "Entity.hpp"
 #include "Event.hpp"
+#include "Map.hpp"
 #include "Position.hpp"
 #include "StringTable.hpp"
 
@@ -73,15 +74,20 @@ namespace tutorial
     {
         // No op
     }
-} // namespace tutorial
 
-namespace tutorial
-{
     void HostileAi::Perform(Engine& engine, Entity& entity)
     {
-        const auto pos = entity.GetPos();
+        auto pos = entity.GetPos();
 
-        if (!engine.IsInFov(pos))
+        // Only act if entity is alive and in player's FOV
+        if (entity.GetDestructible() && entity.GetDestructible()->IsDead())
+        {
+            return;
+        }
+
+        // If not in player's FOV, don't act (monsters only act when player can
+        // see them)
+        if (!engine.GetMap().IsInFov(pos))
         {
             return;
         }
@@ -93,44 +99,88 @@ namespace tutorial
         auto distance = std::max(std::abs(delta.x), std::abs(delta.y));
         auto is_diagonal = (std::abs(delta.x) + std::abs(delta.y)) > 1;
 
+        // At melee range - attack
         if (distance == 1 && !is_diagonal)
         {
             auto action = MeleeAction(engine, entity, delta);
             std::unique_ptr<Event> event =
                 std::make_unique<MeleeAction>(action);
             engine.AddEventFront(event);
-
             return;
         }
 
-        auto path = checkCardinalPoints(pos, targetPos);
-
-        auto canPathToTarget = [](const tcod::BresenhamLine& path,
-                                  const Engine& engine) -> bool
+        // Player is visible - move directly toward them
+        if (engine.GetMap().IsInFov(targetPos))
         {
-            for (const auto [x, y] : path)
+            auto path = checkCardinalPoints(pos, targetPos);
+
+            auto canPathToTarget = [](const tcod::BresenhamLine& path,
+                                      const Engine& engine) -> bool
             {
-                if (engine.IsBlocker({ x, y }))
+                for (const auto [x, y] : path)
                 {
-                    return false;
+                    if (engine.IsBlocker({ x, y }))
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            };
+
+            if (canPathToTarget(path, engine))
+            {
+                auto dest = path[0];
+                auto destPos = pos_t{ dest[0], dest[1] } - pos;
+
+                auto action = MoveAction(engine, entity, destPos);
+                std::unique_ptr<Event> event =
+                    std::make_unique<MoveAction>(action);
+                engine.AddEventFront(event);
+                return;
+            }
+        }
+
+        // Player not visible - use scent tracking
+        // Scan the 8 adjacent cells for the strongest scent
+        unsigned int bestLevel = 0;
+        int bestCellIndex = -1;
+
+        // Direction offsets for 8 adjacent cells: NW, N, NE, W, E, SW, S, SE
+        static constexpr int dx[8] = { -1, 0, 1, -1, 1, -1, 0, 1 };
+        static constexpr int dy[8] = { -1, -1, -1, 0, 0, 1, 1, 1 };
+
+        for (int i = 0; i < 8; ++i)
+        {
+            pos_t cellPos{ pos.x + dx[i], pos.y + dy[i] };
+
+            // Only consider walkable cells
+            if (!engine.IsWall(cellPos) && !engine.IsBlocker(cellPos))
+            {
+                unsigned int cellScent = engine.GetMap().GetScent(cellPos);
+
+                // Check if scent is fresh enough (not older than
+                // SCENT_THRESHOLD) and better than what we've found so far
+                if (cellScent > engine.GetMap().GetCurrentScentValue()
+                                    - SCENT_THRESHOLD
+                    && cellScent > bestLevel)
+                {
+                    bestLevel = cellScent;
+                    bestCellIndex = i;
                 }
             }
+        }
 
-            return true;
-        };
-
-        if (canPathToTarget(path, engine))
+        // If we found a cell with detectable scent, move toward it
+        if (bestCellIndex != -1)
         {
-            auto dest = path[0];
-            auto destPos = pos_t{ dest[0], dest[1] } - pos;
-
-            auto action = MoveAction(engine, entity, destPos);
+            pos_t moveDir{ dx[bestCellIndex], dy[bestCellIndex] };
+            auto action = MoveAction(engine, entity, moveDir);
             std::unique_ptr<Event> event = std::make_unique<MoveAction>(action);
             engine.AddEventFront(event);
-
             return;
         }
 
+        // No valid scent trail - wait
         auto action = WaitAction(engine, entity);
         std::unique_ptr<Event> event = std::make_unique<WaitAction>(action);
         engine.AddEventFront(event);

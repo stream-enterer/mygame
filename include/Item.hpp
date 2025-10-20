@@ -1,65 +1,32 @@
 #ifndef ITEM_HPP
 #define ITEM_HPP
 
+#include <memory>
+#include <vector>
+
 namespace tutorial
 {
     class Entity;
     class Engine;
+    class Effect;
+    class TargetSelector;
 
+    // Generic item that applies effects to selected targets
     class Item
     {
     public:
-        virtual ~Item() = default;
+        Item(std::unique_ptr<TargetSelector> selector,
+             std::vector<std::unique_ptr<Effect>> effects);
 
-        virtual bool Use(Entity& owner, Engine& engine) = 0;
-    };
+        ~Item(); // Need explicit destructor for pimpl with unique_ptr
 
-    class HealthPotion final : public Item
-    {
-    public:
-        explicit HealthPotion(unsigned int amount);
-
-        bool Use(Entity& owner, Engine& engine) override;
+        bool Use(Entity& owner, Engine& engine);
 
     private:
-        unsigned int amount_;
+        struct Impl;
+        std::unique_ptr<Impl> impl_;
     };
 
-    class LightningBolt final : public Item
-    {
-    public:
-        LightningBolt(float range, float damage);
-
-        bool Use(Entity& owner, Engine& engine) override;
-
-    protected:
-        float range_;
-        float damage_;
-    };
-
-    class Fireball final : public Item
-    {
-    public:
-        Fireball(float range, float damage);
-
-        bool Use(Entity& owner, Engine& engine) override;
-
-    private:
-        float range_;
-        float damage_;
-    };
-
-    class Confuser final : public Item
-    {
-    public:
-        Confuser(int nbTurns, float range);
-
-        bool Use(Entity& owner, Engine& engine) override;
-
-    private:
-        int nbTurns_;
-        float range_;
-    };
 } // namespace tutorial
 
 #endif // ITEM_HPP

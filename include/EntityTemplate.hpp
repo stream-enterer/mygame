@@ -22,16 +22,33 @@ namespace tutorial
         static SpawnData FromJson(const nlohmann::json& j);
     };
 
+    // Effect data parsed from JSON
+    struct EffectData
+    {
+        std::string type;                      // "health", "ai_change"
+        std::optional<int> amount;             // For health effects
+        std::optional<std::string> aiType;     // For AI change effects
+        std::optional<int> duration;           // For AI change effects
+        std::optional<std::string> messageKey; // Localization key
+
+        static EffectData FromJson(const nlohmann::json& j);
+    };
+
+    // Target selector data parsed from JSON
+    struct TargetingData
+    {
+        std::string type;           // "self", "closest_enemy", "single", "area"
+        std::optional<float> range; // For ranged selectors
+        std::optional<float> radius; // For area selectors
+
+        static TargetingData FromJson(const nlohmann::json& j);
+    };
+
     // Item data parsed from JSON
     struct ItemData
     {
-        std::string type; // "heal", "lightning", "fireball", "confuse"
-
-        // Optional fields depending on item type
-        std::optional<int> amount;   // For heal items
-        std::optional<float> range;  // For targeted items
-        std::optional<float> damage; // For damage items
-        std::optional<int> turns;    // For confuse items
+        TargetingData targeting;
+        std::vector<EffectData> effects;
 
         static ItemData FromJson(const nlohmann::json& j);
     };
