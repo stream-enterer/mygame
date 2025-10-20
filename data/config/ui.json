@@ -4,7 +4,7 @@
         "map_height_offset": 5,
         "health_bar": {
             "width": 20,
-            "height": 1,
+            "height": 3,
             "position": { "x": 0, "y": 45 }
         },
         "message_log": {
@@ -21,6 +21,8 @@
     "colors": {
         "health_bar_full": [0, 60, 0],
         "health_bar_empty": [191, 0, 0],
+        "xp_bar_full": [138, 43, 226],
+        "xp_bar_empty": [64, 0, 128],
         "ui_frame": [200, 180, 50],
         "ui_text": [255, 255, 255]
     }

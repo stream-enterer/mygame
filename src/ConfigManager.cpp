@@ -240,6 +240,32 @@ namespace tutorial
                                static_cast<uint8_t>(colorArray[2].get<int>()) };
     }
 
+    tcod::ColorRGB ConfigManager::GetXpBarFullColor() const
+    {
+        if (!uiConfig_.contains("colors")
+            || !uiConfig_["colors"].contains("xp_bar_full"))
+        {
+            throw std::runtime_error("ui.json missing colors.xp_bar_full");
+        }
+        auto colorArray = uiConfig_["colors"]["xp_bar_full"];
+        return tcod::ColorRGB{ static_cast<uint8_t>(colorArray[0].get<int>()),
+                               static_cast<uint8_t>(colorArray[1].get<int>()),
+                               static_cast<uint8_t>(colorArray[2].get<int>()) };
+    }
+
+    tcod::ColorRGB ConfigManager::GetXpBarEmptyColor() const
+    {
+        if (!uiConfig_.contains("colors")
+            || !uiConfig_["colors"].contains("xp_bar_empty"))
+        {
+            throw std::runtime_error("ui.json missing colors.xp_bar_empty");
+        }
+        auto colorArray = uiConfig_["colors"]["xp_bar_empty"];
+        return tcod::ColorRGB{ static_cast<uint8_t>(colorArray[0].get<int>()),
+                               static_cast<uint8_t>(colorArray[1].get<int>()),
+                               static_cast<uint8_t>(colorArray[2].get<int>()) };
+    }
+
     int ConfigManager::GetMessageLogWidth() const
     {
         if (!uiConfig_.contains("layout")

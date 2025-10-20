@@ -19,7 +19,10 @@ namespace tutorial
         NewGame,
         Continue,
         SaveAndQuit,
-        Quit
+        Quit,
+        LevelUpConstitution, // +20 HP
+        LevelUpStrength,     // +1 attack power
+        LevelUpAgility       // +1 defense
     };
 
     // Individual menu item with label and action

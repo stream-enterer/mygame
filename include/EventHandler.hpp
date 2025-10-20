@@ -25,7 +25,8 @@ namespace tutorial
         RETURN_TO_GAME,
         NEW_GAME,
         QUIT,
-        OPEN_PAUSE_MENU
+        OPEN_PAUSE_MENU,
+        DESCEND_STAIRS
     };
 
     class Engine;
@@ -86,6 +87,14 @@ namespace tutorial
     {
     public:
         StartMenuEventHandler(Engine& engine);
+
+        std::unique_ptr<Command> Dispatch() const override;
+    };
+
+    class LevelUpMenuEventHandler final : public BaseEventHandler
+    {
+    public:
+        LevelUpMenuEventHandler(Engine& engine);
 
         std::unique_ptr<Command> Dispatch() const override;
     };

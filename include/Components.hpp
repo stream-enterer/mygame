@@ -14,6 +14,7 @@ namespace tutorial
         AttackerComponent(unsigned int power);
 
         unsigned int Attack() const;
+        void IncreasePower(unsigned int amount);
 
     private:
         unsigned int power_;
@@ -34,10 +35,20 @@ namespace tutorial
         unsigned int GetMaxHealth() const;
         bool IsDead() const;
 
+        // XP management
+        unsigned int GetXp() const;
+        void AddXp(unsigned int amount);
+        unsigned int GetXpReward() const;
+        void SetXpReward(unsigned int reward);
+        void IncreaseMaxHealth(unsigned int amount);
+        void IncreaseDefense(unsigned int amount);
+
     private:
         unsigned int defense_;
         unsigned int maxHp_;
         int hp_;
+        unsigned int xp_;       // Current XP (for player)
+        unsigned int xpReward_; // XP granted when this entity dies
     };
 
     class RenderableComponent

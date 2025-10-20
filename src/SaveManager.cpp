@@ -253,6 +253,7 @@ namespace tutorial
         // Access currentLevel_ through Engine (it's a private member, but we
         // need a getter) For now, we'll add a public getter to Engine
         j["level"]["id"] = engine.GetCurrentLevelId();
+        j["level"]["dungeonLevel"] = engine.GetDungeonLevel();
 
         // Serialize message log
         nlohmann::json messages = nlohmann::json::array();
@@ -284,6 +285,18 @@ namespace tutorial
             // Step 1: Load the level configuration
             std::string levelId = j["level"]["id"].get<std::string>();
             std::string levelPath = "data/levels/" + levelId + ".json";
+
+            // Restore dungeon level
+            if (j["level"].contains("dungeonLevel"))
+            {
+                engine.dungeonLevel_ = j["level"]["dungeonLevel"].get<int>();
+                std::cout << "[SaveManager] Restored dungeon level: "
+                          << engine.dungeonLevel_ << std::endl;
+            }
+            else
+            {
+                engine.dungeonLevel_ = 1; // Default to level 1 for old saves
+            }
 
             // Check if level file exists, fallback to dungeon_1 if not
             if (!std::filesystem::exists(levelPath))
@@ -318,7 +331,6 @@ namespace tutorial
                 DynamicSpawnSystem::Instance().Clear();
                 DynamicSpawnSystem::Instance().BuildSpawnTablesForLevel(
                     levelConfig);
-                DynamicSpawnSystem::Instance().ValidateSpawnData();
             }
             catch (const std::exception& e)
             {
@@ -426,6 +438,18 @@ namespace tutorial
                                             levelConfig.id);
             }
 
+            // Place stairs in the last room
+            if (!rooms.empty())
+            {
+                pos_t stairsPos = rooms.back().GetCenter();
+                auto stairsEntity = TemplateRegistry::Instance().Create(
+                    "stairs_down", stairsPos);
+                engine.stairs_ =
+                    engine.entities_.Spawn(std::move(stairsEntity)).get();
+                std::cout << "[SaveManager] Placed stairs at (" << stairsPos.x
+                          << ", " << stairsPos.y << ")" << std::endl;
+            }
+
             // Step 6: Recompute FOV for the restored player position
             if (engine.player_)
             {
@@ -501,6 +525,8 @@ namespace tutorial
             j["destructible"]["defense"] = destructible->GetDefense();
             j["destructible"]["hp"] = destructible->GetHealth();
             j["destructible"]["maxHp"] = destructible->GetMaxHealth();
+            j["destructible"]["xp"] = destructible->GetXp();
+            j["destructible"]["xpReward"] = destructible->GetXpReward();
         }
 
         // Renderable (store icon and color)
@@ -602,6 +628,20 @@ namespace tutorial
                     j["destructible"]["maxHp"].get<unsigned int>();
                 unsigned int hp = j["destructible"]["hp"].get<unsigned int>();
                 destructible = DestructibleComponent{ defense, maxHp, hp };
+
+                // Restore XP data if present
+                if (j["destructible"].contains("xp"))
+                {
+                    unsigned int xp =
+                        j["destructible"]["xp"].get<unsigned int>();
+                    destructible.AddXp(xp);
+                }
+                if (j["destructible"].contains("xpReward"))
+                {
+                    unsigned int xpReward =
+                        j["destructible"]["xpReward"].get<unsigned int>();
+                    destructible.SetXpReward(xpReward);
+                }
             }
 
             // Parse renderable

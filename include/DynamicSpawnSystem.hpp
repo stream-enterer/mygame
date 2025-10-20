@@ -33,9 +33,6 @@ namespace tutorial
         // Clear all tables
         void Clear();
 
-        // Validation: log warnings for unused entities or invalid locations
-        void ValidateSpawnData() const;
-
     private:
         DynamicSpawnSystem() = default;
         ~DynamicSpawnSystem() = default;

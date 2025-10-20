@@ -37,7 +37,8 @@ namespace tutorial
         MessageHistory,
         Inventory,
         ItemSelection,
-        PauseMenu
+        PauseMenu,
+        LevelUpMenu
     };
 
     class Entity;
@@ -122,12 +123,18 @@ namespace tutorial
         bool IsWall(pos_t pos) const;
         void Render();
 
+        Entity* GetStairs() const;
+        int GetDungeonLevel() const;
+        void NextLevel();
+        void ShowLevelUpMenu();
+
     private:
         friend class TurnManager;
         friend class MoveCommand;
         friend class WaitCommand;
         friend class PickupCommand;
         friend class PickupItemCommand;
+        friend class DescendStairsCommand;
         friend class UseItemCommand;
         friend class DropItemCommand;
         friend class SaveManager;
@@ -158,6 +165,10 @@ namespace tutorial
 
         Entity* player_;
         std::unique_ptr<HealthBar> healthBar_;
+
+        Entity*
+            stairs_; // Pointer to stairs entity (not owned, just referenced)
+        int dungeonLevel_; // Current dungeon depth (starts at 1)
 
         // New SDL3/libtcod context members
         TCOD_Context* context_;

@@ -40,6 +40,8 @@ namespace tutorial
         int GetHealthBarY() const;
         tcod::ColorRGB GetHealthBarFullColor() const;
         tcod::ColorRGB GetHealthBarEmptyColor() const;
+        tcod::ColorRGB GetXpBarFullColor() const;
+        tcod::ColorRGB GetXpBarEmptyColor() const;
 
         // Message log
         int GetMessageLogWidth() const;

@@ -150,6 +150,9 @@ namespace tutorial
         }
         tpl.power = j["power"];
 
+        // Parse xpReward (optional, defaults to 0)
+        tpl.xpReward = j.value("xpReward", 0);
+
         // AI is optional (items don't need it)
         if (j.contains("ai"))
         {
@@ -330,14 +333,17 @@ namespace tutorial
         }
         else if (aiComponent != nullptr)
         {
-            // Monster with AI
+            // Monster with AI - create destructible with XP reward
+            DestructibleComponent destructible{
+                static_cast<unsigned int>(defense),
+                static_cast<unsigned int>(maxHp), static_cast<unsigned int>(hp)
+            };
+            destructible.SetXpReward(static_cast<unsigned int>(xpReward));
+
             return std::make_unique<Npc>(
                 pos, name, blocks,
                 AttackerComponent{ static_cast<unsigned int>(power) },
-                DestructibleComponent{ static_cast<unsigned int>(defense),
-                                       static_cast<unsigned int>(maxHp),
-                                       static_cast<unsigned int>(hp) },
-                IconRenderable{ color, icon }, factionEnum,
+                destructible, IconRenderable{ color, icon }, factionEnum,
                 std::move(aiComponent), pickable);
         }
         else

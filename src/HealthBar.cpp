@@ -28,36 +28,100 @@ namespace tutorial
         }
     }
 
+    unsigned int HealthBar::GetNextLevelXp(unsigned int currentLevel) const
+    {
+        // XP formula: 200 base + 150 per level
+        // Level 1->2: 350 XP, Level 2->3: 500 XP, etc.
+        const unsigned int LEVEL_UP_BASE = 200;
+        const unsigned int LEVEL_UP_FACTOR = 150;
+        return LEVEL_UP_BASE + currentLevel * LEVEL_UP_FACTOR;
+    }
+
     void HealthBar::Render(TCOD_Console* parent) const
     {
         TCOD_console_clear(console_);
 
-        auto health = entity_.GetDestructible();
+        auto destructible = entity_.GetDestructible();
 
-        if (health != nullptr)
+        if (destructible != nullptr)
         {
-            const auto width =
-                (int)((float)(health->GetHealth()) / health->GetMaxHealth()
-                      * TCOD_console_get_width(console_));
+            const int consoleWidth = TCOD_console_get_width(console_);
 
-            if (width > 0)
+            // === HP BAR (Row 0) ===
+            // Fill background with empty HP color
+            tcod::ColorRGB hpEmpty =
+                ConfigManager::Instance().GetHealthBarEmptyColor();
+            for (int i = 0; i < consoleWidth; ++i)
             {
-                tcod::ColorRGB fullColor =
-                    ConfigManager::Instance().GetHealthBarFullColor();
+                TCOD_console_set_char_background(console_, i, 0, hpEmpty,
+                                                 TCOD_BKGND_SET);
+            }
 
-                for (int i = 0; i < width; ++i)
+            // Fill foreground with full HP color
+            const int hpWidth =
+                (int)((float)(destructible->GetHealth())
+                      / destructible->GetMaxHealth() * consoleWidth);
+            if (hpWidth > 0)
+            {
+                tcod::ColorRGB hpFull =
+                    ConfigManager::Instance().GetHealthBarFullColor();
+                for (int i = 0; i < hpWidth; ++i)
                 {
-                    TCOD_console_set_char_background(
-                        console_, i, TCOD_console_get_height(console_) - 1,
-                        fullColor, TCOD_BKGND_SET);
+                    TCOD_console_set_char_background(console_, i, 0, hpFull,
+                                                     TCOD_BKGND_SET);
                 }
             }
 
-            // Print health text
-            char buffer[50];
-            snprintf(buffer, sizeof(buffer), "HP: %i/%i", health->GetHealth(),
-                     health->GetMaxHealth());
-            TCOD_console_print(console_, 1, 0, "%s", buffer);
+            // Print HP text
+            char hpBuffer[50];
+            snprintf(hpBuffer, sizeof(hpBuffer), "HP: %i/%i",
+                     destructible->GetHealth(), destructible->GetMaxHealth());
+            TCOD_console_print(console_, 1, 0, "%s", hpBuffer);
+
+            // === XP BAR (Row 2) ===
+            // Calculate XP level from current XP
+            unsigned int currentXp = destructible->GetXp();
+            unsigned int xpLevel = 1;
+            unsigned int xpForCurrentLevel = 0;
+
+            // Determine which level the player is at
+            while (xpForCurrentLevel + GetNextLevelXp(xpLevel) <= currentXp)
+            {
+                xpForCurrentLevel += GetNextLevelXp(xpLevel);
+                xpLevel++;
+            }
+
+            unsigned int xpIntoCurrentLevel = currentXp - xpForCurrentLevel;
+            unsigned int xpNeededForNextLevel = GetNextLevelXp(xpLevel);
+
+            // Fill background with empty XP color
+            tcod::ColorRGB xpEmpty =
+                ConfigManager::Instance().GetXpBarEmptyColor();
+            for (int i = 0; i < consoleWidth; ++i)
+            {
+                TCOD_console_set_char_background(console_, i, 2, xpEmpty,
+                                                 TCOD_BKGND_SET);
+            }
+
+            // Fill foreground with full XP color
+            const int xpWidth = (int)((float)xpIntoCurrentLevel
+                                      / xpNeededForNextLevel * consoleWidth);
+            if (xpWidth > 0)
+            {
+                tcod::ColorRGB xpFull =
+                    ConfigManager::Instance().GetXpBarFullColor();
+                for (int i = 0; i < xpWidth; ++i)
+                {
+                    TCOD_console_set_char_background(console_, i, 2, xpFull,
+                                                     TCOD_BKGND_SET);
+                }
+            }
+
+            // Print XP text
+            char xpBuffer[50];
+            snprintf(xpBuffer, sizeof(xpBuffer), "XP: %u/%u (Lvl %u)",
+                     xpIntoCurrentLevel, xpNeededForNextLevel, xpLevel);
+            TCOD_console_print(console_, 1, 2, "%s", xpBuffer);
         }
 
         TCOD_console_blit(console_, 0, 0, TCOD_console_get_width(console_),

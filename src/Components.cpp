@@ -17,13 +17,13 @@ namespace tutorial
     }
 
     DestructibleComponent::DestructibleComponent(uint defense, uint hp) :
-        defense_(defense), maxHp_(hp), hp_(hp)
+        defense_(defense), maxHp_(hp), hp_(hp), xp_(0), xpReward_(0)
     {
     }
 
     DestructibleComponent::DestructibleComponent(uint defense, uint maxHp,
                                                  uint hp) :
-        defense_(defense), maxHp_(maxHp), hp_(hp)
+        defense_(defense), maxHp_(maxHp), hp_(hp), xp_(0), xpReward_(0)
     {
     }
 
@@ -57,6 +57,42 @@ namespace tutorial
     bool DestructibleComponent::IsDead() const
     {
         return (hp_ <= 0);
+    }
+
+    uint DestructibleComponent::GetXp() const
+    {
+        return xp_;
+    }
+
+    void DestructibleComponent::AddXp(uint amount)
+    {
+        xp_ += amount;
+    }
+
+    uint DestructibleComponent::GetXpReward() const
+    {
+        return xpReward_;
+    }
+
+    void DestructibleComponent::SetXpReward(uint reward)
+    {
+        xpReward_ = reward;
+    }
+
+    void DestructibleComponent::IncreaseMaxHealth(uint amount)
+    {
+        maxHp_ += amount;
+        hp_ += amount; // Also heal by the same amount
+    }
+
+    void DestructibleComponent::IncreaseDefense(uint amount)
+    {
+        defense_ += amount;
+    }
+
+    void AttackerComponent::IncreasePower(uint amount)
+    {
+        power_ += amount;
     }
 
     IconRenderable::IconRenderable(tcod::ColorRGB color, char icon) :

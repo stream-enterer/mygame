@@ -1,0 +1,15 @@
+{
+    "stairs_down": {
+        "name": "stairs",
+        "char": ">",
+        "color": [255, 255, 255],
+        "blocks": false,
+        "faction": "neutral",
+        "hp": 1,
+        "maxHp": 1,
+        "defense": 0,
+        "power": 0,
+        "pickable": false,
+        "spawns": []
+    }
+}

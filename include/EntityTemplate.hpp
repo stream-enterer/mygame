@@ -51,6 +51,7 @@ namespace tutorial
         int maxHp;
         int defense;
         int power;
+        int xpReward;
 
         // AI type
         std::optional<std::string> aiType; // "hostile", "player", "confused"

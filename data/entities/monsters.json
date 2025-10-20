@@ -9,8 +9,8 @@
         "maxHp": 10,
         "defense": 0,
         "power": 3,
-        "ai": "hostile",
-        "spawns": [{ "location": "dungeon_level_1", "weight": 80 }]
+        "xpReward": 35,
+        "ai": "hostile"
     },
     "troll": {
         "name": "troll",
@@ -22,7 +22,7 @@
         "maxHp": 16,
         "defense": 1,
         "power": 4,
-        "ai": "hostile",
-        "spawns": [{ "location": "dungeon_level_1", "weight": 20 }]
+        "xpReward": 100,
+        "ai": "hostile"
     }
 }

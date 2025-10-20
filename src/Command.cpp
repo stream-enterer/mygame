@@ -106,6 +106,30 @@ namespace tutorial
         engine.AddEventFront(action);
     }
 
+    void DescendStairsCommand::Execute(Engine& engine)
+    {
+        // Check if player is on the stairs
+        Entity* stairs = engine.GetStairs();
+        Entity* player = engine.GetPlayer();
+
+        if (!stairs || !player)
+        {
+            return;
+        }
+
+        if (player->GetPos() == stairs->GetPos())
+        {
+            // Player is on stairs - descend to next level
+            engine.NextLevel();
+        }
+        else
+        {
+            // Not on stairs - display message
+            engine.LogMessage("There are no stairs here.", { 128, 128, 128 },
+                              false);
+        }
+    }
+
     void PickupItemCommand::Execute(Engine& engine)
     {
         std::unique_ptr<Event> action = std::make_unique<PickupItemAction>(

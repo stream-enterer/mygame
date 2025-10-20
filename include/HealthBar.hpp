@@ -18,6 +18,7 @@ namespace tutorial
 
     private:
         const Entity& entity_;
+        unsigned int GetNextLevelXp(unsigned int currentLevel) const;
     };
 } // namespace tutorial
 

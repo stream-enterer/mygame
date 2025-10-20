@@ -160,6 +160,12 @@ namespace tutorial
         void Execute(Engine& engine) override;
     };
 
+    class DescendStairsCommand final : public ActionCommand
+    {
+    public:
+        void Execute(Engine& engine) override;
+    };
+
     class PickupItemCommand final : public ActionCommand
     {
     public:

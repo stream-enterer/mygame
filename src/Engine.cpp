@@ -34,6 +34,8 @@ namespace tutorial
         messageLogWindow_(nullptr),
         player_(nullptr),
         healthBar_(nullptr),
+        stairs_(nullptr),
+        dungeonLevel_(1),
         context_(nullptr),
         console_(nullptr),
         window_(nullptr),
@@ -214,7 +216,6 @@ namespace tutorial
             DynamicSpawnSystem::Instance().Clear();
             DynamicSpawnSystem::Instance().BuildSpawnTablesForLevel(
                 currentLevel_);
-            DynamicSpawnSystem::Instance().ValidateSpawnData();
         }
         catch (const std::exception& e)
         {
@@ -252,6 +253,17 @@ namespace tutorial
         healthBar_ = std::make_unique<HealthBar>(
             cfg.GetHealthBarWidth(), cfg.GetHealthBarHeight(),
             pos_t{ cfg.GetHealthBarX(), cfg.GetHealthBarY() }, *player_);
+
+        // Place stairs in the center of the last room (furthest from player)
+        if (!rooms.empty())
+        {
+            pos_t stairsPos = rooms.back().GetCenter();
+            auto stairsEntity =
+                TemplateRegistry::Instance().Create("stairs_down", stairsPos);
+            stairs_ = entities_.Spawn(std::move(stairsEntity)).get();
+            std::cout << "[Engine] Placed stairs at (" << stairsPos.x << ", "
+                      << stairsPos.y << ")" << std::endl;
+        }
 
         int invWidth = cfg.GetInventoryWindowWidth();
         int invHeight = cfg.GetInventoryWindowHeight();
@@ -385,6 +397,33 @@ namespace tutorial
         }
     }
 
+    void Engine::ShowLevelUpMenu()
+    {
+        if (windowState_ != LevelUpMenu)
+        {
+            // Create menu window centered on screen
+            int width = 50;
+            int height = 18;
+            pos_t pos{ static_cast<int>(config_.width) / 2 - width / 2,
+                       static_cast<int>(config_.height) / 2 - height / 2 };
+
+            menuWindow_ =
+                std::make_unique<MenuWindow>(width, height, pos, "Level Up!");
+
+            // Build level-up options
+            menuWindow_->Clear();
+            menuWindow_->AddItem(MenuAction::LevelUpConstitution,
+                                 "Constitution (+20 HP)");
+            menuWindow_->AddItem(MenuAction::LevelUpStrength,
+                                 "Strength (+1 attack)");
+            menuWindow_->AddItem(MenuAction::LevelUpAgility,
+                                 "Agility (+1 defense)");
+
+            eventHandler_ = std::make_unique<LevelUpMenuEventHandler>(*this);
+            windowState_ = LevelUpMenu;
+        }
+    }
+
     void Engine::ShowStartMenu()
     {
         // Create menu window centered on screen
@@ -493,6 +532,52 @@ namespace tutorial
                 default:
                     break;
             }
+        }
+        else if (windowState_ == LevelUpMenu)
+        {
+            // Level-up stat selection
+            if (!player_ || !player_->GetDestructible())
+            {
+                ReturnToMainGame();
+                return;
+            }
+
+            auto* destructible = player_->GetDestructible();
+            auto* attacker = player_->GetAttacker();
+
+            switch (action)
+            {
+                case MenuAction::LevelUpConstitution:
+                    // +20 max HP and current HP
+                    destructible->IncreaseMaxHealth(20);
+                    LogMessage("Your health increases by 20 HP!", { 0, 255, 0 },
+                               false);
+                    break;
+
+                case MenuAction::LevelUpStrength:
+                    // +1 attack power
+                    if (attacker)
+                    {
+                        attacker->IncreasePower(1);
+                        LogMessage("Your strength increases by 1!",
+                                   { 255, 100, 0 }, false);
+                    }
+                    break;
+
+                case MenuAction::LevelUpAgility:
+                    // +1 defense
+                    destructible->IncreaseDefense(1);
+                    LogMessage("Your agility increases by 1!",
+                               { 100, 100, 255 }, false);
+                    break;
+
+                case MenuAction::None:
+                default:
+                    break;
+            }
+
+            // Return to game after selecting upgrade
+            ReturnToMainGame();
         }
     }
 
@@ -624,6 +709,198 @@ namespace tutorial
         }
 
         return closest;
+    }
+
+    Entity* Engine::GetStairs() const
+    {
+        return stairs_;
+    }
+
+    int Engine::GetDungeonLevel() const
+    {
+        return dungeonLevel_;
+    }
+
+    void tutorial::Engine::NextLevel()
+    {
+        // Increment dungeon level
+        dungeonLevel_++;
+
+        std::cout << "[Engine] Descending to dungeon level " << dungeonLevel_
+                  << std::endl;
+
+        LogMessage(
+            "After a rare moment of peace, you descend deeper into "
+            "the heart of the dungeon...",
+            { 255, 60, 60 }, false);
+
+        // Determine which level config to load based on depth
+        std::string levelConfigPath;
+        if (dungeonLevel_ == 1)
+        {
+            levelConfigPath = "data/levels/dungeon_1.json";
+        }
+        else if (dungeonLevel_ == 2)
+        {
+            levelConfigPath = "data/levels/dungeon_2.json";
+        }
+        else
+        {
+            // For deeper levels, cycle between dungeon_1 and dungeon_2
+            // Or use dungeon_2 for all deeper levels (harder difficulty)
+            levelConfigPath = "data/levels/dungeon_2.json";
+        }
+
+        // Load the new level configuration
+        try
+        {
+            currentLevel_ = LevelConfig::LoadFromFile(levelConfigPath);
+            std::cout << "[Engine] Loaded level config: " << currentLevel_.id
+                      << std::endl;
+        }
+        catch (const std::exception& e)
+        {
+            std::cerr << "[Engine] Failed to load level config: " << e.what()
+                      << ", using dungeon_1" << std::endl;
+            currentLevel_ =
+                LevelConfig::LoadFromFile("data/levels/dungeon_1.json");
+        }
+
+        // Rebuild spawn tables for the new level
+        try
+        {
+            DynamicSpawnSystem::Instance().Clear();
+            DynamicSpawnSystem::Instance().BuildSpawnTablesForLevel(
+                currentLevel_);
+        }
+        catch (const std::exception& e)
+        {
+            std::cerr << "[Engine] FATAL: Failed to build spawn tables: "
+                      << e.what() << std::endl;
+            throw;
+        }
+
+        // Save player's inventory before clearing entities
+        std::vector<std::unique_ptr<Entity>> savedInventory;
+        if (player_)
+        {
+            // Cast to Player to access inventory methods
+            if (auto* playerPtr = dynamic_cast<Player*>(player_))
+            {
+                // Extract items from player's inventory
+                size_t invSize = playerPtr->GetInventorySize();
+                for (size_t i = 0; i < invSize; ++i)
+                {
+                    auto item = playerPtr->ExtractFromInventory(
+                        0); // Always extract first
+                    if (item)
+                    {
+                        savedInventory.push_back(std::move(item));
+                    }
+                }
+            }
+        }
+
+        // Save player stats before clearing
+        pos_t savedPos = player_ ? player_->GetPos() : pos_t{ 0, 0 };
+        std::string playerName = player_ ? player_->GetName() : "player";
+        DestructibleComponent savedDestructible =
+            player_ && player_->GetDestructible()
+                ? *player_->GetDestructible()
+                : DestructibleComponent{ 1, 30, 30 };
+        AttackerComponent savedAttacker = player_ && player_->GetAttacker()
+                                              ? *player_->GetAttacker()
+                                              : AttackerComponent{ 5 };
+
+        // Clear all entities (including player and stairs)
+        entities_.Clear();
+        eventQueue_.clear();
+        entitiesToRemove_.clear();
+        player_ = nullptr;
+        stairs_ = nullptr;
+
+        // Regenerate the map
+        GenerateMap(currentLevel_.generation.width,
+                    currentLevel_.generation.height);
+        map_->Update();
+
+        auto rooms = map_->GetRooms();
+        if (rooms.empty())
+        {
+            std::cerr << "[Engine] FATAL: No rooms generated!" << std::endl;
+            return;
+        }
+
+        // Spawn monsters and items in all rooms except the first
+        for (auto it = rooms.begin() + 1; it != rooms.end(); ++it)
+        {
+            entities_.PlaceItems(*it, currentLevel_.itemSpawning,
+                                 currentLevel_.id);
+            entities_.PlaceEntities(*it, currentLevel_.monsterSpawning,
+                                    currentLevel_.id);
+        }
+
+        // Recreate player in first room with saved stats
+        pos_t playerPos = rooms[0].GetCenter();
+        auto playerEntity = std::make_unique<Player>(
+            playerPos, playerName, true, savedAttacker, savedDestructible,
+            IconRenderable{ { 255, 255, 255 }, '@' }, Faction::PLAYER);
+
+        // Restore inventory to new player entity
+        for (auto& item : savedInventory)
+        {
+            playerEntity->AddToInventory(std::move(item));
+        }
+
+        player_ = entities_.Spawn(std::move(playerEntity)).get();
+
+        // Recreate UI components that reference the player
+        auto& cfg = ConfigManager::Instance();
+        healthBar_ = std::make_unique<HealthBar>(
+            cfg.GetHealthBarWidth(), cfg.GetHealthBarHeight(),
+            pos_t{ cfg.GetHealthBarX(), cfg.GetHealthBarY() }, *player_);
+
+        int invWidth = cfg.GetInventoryWindowWidth();
+        int invHeight = cfg.GetInventoryWindowHeight();
+        pos_t invPos;
+
+        if (cfg.GetInventoryCenterOnScreen())
+        {
+            invPos =
+                pos_t{ static_cast<int>(config_.width) / 2 - invWidth / 2,
+                       static_cast<int>(config_.height) / 2 - invHeight / 2 };
+        }
+        else
+        {
+            invPos = pos_t{ 0, 0 };
+        }
+
+        inventoryWindow_ = std::make_unique<InventoryWindow>(
+            invWidth, invHeight, invPos, *player_);
+
+        // Place stairs in the last room
+        if (!rooms.empty())
+        {
+            pos_t stairsPos = rooms.back().GetCenter();
+            auto stairsEntity =
+                TemplateRegistry::Instance().Create("stairs_down", stairsPos);
+            stairs_ = entities_.Spawn(std::move(stairsEntity)).get();
+            std::cout << "[Engine] Placed stairs at (" << stairsPos.x << ", "
+                      << stairsPos.y << ")" << std::endl;
+        }
+
+        // Recompute FOV for new position
+        ComputeFOV();
+        map_->Update();
+
+        // Log the new level
+        LogMessage(
+            "Welcome to dungeon level " + std::to_string(dungeonLevel_) + "!",
+            { 255, 255, 0 }, false);
+
+        // Return to game state (in case we were in a menu)
+        windowState_ = MainGame;
+        eventHandler_ = std::make_unique<MainGameEventHandler>(*this);
     }
 
     bool Engine::PickATile(int* x, int* y, float maxRange)
@@ -1080,6 +1357,34 @@ namespace tutorial
             messageLogWindow_->Render(console_);
 
             // Render menu on top
+            if (menuWindow_)
+            {
+                menuWindow_->Render(console_);
+            }
+        }
+        else if (windowState_ == LevelUpMenu)
+        {
+            // Render game in background
+            map_->Render(console_);
+
+            for (const auto& entity : entities_)
+            {
+                const auto pos = entity->GetPos();
+                if (map_->IsInFov(pos))
+                {
+                    const auto& renderable = entity->GetRenderable();
+                    renderable->Render(console_, pos);
+                }
+            }
+
+            if (player_ && healthBar_)
+            {
+                healthBar_->Render(console_);
+            }
+
+            messageLogWindow_->Render(console_);
+
+            // Render level-up menu on top
             if (menuWindow_)
             {
                 menuWindow_->Render(console_);

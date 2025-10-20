@@ -15,7 +15,7 @@ namespace tutorial
 {
     inline namespace
     {
-        constexpr std::size_t kNumActions = 13;
+        constexpr std::size_t kNumActions = 14;
 
         static const std::array<
             std::function<std::unique_ptr<tutorial::Command>(Engine&)>,
@@ -100,6 +100,12 @@ namespace tutorial
                 {
                     (void)engine;
                     return std::make_unique<tutorial::OpenPauseMenuCommand>();
+                },
+                // Descend stairs
+                [](auto& engine)
+                {
+                    (void)engine;
+                    return std::make_unique<tutorial::DescendStairsCommand>();
                 }
             };
     }; // namespace
@@ -174,6 +180,19 @@ namespace tutorial
                     case SDLK_ESCAPE:
                         tcodKey = TCODK_ESCAPE;
                         break;
+                    case SDLK_PERIOD:
+                        // Handle '>' (Shift+Period) for stairs
+                        if (sdlEvent.key.mod & SDL_KMOD_SHIFT)
+                        {
+                            tcodKey = TCODK_CHAR;
+                            character = '>';
+                        }
+                        else
+                        {
+                            tcodKey = TCODK_CHAR;
+                            character = '.';
+                        }
+                        break;
                     default:
                         if (sdlKey >= SDLK_A && sdlKey <= SDLK_Z)
                         {
@@ -206,18 +225,20 @@ namespace tutorial
 
     static const std::unordered_map<tutorial::KeyPress, tutorial::Actions,
                                     tutorial::KeyPressHash>
-        MainGameKeyMap{ { TCODK_UP, tutorial::Actions::MOVE_UP },
-                        { TCODK_DOWN, tutorial::Actions::MOVE_DOWN },
-                        { TCODK_LEFT, tutorial::Actions::MOVE_LEFT },
-                        { TCODK_RIGHT, tutorial::Actions::MOVE_RIGHT },
-                        { TCODK_SPACE, tutorial::Actions::WAIT },
-                        { { TCODK_CHAR, 'g' }, tutorial::Actions::PICKUP },
-                        { { TCODK_CHAR, 'i' }, tutorial::Actions::INVENTORY },
-                        { { TCODK_CHAR, 'v' },
-                          tutorial::Actions::MESSAGE_HISTORY },
-                        { { TCODK_CHAR, 'd' }, tutorial::Actions::DROP_ITEM },
-                        { TCODK_ESCAPE, tutorial::Actions::OPEN_PAUSE_MENU },
-                        { TCODK_ENTER, tutorial::Actions::NEW_GAME } };
+        MainGameKeyMap{
+            { TCODK_UP, tutorial::Actions::MOVE_UP },
+            { TCODK_DOWN, tutorial::Actions::MOVE_DOWN },
+            { TCODK_LEFT, tutorial::Actions::MOVE_LEFT },
+            { TCODK_RIGHT, tutorial::Actions::MOVE_RIGHT },
+            { TCODK_SPACE, tutorial::Actions::WAIT },
+            { { TCODK_CHAR, 'g' }, tutorial::Actions::PICKUP },
+            { { TCODK_CHAR, 'i' }, tutorial::Actions::INVENTORY },
+            { { TCODK_CHAR, 'v' }, tutorial::Actions::MESSAGE_HISTORY },
+            { { TCODK_CHAR, 'd' }, tutorial::Actions::DROP_ITEM },
+            { { TCODK_CHAR, '>' }, tutorial::Actions::DESCEND_STAIRS },
+            { TCODK_ESCAPE, tutorial::Actions::OPEN_PAUSE_MENU },
+            { TCODK_ENTER, tutorial::Actions::NEW_GAME }
+        };
 
     tutorial::MainGameEventHandler::MainGameEventHandler(Engine& engine) :
         BaseEventHandler(engine)
@@ -346,6 +367,53 @@ namespace tutorial
                 {
                     return std::make_unique<QuitCommand>();
                 }
+            }
+        }
+
+        return command;
+    }
+
+    LevelUpMenuEventHandler::LevelUpMenuEventHandler(Engine& engine) :
+        BaseEventHandler(engine)
+    {
+        // No keymap needed - custom Dispatch handles all input
+    }
+
+    std::unique_ptr<Command> LevelUpMenuEventHandler::Dispatch() const
+    {
+        SDL_Event sdlEvent;
+        std::unique_ptr<Command> command{ nullptr };
+
+        while (SDL_PollEvent(&sdlEvent))
+        {
+            if (sdlEvent.type == SDL_EVENT_QUIT)
+            {
+                return std::make_unique<QuitCommand>();
+            }
+
+            if (sdlEvent.type == SDL_EVENT_KEY_DOWN)
+            {
+                SDL_Keycode sdlKey = sdlEvent.key.key;
+
+                // UP key - select previous item
+                if (sdlKey == SDLK_UP)
+                {
+                    return std::make_unique<MenuNavigateUpCommand>();
+                }
+
+                // DOWN key - select next item
+                if (sdlKey == SDLK_DOWN)
+                {
+                    return std::make_unique<MenuNavigateDownCommand>();
+                }
+
+                // ENTER or SPACE - confirm selection
+                if (sdlKey == SDLK_RETURN || sdlKey == SDLK_SPACE)
+                {
+                    return std::make_unique<MenuConfirmCommand>();
+                }
+
+                // NOTE: No ESCAPE key - player MUST choose a stat upgrade
             }
         }
 
