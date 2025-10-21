@@ -36,16 +36,16 @@ namespace tutorial
         healthBar_(nullptr),
         stairs_(nullptr),
         dungeonLevel_(1),
+        turnsSinceLastAutosave_(0),
         context_(nullptr),
+        menuWindow_(nullptr),
         console_(nullptr),
         window_(nullptr),
-        menuWindow_(nullptr),
         windowState_(StartMenu),
         gameOver_(false),
         running_(true),
         mousePos_{ 0, 0 },
-        inventoryMode_(InventoryMode::Use),
-        turnsSinceLastAutosave_(0)
+        inventoryMode_(InventoryMode::Use)
     {
         console_ = TCOD_console_new(config.width, config.height);
         if (!console_)
@@ -177,26 +177,7 @@ namespace tutorial
         // Ensure basic components are initialized
         EnsureInitialized();
 
-        // OLD CODE TO REMOVE - Delete these blocks:
-        // if (!map_)
-        // {
-        //     auto& cfg = ConfigManager::Instance();
-        //     map_ = std::make_unique<Map>(
-        //         config_.width, config_.height - cfg.GetMapHeightOffset());
-        // }
-        //
-        // if (!messageLogWindow_)
-        // {
-        //     auto& cfg = ConfigManager::Instance();
-        //     messageLogWindow_ = std::make_unique<MessageLogWindow>(
-        //         cfg.GetMessageLogWidth(), cfg.GetMessageLogHeight(),
-        //         pos_t{ cfg.GetMessageLogX(), cfg.GetMessageLogY() },
-        //         messageLog_);
-        // }
-
         currentLevel_ = LevelConfig::LoadFromFile("data/levels/dungeon_1.json");
-
-        // ... rest of NewGame() stays the same
 
         try
         {
@@ -803,8 +784,7 @@ namespace tutorial
             }
         }
 
-        // Save player stats before clearing
-        pos_t savedPos = player_ ? player_->GetPos() : pos_t{ 0, 0 };
+        // Save player stats before clearing (position is reset to first room)
         std::string playerName = player_ ? player_->GetName() : "player";
         DestructibleComponent savedDestructible =
             player_ && player_->GetDestructible()

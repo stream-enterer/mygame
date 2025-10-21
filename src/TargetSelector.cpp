@@ -43,7 +43,7 @@ namespace tutorial
     }
 
     bool SingleTargetSelector::SelectTargets(
-        Entity& user, Engine& engine, std::vector<Entity*>& targets) const
+        Entity& /*user*/, Engine& engine, std::vector<Entity*>& targets) const
     {
         auto msg =
             StringTable::Instance().GetMessage("items.targeting.select_target");
@@ -80,7 +80,7 @@ namespace tutorial
     {
     }
 
-    bool AreaTargetSelector::SelectTargets(Entity& user, Engine& engine,
+    bool AreaTargetSelector::SelectTargets(Entity& /*user*/, Engine& engine,
                                            std::vector<Entity*>& targets) const
     {
         auto msg =

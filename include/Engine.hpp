@@ -147,15 +147,15 @@ namespace tutorial
         void ProcessDeferredRemovals();
         void EnsureInitialized();
 
-        int turnsSinceLastAutosave_;
         static constexpr int kAutosaveInterval = 100;
+
+        // Member variables in initialization order
+        Configuration config_;
+        LevelConfig currentLevel_;
 
         EntityManager entities_;
         std::deque<Event_ptr> eventQueue_;
         std::vector<Entity*> entitiesToRemove_;
-
-        Configuration config_;
-        LevelConfig currentLevel_;
 
         MessageLog messageLog_;
 
@@ -165,7 +165,6 @@ namespace tutorial
         std::unique_ptr<MessageLogWindow> messageLogWindow_;
         std::unique_ptr<InventoryWindow> inventoryWindow_;
         std::unique_ptr<ItemSelectionWindow> itemSelectionWindow_;
-        std::unique_ptr<MenuWindow> menuWindow_;
 
         Entity* player_;
         std::unique_ptr<HealthBar> healthBar_;
@@ -173,9 +172,11 @@ namespace tutorial
         Entity*
             stairs_; // Pointer to stairs entity (not owned, just referenced)
         int dungeonLevel_; // Current dungeon depth (starts at 1)
+        int turnsSinceLastAutosave_;
 
         // New SDL3/libtcod context members
         TCOD_Context* context_;
+        std::unique_ptr<MenuWindow> menuWindow_;
         TCOD_Console* console_;
         SDL_Window* window_;
 

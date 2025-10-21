@@ -33,7 +33,7 @@ namespace tutorial
         blocker_(blocker),
         pickable_(pickable),
         isCorpse_(isCorpse),
-        renderPriority_(0)  // Default priority
+        renderPriority_(0) // Default priority
     {
     }
 
@@ -205,7 +205,7 @@ namespace tutorial
     {
     }
 
-    void Player::Use(Engine& engine)
+    void Player::Use(Engine& /*engine*/)
     {
         // Using an item from inventory is now handled by UseItemAction
         // This method is for when the player entity itself is "used" (not

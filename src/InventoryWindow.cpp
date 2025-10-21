@@ -8,7 +8,7 @@ namespace tutorial
 {
     InventoryWindow::InventoryWindow(std::size_t width, std::size_t height,
                                      pos_t pos, const Entity& player) :
-        UiWindowBase(width, height, pos), player_(player), title_("Inventory")
+        UiWindowBase(width, height, pos), title_("Inventory"), player_(player)
     {
     }
 

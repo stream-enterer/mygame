@@ -546,7 +546,7 @@ namespace tutorial
         }
 
         // Item component (if entity is an item)
-        if (const auto* item = entity.GetItem())
+        if (entity.GetItem())
         {
             j["hasItem"] = true;
 
@@ -564,7 +564,7 @@ namespace tutorial
         }
 
         // Special handling for NPCs with AI
-        if (const auto* npc = dynamic_cast<const Npc*>(&entity))
+        if (dynamic_cast<const Npc*>(&entity))
         {
             // For now, we'll save all NPCs as "hostile"
             // TODO: Detect confused AI and save original AI type + turns
@@ -789,7 +789,7 @@ namespace tutorial
         }
     }
 
-    nlohmann::json SaveManager::SerializeMap(const Engine& engine) const
+    nlohmann::json SaveManager::SerializeMap(const Engine& /*engine*/) const
     {
         nlohmann::json j;
 
@@ -803,7 +803,8 @@ namespace tutorial
         return j;
     }
 
-    bool SaveManager::DeserializeMap(const nlohmann::json& j, Engine& engine)
+    bool SaveManager::DeserializeMap(const nlohmann::json& /*j*/,
+                                     Engine& /*engine*/)
     {
         // Map is regenerated, not restored
         // This is traditional roguelike behavior
