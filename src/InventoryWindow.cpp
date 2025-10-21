@@ -17,18 +17,30 @@ namespace tutorial
         TCOD_console_clear(console_);
 
         // Draw frame
-        TCOD_console_set_default_foreground(console_,
-                                            tcod::ColorRGB{ 200, 180, 50 });
-        TCOD_console_print_frame(console_, 0, 0,
-                                 TCOD_console_get_width(console_),
-                                 TCOD_console_get_height(console_), true,
-                                 TCOD_BKGND_DEFAULT, title_.c_str());
+        tcod::ColorRGB frameColor = tcod::ColorRGB{ 200, 180, 50 };
+        // Draw frame and title separately
+        TCOD_console_draw_frame_rgb(console_, 0, 0,
+                                    TCOD_console_get_width(console_),
+                                    TCOD_console_get_height(console_), NULL,
+                                    NULL, NULL, TCOD_BKGND_DEFAULT, true);
+        int titleX = (TCOD_console_get_width(console_)
+                      - static_cast<int>(title_.length()))
+                     / 2;
+        TCOD_printf_rgb(console_,
+                        (TCOD_PrintParamsRGB){ .x = titleX,
+                                               .y = 0,
+                                               .width = 0,
+                                               .height = 0,
+                                               .fg = &frameColor,
+                                               .bg = NULL,
+                                               .flag = TCOD_BKGND_NONE,
+                                               .alignment = TCOD_LEFT },
+                        "%s", title_.c_str());
 
         // Display items with shortcuts
         if (auto* player = dynamic_cast<const Player*>(&player_))
         {
-            TCOD_console_set_default_foreground(
-                console_, tcod::ColorRGB{ 255, 255, 255 });
+            tcod::ColorRGB textColor = tcod::ColorRGB{ 255, 255, 255 };
 
             const auto& inventory = player->GetInventory();
             char shortcut = 'a';
@@ -36,15 +48,33 @@ namespace tutorial
 
             for (const auto& item : inventory)
             {
-                TCOD_console_print(console_, 2, y, "(%c) %s", shortcut,
-                                   item->GetName().c_str());
+                TCOD_printf_rgb(console_,
+                                (TCOD_PrintParamsRGB){ .x = 2,
+                                                       .y = y,
+                                                       .width = 0,
+                                                       .height = 0,
+                                                       .fg = &textColor,
+                                                       .bg = NULL,
+                                                       .flag = TCOD_BKGND_NONE,
+                                                       .alignment = TCOD_LEFT },
+                                "(%c) %s", shortcut, item->GetName().c_str());
+
                 y++;
                 shortcut++;
             }
 
             if (inventory.empty())
             {
-                TCOD_console_print(console_, 2, 1, "(empty)");
+                TCOD_printf_rgb(console_,
+                                (TCOD_PrintParamsRGB){ .x = 2,
+                                                       .y = 1,
+                                                       .width = 0,
+                                                       .height = 0,
+                                                       .fg = &textColor,
+                                                       .bg = NULL,
+                                                       .flag = TCOD_BKGND_NONE,
+                                                       .alignment = TCOD_LEFT },
+                                "%s", "(empty)");
             }
         }
 

@@ -14,18 +14,11 @@ namespace tutorial
         tcod::ColorRGB emptyColor =
             ConfigManager::Instance().GetHealthBarEmptyColor();
 
-        TCOD_console_rect(console_, 0, 0, TCOD_console_get_width(console_),
-                          TCOD_console_get_height(console_), true,
-                          TCOD_BKGND_SET);
-
-        for (int x = 0; x < TCOD_console_get_width(console_); ++x)
-        {
-            for (int y = 0; y < TCOD_console_get_height(console_); ++y)
-            {
-                TCOD_console_set_char_background(console_, x, y, emptyColor,
-                                                 TCOD_BKGND_SET);
-            }
-        }
+        // Fill the background with empty color
+        TCOD_console_draw_rect_rgb(console_, 0, 0,
+                                   TCOD_console_get_width(console_),
+                                   TCOD_console_get_height(console_), 0, NULL,
+                                   &emptyColor, TCOD_BKGND_SET);
     }
 
     unsigned int HealthBar::GetNextLevelXp(unsigned int currentLevel) const
@@ -53,8 +46,8 @@ namespace tutorial
                 ConfigManager::Instance().GetHealthBarEmptyColor();
             for (int i = 0; i < consoleWidth; ++i)
             {
-                TCOD_console_set_char_background(console_, i, 0, hpEmpty,
-                                                 TCOD_BKGND_SET);
+                TCOD_console_put_rgb(console_, i, 0, 0, NULL, &hpEmpty,
+                                     TCOD_BKGND_SET);
             }
 
             // Fill foreground with full HP color
@@ -67,8 +60,8 @@ namespace tutorial
                     ConfigManager::Instance().GetHealthBarFullColor();
                 for (int i = 0; i < hpWidth; ++i)
                 {
-                    TCOD_console_set_char_background(console_, i, 0, hpFull,
-                                                     TCOD_BKGND_SET);
+                    TCOD_console_put_rgb(console_, i, 0, 0, NULL, &hpFull,
+                                         TCOD_BKGND_SET);
                 }
             }
 
@@ -76,7 +69,16 @@ namespace tutorial
             char hpBuffer[50];
             snprintf(hpBuffer, sizeof(hpBuffer), "HP: %i/%i",
                      destructible->GetHealth(), destructible->GetMaxHealth());
-            TCOD_console_print(console_, 1, 0, "%s", hpBuffer);
+            TCOD_printf_rgb(console_,
+                            (TCOD_PrintParamsRGB){ .x = 1,
+                                                   .y = 0,
+                                                   .width = 0,
+                                                   .height = 0,
+                                                   .fg = NULL,
+                                                   .bg = NULL,
+                                                   .flag = TCOD_BKGND_NONE,
+                                                   .alignment = TCOD_LEFT },
+                            "%s", hpBuffer);
 
             // === XP BAR (Row 2) ===
             // Calculate XP level from current XP
@@ -99,8 +101,8 @@ namespace tutorial
                 ConfigManager::Instance().GetXpBarEmptyColor();
             for (int i = 0; i < consoleWidth; ++i)
             {
-                TCOD_console_set_char_background(console_, i, 2, xpEmpty,
-                                                 TCOD_BKGND_SET);
+                TCOD_console_put_rgb(console_, i, 2, 0, NULL, &xpEmpty,
+                                     TCOD_BKGND_SET);
             }
 
             // Fill foreground with full XP color
@@ -112,8 +114,8 @@ namespace tutorial
                     ConfigManager::Instance().GetXpBarFullColor();
                 for (int i = 0; i < xpWidth; ++i)
                 {
-                    TCOD_console_set_char_background(console_, i, 2, xpFull,
-                                                     TCOD_BKGND_SET);
+                    TCOD_console_put_rgb(console_, i, 2, 0, NULL, &xpFull,
+                                         TCOD_BKGND_SET);
                 }
             }
 
@@ -121,7 +123,16 @@ namespace tutorial
             char xpBuffer[50];
             snprintf(xpBuffer, sizeof(xpBuffer), "XP: %u/%u (Lvl %u)",
                      xpIntoCurrentLevel, xpNeededForNextLevel, xpLevel);
-            TCOD_console_print(console_, 1, 2, "%s", xpBuffer);
+            TCOD_printf_rgb(console_,
+                            (TCOD_PrintParamsRGB){ .x = 1,
+                                                   .y = 2,
+                                                   .width = 0,
+                                                   .height = 0,
+                                                   .fg = NULL,
+                                                   .bg = NULL,
+                                                   .flag = TCOD_BKGND_NONE,
+                                                   .alignment = TCOD_LEFT },
+                            "%s", xpBuffer);
         }
 
         TCOD_console_blit(console_, 0, 0, TCOD_console_get_width(console_),

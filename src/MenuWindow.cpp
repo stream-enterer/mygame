@@ -32,51 +32,63 @@ namespace tutorial
 
         for (int x = 0; x < width; ++x)
         {
-            TCOD_console_put_char(console_, x, 0, ' ', TCOD_BKGND_NONE);
-            TCOD_console_set_char_background(console_, x, 0, frameColor,
-                                             TCOD_BKGND_SET);
+            TCOD_console_put_rgb(console_, x, 0, ' ', NULL, &frameColor,
+                                 TCOD_BKGND_SET);
 
-            TCOD_console_put_char(console_, x, height - 1, ' ',
-                                  TCOD_BKGND_NONE);
-            TCOD_console_set_char_background(console_, x, height - 1,
-                                             frameColor, TCOD_BKGND_SET);
+            TCOD_console_put_rgb(console_, x, height - 1, ' ', NULL,
+                                 &frameColor, TCOD_BKGND_SET);
         }
 
         for (int y = 1; y < height - 1; ++y)
         {
-            TCOD_console_put_char(console_, 0, y, ' ', TCOD_BKGND_NONE);
-            TCOD_console_set_char_background(console_, 0, y, frameColor,
-                                             TCOD_BKGND_SET);
+            TCOD_console_put_rgb(console_, 0, y, ' ', NULL, &frameColor,
+                                 TCOD_BKGND_SET);
 
-            TCOD_console_put_char(console_, width - 1, y, ' ', TCOD_BKGND_NONE);
-            TCOD_console_set_char_background(console_, width - 1, y, frameColor,
-                                             TCOD_BKGND_SET);
+            TCOD_console_put_rgb(console_, width - 1, y, ' ', NULL, &frameColor,
+                                 TCOD_BKGND_SET);
         }
 
         // Draw title
-        TCOD_console_set_default_foreground(console_, textColor);
         int titleX = (width - static_cast<int>(title_.length())) / 2;
-        TCOD_console_print(console_, titleX, 2, title_.c_str());
+        TCOD_printf_rgb(console_,
+                        (TCOD_PrintParamsRGB){ .x = titleX,
+                                               .y = 2,
+                                               .width = 0,
+                                               .height = 0,
+                                               .fg = &textColor,
+                                               .bg = NULL,
+                                               .flag = TCOD_BKGND_NONE,
+                                               .alignment = TCOD_LEFT },
+                        "%s", title_.c_str());
 
         // Draw menu items
         int startY = 5;
         for (size_t i = 0; i < items_.size(); ++i)
         {
+            tcod::ColorRGB itemColor;
             if (static_cast<int>(i) == selectedIndex_)
             {
                 // Highlight selected item
-                TCOD_console_set_default_foreground(
-                    console_, tcod::ColorRGB{ 255, 200, 100 }); // Light orange
+                itemColor = tcod::ColorRGB{ 255, 200, 100 }; // Light orange
             }
             else
             {
-                TCOD_console_set_default_foreground(console_, textColor);
+                itemColor = textColor;
             }
 
             int itemY = startY + static_cast<int>(i) * 2;
             int itemX =
                 (width - static_cast<int>(items_[i].label.length())) / 2;
-            TCOD_console_print(console_, itemX, itemY, items_[i].label.c_str());
+            TCOD_printf_rgb(console_,
+                            (TCOD_PrintParamsRGB){ .x = itemX,
+                                                   .y = itemY,
+                                                   .width = 0,
+                                                   .height = 0,
+                                                   .fg = &itemColor,
+                                                   .bg = NULL,
+                                                   .flag = TCOD_BKGND_NONE,
+                                                   .alignment = TCOD_LEFT },
+                            "%s", items_[i].label.c_str());
         }
 
         // Blit to parent

@@ -102,11 +102,7 @@ namespace tutorial
 
     void IconRenderable::Render(TCOD_Console* parent, pos_t pos) const
     {
-        // Use C API functions instead of deprecated C++ methods
-        // Set the character at this position
-        TCOD_console_put_char(parent, pos.x, pos.y, icon_, TCOD_BKGND_NONE);
-
-        // Set the foreground color for this character
-        TCOD_console_set_char_foreground(parent, pos.x, pos.y, color_);
+        TCOD_console_put_rgb(parent, pos.x, pos.y, icon_, &color_, NULL,
+                             TCOD_BKGND_NONE);
     }
 } // namespace tutorial

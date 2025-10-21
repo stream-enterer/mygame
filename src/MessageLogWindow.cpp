@@ -37,9 +37,15 @@ namespace tutorial
                 auto* line = TCOD_console_new(TCOD_console_get_width(console_),
                                               line_height);
 
-                TCOD_console_printf_rect(
+                TCOD_console_printn_rect(
                     line, 0, 0, TCOD_console_get_width(line),
-                    TCOD_console_get_height(line), "%s", it->text.c_str());
+                    TCOD_console_get_height(line),
+                    it->text.length(), // n = string length in bytes
+                    it->text.c_str(),  // str
+                    NULL,              // fg (use default)
+                    NULL,              // bg (use default)
+                    TCOD_BKGND_NONE,   // flag
+                    TCOD_LEFT);        // alignment
 
                 TCOD_console_blit(line, 0, 0, TCOD_console_get_width(line),
                                   TCOD_console_get_height(line), console_, 0,
@@ -96,8 +102,16 @@ namespace tutorial
         }
 
         // Display the text at top of parent console
-        TCOD_console_set_default_foreground(parent,
-                                            tcod::ColorRGB{ 192, 192, 192 });
-        TCOD_console_print(parent, 1, 0, "%s", buf);
+        tcod::ColorRGB textColor = tcod::ColorRGB{ 192, 192, 192 };
+        TCOD_printf_rgb(parent,
+                        (TCOD_PrintParamsRGB){ .x = 1,
+                                               .y = 0,
+                                               .width = 0,
+                                               .height = 0,
+                                               .fg = &textColor,
+                                               .bg = NULL,
+                                               .flag = TCOD_BKGND_NONE,
+                                               .alignment = TCOD_LEFT },
+                        "%s", buf);
     }
 } // namespace tutorial

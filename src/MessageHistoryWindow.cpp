@@ -6,18 +6,14 @@ namespace tutorial
 {
     MessageHistoryWindow::MessageHistoryWindow(std::size_t width,
                                                std::size_t height, pos_t pos,
-                                               const MessageLog& log)
-        : UiWindowBase(width, height, pos), log_(log)
+                                               const MessageLog& log) :
+        UiWindowBase(width, height, pos), log_(log)
     {
-        // Set background to black by filling it
-        for (int x = 0; x < TCOD_console_get_width(console_); ++x)
-        {
-            for (int y = 0; y < TCOD_console_get_height(console_); ++y)
-            {
-                TCOD_console_set_char_background(console_, x, y, color::black,
-                                                 TCOD_BKGND_SET);
-            }
-        }
+        // Fill background with black
+        TCOD_console_draw_rect_rgb(console_, 0, 0,
+                                   TCOD_console_get_width(console_),
+                                   TCOD_console_get_height(console_), 0, NULL,
+                                   &color::black, TCOD_BKGND_SET);
     }
 
     void MessageHistoryWindow::Render(TCOD_Console* parent) const
@@ -43,9 +39,15 @@ namespace tutorial
                 auto* line = TCOD_console_new(TCOD_console_get_width(console_),
                                               line_height);
 
-                TCOD_console_printf_rect(
+                TCOD_console_printn_rect(
                     line, 0, 0, TCOD_console_get_width(line),
-                    TCOD_console_get_height(line), "%s", it->text.c_str());
+                    TCOD_console_get_height(line),
+                    it->text.length(), // n = string length in bytes
+                    it->text.c_str(),  // str
+                    NULL,              // fg (use default)
+                    NULL,              // bg (use default)
+                    TCOD_BKGND_NONE,   // flag
+                    TCOD_LEFT);        // alignment
 
                 TCOD_console_blit(line, 0, 0, TCOD_console_get_width(line),
                                   TCOD_console_get_height(line), console_, 0,

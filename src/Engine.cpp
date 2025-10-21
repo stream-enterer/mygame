@@ -939,8 +939,8 @@ namespace tutorial
                     col.g = std::min(255, static_cast<int>(col.g * 1.2f));
                     col.b = std::min(255, static_cast<int>(col.b * 1.2f));
 
-                    TCOD_console_set_char_background(console_, cx, cy, col,
-                                                     TCOD_BKGND_SET);
+                    TCOD_console_put_rgb(console_, cx, cy, 0, NULL, &col,
+                                         TCOD_BKGND_SET);
                 }
             }
         }
@@ -981,8 +981,8 @@ namespace tutorial
             && (maxRange == 0.0f
                 || player_->GetDistance(mousePos_.x, mousePos_.y) <= maxRange))
         {
-            TCOD_console_set_char_background(console_, mousePos_.x, mousePos_.y,
-                                             color::white, TCOD_BKGND_SET);
+            TCOD_console_put_rgb(console_, mousePos_.x, mousePos_.y, 0, NULL,
+                                 &color::white, TCOD_BKGND_SET);
         }
         lastMousePos = mousePos_;
 
@@ -1063,9 +1063,9 @@ namespace tutorial
                                 std::min(255, static_cast<int>(col.g * 1.2f));
                             col.b =
                                 std::min(255, static_cast<int>(col.b * 1.2f));
-                            TCOD_console_set_char_background(
-                                console_, lastMousePos.x, lastMousePos.y, col,
-                                TCOD_BKGND_SET);
+                            TCOD_console_put_rgb(console_, lastMousePos.x,
+                                                 lastMousePos.y, 0, NULL, &col,
+                                                 TCOD_BKGND_SET);
                         }
 
                         mousePos_ = newMousePos;
@@ -1077,9 +1077,9 @@ namespace tutorial
                                                         mousePos_.y)
                                        <= maxRange))
                         {
-                            TCOD_console_set_char_background(
-                                console_, mousePos_.x, mousePos_.y,
-                                color::white, TCOD_BKGND_SET);
+                            TCOD_console_put_rgb(console_, mousePos_.x,
+                                                 mousePos_.y, 0, NULL,
+                                                 &color::white, TCOD_BKGND_SET);
                         }
 
                         TCOD_context_present(context_, console_, nullptr);
@@ -1176,9 +1176,10 @@ namespace tutorial
                                         255, static_cast<int>(col.g * 1.2f));
                                     col.b = std::min(
                                         255, static_cast<int>(col.b * 1.2f));
-                                    TCOD_console_set_char_background(
+                                    TCOD_console_put_rgb(
                                         console_, lastMousePos.x,
-                                        lastMousePos.y, col, TCOD_BKGND_SET);
+                                        lastMousePos.y, 0, NULL, &col,
+                                        TCOD_BKGND_SET);
                                 }
 
                                 mousePos_ = newPos;
@@ -1190,9 +1191,9 @@ namespace tutorial
                                                                 mousePos_.y)
                                                <= maxRange))
                                 {
-                                    TCOD_console_set_char_background(
-                                        console_, mousePos_.x, mousePos_.y,
-                                        color::white, TCOD_BKGND_SET);
+                                    TCOD_console_put_rgb(
+                                        console_, mousePos_.x, mousePos_.y, 0,
+                                        NULL, &color::white, TCOD_BKGND_SET);
                                 }
 
                                 TCOD_context_present(context_, console_,

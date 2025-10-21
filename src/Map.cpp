@@ -130,9 +130,9 @@ namespace tutorial
                 }
             }
 
-            // Use C API to set background color
-            TCOD_console_set_char_background(console_, pos.x, pos.y, color,
-                                             TCOD_BKGND_SET);
+            // Set background color (0 = don't change character)
+            TCOD_console_put_rgb(console_, pos.x, pos.y, 0, NULL, &color,
+                                 TCOD_BKGND_SET);
         }
     }
 
