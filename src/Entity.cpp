@@ -44,11 +44,10 @@ namespace tutorial
 
     void BaseEntity::Die()
     {
+        // Only update visual representation
+        // Gameplay state changes (removing components, blocker status) are
+        // handled by the death event system
         renderable_ = std::make_unique<IconRenderable>(kDeadIcon);
-        defense_ = nullptr;
-        attack_ = nullptr;
-        blocker_ = false;
-        name_ = "remains of " + name_;
     }
 
     void BaseEntity::Use(Engine& engine)

@@ -95,6 +95,9 @@ namespace tutorial
     {
         Action::Execute();
 
+        // Update visual state
+        entity_.Die();
+
         if (engine_.IsPlayer(entity_))
         {
             auto msg =
@@ -206,18 +209,14 @@ namespace tutorial
 
         auto targetPos = entity_.GetPos() + pos_;
 
+        // Execute the resolved action directly instead of queueing it
         if (engine_.GetBlockingEntity(targetPos))
         {
-            auto action = MeleeAction(engine_, entity_, pos_);
-            std::unique_ptr<Event> event =
-                std::make_unique<MeleeAction>(action);
-            engine_.AddEventFront(event);
+            MeleeAction(engine_, entity_, pos_).Execute();
         }
         else
         {
-            auto action = MoveAction(engine_, entity_, pos_);
-            std::unique_ptr<Event> event = std::make_unique<MoveAction>(action);
-            engine_.AddEventFront(event);
+            MoveAction(engine_, entity_, pos_).Execute();
         }
     }
 } // namespace tutorial
@@ -336,10 +335,7 @@ namespace tutorial
         // If only one item, pick it up directly
         if (itemsHere.size() == 1)
         {
-            auto action = PickupItemAction(engine_, entity_, itemsHere[0]);
-            std::unique_ptr<Event> event =
-                std::make_unique<PickupItemAction>(action);
-            engine_.AddEventFront(event);
+            PickupItemAction(engine_, entity_, itemsHere[0]).Execute();
         }
         else
         {

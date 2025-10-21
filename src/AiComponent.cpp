@@ -102,9 +102,8 @@ namespace tutorial
         // At melee range - attack
         if (distance == 1 && !is_diagonal)
         {
-            auto action = MeleeAction(engine, entity, delta);
             std::unique_ptr<Event> event =
-                std::make_unique<MeleeAction>(action);
+                std::make_unique<MeleeAction>(engine, entity, delta);
             engine.AddEventFront(event);
             return;
         }
@@ -132,9 +131,8 @@ namespace tutorial
                 auto dest = path[0];
                 auto destPos = pos_t{ dest[0], dest[1] } - pos;
 
-                auto action = MoveAction(engine, entity, destPos);
                 std::unique_ptr<Event> event =
-                    std::make_unique<MoveAction>(action);
+                    std::make_unique<MoveAction>(engine, entity, destPos);
                 engine.AddEventFront(event);
                 return;
             }
@@ -174,15 +172,15 @@ namespace tutorial
         if (bestCellIndex != -1)
         {
             pos_t moveDir{ dx[bestCellIndex], dy[bestCellIndex] };
-            auto action = MoveAction(engine, entity, moveDir);
-            std::unique_ptr<Event> event = std::make_unique<MoveAction>(action);
+            std::unique_ptr<Event> event =
+                std::make_unique<MoveAction>(engine, entity, moveDir);
             engine.AddEventFront(event);
             return;
         }
 
         // No valid scent trail - wait
-        auto action = WaitAction(engine, entity);
-        std::unique_ptr<Event> event = std::make_unique<WaitAction>(action);
+        std::unique_ptr<Event> event =
+            std::make_unique<WaitAction>(engine, entity);
         engine.AddEventFront(event);
     }
 
@@ -211,16 +209,15 @@ namespace tutorial
                 if (target)
                 {
                     // Attack anyone including other monsters
-                    auto action = MeleeAction(engine, entity, pos_t{ dx, dy });
                     std::unique_ptr<Event> event =
-                        std::make_unique<MeleeAction>(action);
+                        std::make_unique<MeleeAction>(engine, entity,
+                                                      pos_t{ dx, dy });
                     engine.AddEventFront(event);
                 }
                 else
                 {
-                    auto action = MoveAction(engine, entity, pos_t{ dx, dy });
-                    std::unique_ptr<Event> event =
-                        std::make_unique<MoveAction>(action);
+                    std::unique_ptr<Event> event = std::make_unique<MoveAction>(
+                        engine, entity, pos_t{ dx, dy });
                     engine.AddEventFront(event);
                 }
             }
