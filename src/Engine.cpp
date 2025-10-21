@@ -369,9 +369,6 @@ namespace tutorial
     {
         if (windowState_ != PauseMenu)
         {
-            // Save game before showing menu
-            SaveManager::Instance().SaveGame(*this, SaveType::Manual);
-
             // Create menu window centered on screen
             int width = 40;
             int height = 20;
@@ -902,6 +899,12 @@ namespace tutorial
         SDL_Event sdlEvent;
         pos_t lastMousePos{ -1, -1 };
 
+        // Remember previous window state to restore later
+        Window previousWindowState = windowState_;
+
+        // Enter targeting mode (blocks inventory/other UI)
+        windowState_ = MainGame;
+
         this->Render();
 
         std::vector<tcod::ColorRGB> originalColors(map_->GetWidth()
@@ -937,41 +940,12 @@ namespace tutorial
             }
         }
 
-        // Clamp initial mouse position to range
-        if (maxRange > 0.0f
-            && player_->GetDistance(mousePos_.x, mousePos_.y) > maxRange)
-        {
-            // Find closest valid position to mouse
-            int bestX = mousePos_.x;
-            int bestY = mousePos_.y;
-            float bestDist = 1e6f;
+        // Initialize cursor to player position (will move on first
+        // mouse/keyboard input)
+        mousePos_ = player_->GetPos();
 
-            for (int cx = 0; cx < map_->GetWidth(); cx++)
-            {
-                for (int cy = 0; cy < map_->GetHeight(); cy++)
-                {
-                    if (map_->IsInFov(pos_t{ cx, cy })
-                        && player_->GetDistance(cx, cy) <= maxRange)
-                    {
-                        int dx = cx - mousePos_.x;
-                        int dy = cy - mousePos_.y;
-                        float dist = std::sqrt(dx * dx + dy * dy);
-                        if (dist < bestDist)
-                        {
-                            bestDist = dist;
-                            bestX = cx;
-                            bestY = cy;
-                        }
-                    }
-                }
-            }
-
-            mousePos_ = pos_t{ bestX, bestY };
-        }
-
-        if (map_->IsInFov(mousePos_)
-            && (maxRange == 0.0f
-                || player_->GetDistance(mousePos_.x, mousePos_.y) <= maxRange))
+        // Always draw cursor at player position initially (always in range)
+        if (map_->IsExplored(mousePos_))
         {
             TCOD_console_put_rgb(console_, mousePos_.x, mousePos_.y, 0, NULL,
                                  &color::white, TCOD_BKGND_SET);
@@ -987,6 +961,7 @@ namespace tutorial
                 if (sdlEvent.type == SDL_EVENT_QUIT)
                 {
                     this->Quit();
+                    windowState_ = previousWindowState;
                     return false;
                 }
 
@@ -1017,12 +992,13 @@ namespace tutorial
                         {
                             for (int cy = 0; cy < map_->GetHeight(); cy++)
                             {
-                                if (map_->IsInFov(pos_t{ cx, cy })
+                                if (map_->IsExplored(pos_t{ cx, cy })
                                     && player_->GetDistance(cx, cy) <= maxRange)
                                 {
                                     int dx = cx - newMousePos.x;
                                     int dy = cy - newMousePos.y;
-                                    float dist = std::sqrt(dx * dx + dy * dy);
+                                    float dist = std::sqrt(
+                                        static_cast<float>(dx * dx + dy * dy));
                                     if (dist < bestDist)
                                     {
                                         bestDist = dist;
@@ -1036,8 +1012,11 @@ namespace tutorial
                         newMousePos = pos_t{ bestX, bestY };
                     }
 
-                    if (newMousePos != lastMousePos)
+                    // Only update if position changed
+                    if (newMousePos.x != mousePos_.x
+                        || newMousePos.y != mousePos_.y)
                     {
+                        // Restore old position
                         if (lastMousePos.x >= 0 && lastMousePos.y >= 0
                             && map_->IsInFov(lastMousePos)
                             && (maxRange == 0.0f
@@ -1063,7 +1042,7 @@ namespace tutorial
                         mousePos_ = newMousePos;
                         lastMousePos = newMousePos;
 
-                        if (map_->IsInFov(mousePos_)
+                        if (map_->IsExplored(mousePos_)
                             && (maxRange == 0.0f
                                 || player_->GetDistance(mousePos_.x,
                                                         mousePos_.y)
@@ -1081,13 +1060,15 @@ namespace tutorial
                 if (sdlEvent.type == SDL_EVENT_MOUSE_BUTTON_DOWN
                     && sdlEvent.button.button == SDL_BUTTON_LEFT)
                 {
-                    if (map_->IsInFov(mousePos_)
+                    if (map_->IsExplored(mousePos_)
                         && (maxRange == 0.0f
                             || player_->GetDistance(mousePos_.x, mousePos_.y)
                                    <= maxRange))
                     {
                         *x = mousePos_.x;
                         *y = mousePos_.y;
+                        // Restore window state before returning
+                        windowState_ = previousWindowState;
                         return true;
                     }
                 }
@@ -1095,12 +1076,16 @@ namespace tutorial
                 if (sdlEvent.type == SDL_EVENT_MOUSE_BUTTON_DOWN
                     && sdlEvent.button.button == SDL_BUTTON_RIGHT)
                 {
+                    // Restore window state before returning
+                    windowState_ = previousWindowState;
                     return false;
                 }
 
                 if (sdlEvent.type == SDL_EVENT_KEY_DOWN
                     && sdlEvent.key.key == SDLK_ESCAPE)
                 {
+                    // Restore window state before returning
+                    windowState_ = previousWindowState;
                     return false;
                 }
 
@@ -1127,7 +1112,7 @@ namespace tutorial
                     }
                     else if (key == SDLK_RETURN || key == SDLK_SPACE)
                     {
-                        if (map_->IsInFov(mousePos_)
+                        if (map_->IsExplored(mousePos_)
                             && (maxRange == 0.0f
                                 || player_->GetDistance(mousePos_.x,
                                                         mousePos_.y)
@@ -1135,6 +1120,8 @@ namespace tutorial
                         {
                             *x = mousePos_.x;
                             *y = mousePos_.y;
+                            // Restore window state before returning
+                            windowState_ = previousWindowState;
                             return true;
                         }
                     }
@@ -1177,7 +1164,7 @@ namespace tutorial
                                 mousePos_ = newPos;
                                 lastMousePos = newPos;
 
-                                if (map_->IsInFov(mousePos_)
+                                if (map_->IsExplored(mousePos_)
                                     && (maxRange == 0.0f
                                         || player_->GetDistance(mousePos_.x,
                                                                 mousePos_.y)
@@ -1191,13 +1178,14 @@ namespace tutorial
                                 TCOD_context_present(context_, console_,
                                                      nullptr);
                             }
-                            // If out of range, don't move the cursor
                         }
                     }
                 }
             }
         }
 
+        // Restore window state
+        windowState_ = previousWindowState;
         return false;
     }
 

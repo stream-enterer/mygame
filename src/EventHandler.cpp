@@ -236,8 +236,7 @@ namespace tutorial
             { { TCODK_CHAR, 'v' }, tutorial::Actions::MESSAGE_HISTORY },
             { { TCODK_CHAR, 'd' }, tutorial::Actions::DROP_ITEM },
             { { TCODK_CHAR, '>' }, tutorial::Actions::DESCEND_STAIRS },
-            { TCODK_ESCAPE, tutorial::Actions::OPEN_PAUSE_MENU },
-            { TCODK_ENTER, tutorial::Actions::NEW_GAME }
+            { TCODK_ESCAPE, tutorial::Actions::OPEN_PAUSE_MENU }
         };
 
     tutorial::MainGameEventHandler::MainGameEventHandler(Engine& engine) :

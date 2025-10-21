@@ -103,7 +103,7 @@ namespace tutorial
         for (const auto& entity : engine.GetEntities())
         {
             if (entity->GetDestructible()
-                && !entity->GetDestructible()->IsDead()
+                && !entity->GetDestructible()->IsDead() && !entity->IsCorpse()
                 && entity->GetDistance(x, y) <= effectRadius_)
             {
                 targets.push_back(entity.get());
