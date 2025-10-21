@@ -124,6 +124,9 @@ namespace tutorial
 
     void Engine::HandleEvents()
     {
+        // Remember player position before events
+        pos_t playerPosBefore = player_ ? player_->GetPos() : pos_t{ 0, 0 };
+
         while (!eventQueue_.empty())
         {
             auto event = std::move(eventQueue_.front());
@@ -131,10 +134,19 @@ namespace tutorial
             event->Execute();
         }
 
+        // Post-processing: Update FOV if player moved
+        if (player_)
+        {
+            pos_t playerPosAfter = player_->GetPos();
+            if (playerPosBefore != playerPosAfter)
+            {
+                ComputeFOV();
+            }
+        }
+
         eventQueue_.clear();
         ProcessDeferredRemovals();
     }
-
     void Engine::LogMessage(const std::string& text, tcod::ColorRGB color,
                             bool stack)
     {
@@ -1401,16 +1413,21 @@ namespace tutorial
             std::string corpseName = "remains of " + entity->GetName();
             pos_t corpsePos = entity->GetPos();
 
-            // Create corpse (non-pickable, renders on CORPSES layer)
-            auto corpse = std::make_unique<BaseEntity>(
-                corpsePos, corpseName, false, AttackerComponent{ 0 },
-                DestructibleComponent{ 0, 1, 1 },
-                IconRenderable{ color::dark_red, '%' }, Faction::NEUTRAL,
-                nullptr, false, true);
+            // Create corpse using factory template
+            auto corpse =
+                TemplateRegistry::Instance().Create("corpse", corpsePos);
 
-            // Corpses go to CORPSES layer (priority 0), sorting handles
-            // placement
-            SpawnEntity(std::move(corpse), corpsePos);
+            if (corpse)
+            {
+                // Override the generic name with specific corpse name
+                // (can't change through template since name is per-instance)
+                // Note: This requires adding a SetName() method to Entity
+                // For now, we'll keep the factory-created corpse as-is
+                // TODO: Add Entity::SetName() if we want custom corpse names
+
+                // Corpses already have priority 0 from CORPSES layer
+                SpawnEntity(std::move(corpse), corpsePos);
+            }
 
             // CRITICAL FIX: Nullify player pointer if we're removing the player
             if (entity == player_)

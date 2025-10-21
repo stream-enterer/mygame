@@ -284,14 +284,10 @@ namespace tutorial
 
         if (engine_.IsInBounds(targetPos) && !engine_.IsWall(targetPos))
         {
-            auto pos = entity_.GetPos() + pos_;
+            entity_.SetPos(entity_.GetPos() + pos_);
 
-            entity_.SetPos(pos);
-
-            if (engine_.IsPlayer(entity_))
-            {
-                engine_.ComputeFOV();
-            }
+            // FOV computation handled by Engine::HandleEvents() post-processing
+            // This separates rendering concerns from movement logic
         }
     }
 } // namespace tutorial

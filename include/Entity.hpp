@@ -49,11 +49,63 @@ namespace tutorial
         virtual RenderLayer GetRenderLayer() const = 0;
         virtual int GetRenderPriority() const = 0;
         virtual void SetRenderPriority(int priority) = 0;
+
+        // Null-safety helpers - throw if component doesn't exist
+        AttackerComponent& RequireAttacker() const
+        {
+            auto* component = GetAttacker();
+            if (!component)
+            {
+                throw std::runtime_error("Entity " + GetName()
+                                         + " requires Attacker component");
+            }
+            return *component;
+        }
+
+        DestructibleComponent& RequireDestructible() const
+        {
+            auto* component = GetDestructible();
+            if (!component)
+            {
+                throw std::runtime_error("Entity " + GetName()
+                                         + " requires Destructible component");
+            }
+            return *component;
+        }
+
+        Item& RequireItem() const
+        {
+            auto* component = GetItem();
+            if (!component)
+            {
+                throw std::runtime_error("Entity " + GetName()
+                                         + " requires Item component");
+            }
+            return *component;
+        }
     };
 } // namespace tutorial
 
 namespace tutorial
 {
+    /**
+     * BaseEntity - General-purpose entity with flexible component composition
+     *
+     * Required components:
+     * - Renderable (always present via IconRenderable)
+     * - Destructible (always present, may have 0 HP for non-living entities)
+     * - Attacker (always present, may have 0 power for non-combat entities)
+     *
+     * Optional components:
+     * - Item (present only for pickup-able items)
+     * - AI (not present in BaseEntity, see Npc class)
+     *
+     * Component invariants:
+     * - If blocker_ is true, the entity blocks movement
+     * - If pickable_ is true, the entity can be picked up (requires Item
+     * component)
+     * - If isCorpse_ is true, the entity renders on CORPSES layer
+     */
     class BaseEntity : public Entity
     {
     public:
@@ -95,12 +147,24 @@ namespace tutorial
         bool blocker_;
         bool pickable_;
         bool isCorpse_;
-        int renderPriority_;  // Higher = renders later (on top)
+        int renderPriority_; // Higher = renders later (on top)
     };
 } // namespace tutorial
 
 namespace tutorial
 {
+    /**
+     * Npc - Entity with AI behavior (monsters, NPCs)
+     *
+     * Required components (in addition to BaseEntity components):
+     * - AI (always present, defines behavior)
+     *
+     * Typical configuration:
+     * - blocker_ = true (NPCs block movement)
+     * - faction_ = MONSTER (for hostile NPCs)
+     * - Destructible with hp_ > 0 (can be killed)
+     * - Attacker with power_ > 0 (can deal damage)
+     */
     class Npc : public BaseEntity
     {
     public:
@@ -120,6 +184,18 @@ namespace tutorial
 
 namespace tutorial
 {
+    /**
+     * Player - Player-controlled entity with inventory
+     *
+     * Required components (in addition to BaseEntity components):
+     * - Inventory (vector of Entity items, always present)
+     *
+     * Component invariants:
+     * - faction_ must be PLAYER
+     * - blocker_ must be true
+     * - Must have Destructible with hp_ > 0
+     * - Must have Attacker (even if power is low)
+     */
     class Player : public BaseEntity
     {
     public:
