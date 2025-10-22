@@ -61,11 +61,11 @@ add_custom_command(
     COMMENT "Copying data files to build directory"
 )
 
-# Copy terminal.png to build directory
+# Copy font to build directory
 add_custom_command(
     TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    ${PROJECT_SOURCE_DIR}/terminal.png
-    $<TARGET_FILE_DIR:${PROJECT_NAME}>/terminal.png
-    COMMENT "Copying terminal.png to build directory"
+    ${PROJECT_SOURCE_DIR}/font.bdf
+    $<TARGET_FILE_DIR:${PROJECT_NAME}>/font.bdf
+    COMMENT "Copying font to build directory"
 )

@@ -17,8 +17,13 @@ int main()
     // Load default locale
     tutorial::StringTable::Instance().LoadLocale("en_US");
 
-    static const tutorial::Configuration config{ "libtcod C++ tutorial 8", 80,
-                                                 50, 60 };
+    static const tutorial::Configuration config{
+        "libtcod C++ tutorial 8", // title
+        80,                       // width
+        50,                       // height
+        60,                       // fps
+        "font.bdf"                // fontPath - UPDATE THIS PATH!
+    };
     tutorial::Engine engine{ config };
     tutorial::TurnManager turnManager;
 

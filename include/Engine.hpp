@@ -176,6 +176,7 @@ namespace tutorial
 
         // New SDL3/libtcod context members
         TCOD_Context* context_;
+        tcod::TilesetPtr tileset_;
         std::unique_ptr<MenuWindow> menuWindow_;
         TCOD_Console* console_;
         SDL_Window* window_;

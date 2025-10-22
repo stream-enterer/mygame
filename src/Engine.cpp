@@ -54,10 +54,31 @@ namespace tutorial
             throw std::runtime_error("Failed to create console");
         }
 
+        // Load BDF font if path is provided
+        if (!config.fontPath.empty())
+        {
+            try
+            {
+                tileset_ = tcod::load_bdf(config.fontPath);
+            }
+            catch (const std::exception& e)
+            {
+                TCOD_console_delete(console_);
+                SDL_Quit();
+                throw std::runtime_error(
+                    std::string("Failed to load BDF font: ") + e.what());
+            }
+        }
+
         TCOD_ContextParams params = {};
         params.tcod_version = TCOD_COMPILEDVERSION;
         params.console = console_;
         params.window_title = config.title.c_str();
+        // Set tileset if loaded
+        if (tileset_)
+        {
+            params.tileset = tileset_.get();
+        }
         params.sdl_window_flags = SDL_WINDOW_RESIZABLE;
         params.vsync = 1;
         params.argc = 0;
@@ -920,6 +941,21 @@ namespace tutorial
             }
         }
 
+        // Helper lambda to restore console to its original state
+        auto restoreConsole = [&]()
+        {
+            for (int cx = 0; cx < map_->GetWidth(); cx++)
+            {
+                for (int cy = 0; cy < map_->GetHeight(); cy++)
+                {
+                    const tcod::ColorRGB& originalCol =
+                        originalColors[cx + cy * map_->GetWidth()];
+                    TCOD_console_put_rgb(console_, cx, cy, 0, NULL,
+                                         &originalCol, TCOD_BKGND_SET);
+                }
+            }
+        };
+
         for (int cx = 0; cx < map_->GetWidth(); cx++)
         {
             for (int cy = 0; cy < map_->GetHeight(); cy++)
@@ -960,6 +996,7 @@ namespace tutorial
             {
                 if (sdlEvent.type == SDL_EVENT_QUIT)
                 {
+                    restoreConsole();
                     this->Quit();
                     windowState_ = previousWindowState;
                     return false;
@@ -1067,6 +1104,7 @@ namespace tutorial
                     {
                         *x = mousePos_.x;
                         *y = mousePos_.y;
+                        restoreConsole();
                         // Restore window state before returning
                         windowState_ = previousWindowState;
                         return true;
@@ -1076,6 +1114,7 @@ namespace tutorial
                 if (sdlEvent.type == SDL_EVENT_MOUSE_BUTTON_DOWN
                     && sdlEvent.button.button == SDL_BUTTON_RIGHT)
                 {
+                    restoreConsole();
                     // Restore window state before returning
                     windowState_ = previousWindowState;
                     return false;
@@ -1084,6 +1123,7 @@ namespace tutorial
                 if (sdlEvent.type == SDL_EVENT_KEY_DOWN
                     && sdlEvent.key.key == SDLK_ESCAPE)
                 {
+                    restoreConsole();
                     // Restore window state before returning
                     windowState_ = previousWindowState;
                     return false;
@@ -1120,6 +1160,7 @@ namespace tutorial
                         {
                             *x = mousePos_.x;
                             *y = mousePos_.y;
+                            restoreConsole();
                             // Restore window state before returning
                             windowState_ = previousWindowState;
                             return true;
@@ -1184,6 +1225,7 @@ namespace tutorial
             }
         }
 
+        restoreConsole();
         // Restore window state
         windowState_ = previousWindowState;
         return false;

@@ -11,6 +11,7 @@ namespace tutorial
         unsigned int width;
         unsigned int height;
         unsigned int fps;
+        std::string fontPath;
     };
 } // namespace tutorial
 
