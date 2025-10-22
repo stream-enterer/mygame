@@ -917,318 +917,26 @@ namespace tutorial
 
     bool Engine::PickATile(int* x, int* y, float maxRange)
     {
-        SDL_Event sdlEvent;
-        pos_t lastMousePos{ -1, -1 };
-
         // Remember previous window state to restore later
         Window previousWindowState = windowState_;
 
         // Enter targeting mode (blocks inventory/other UI)
         windowState_ = MainGame;
 
+        // Render current game state before targeting
         this->Render();
 
-        std::vector<tcod::ColorRGB> originalColors(map_->GetWidth()
-                                                   * map_->GetHeight());
-        for (int cx = 0; cx < map_->GetWidth(); cx++)
-        {
-            for (int cy = 0; cy < map_->GetHeight(); cy++)
-            {
-                TCOD_color_t tcodCol =
-                    TCOD_console_get_char_background(console_, cx, cy);
-                originalColors[cx + cy * map_->GetWidth()] =
-                    tcod::ColorRGB{ tcodCol.r, tcodCol.g, tcodCol.b };
-            }
-        }
+        // Create targeting cursor (handles all targeting logic)
+        TargetingCursor cursor(*this, maxRange);
 
-        // Helper lambda to restore console to its original state
-        auto restoreConsole = [&]()
-        {
-            for (int cx = 0; cx < map_->GetWidth(); cx++)
-            {
-                for (int cy = 0; cy < map_->GetHeight(); cy++)
-                {
-                    const tcod::ColorRGB& originalCol =
-                        originalColors[cx + cy * map_->GetWidth()];
-                    TCOD_console_put_rgb(console_, cx, cy, 0, NULL,
-                                         &originalCol, TCOD_BKGND_SET);
-                }
-            }
-        };
+        // Let cursor handle all input and selection
+        bool result = cursor.SelectTile(x, y);
 
-        for (int cx = 0; cx < map_->GetWidth(); cx++)
-        {
-            for (int cy = 0; cy < map_->GetHeight(); cy++)
-            {
-                if (map_->IsInFov(pos_t{ cx, cy })
-                    && (maxRange == 0.0f
-                        || player_->GetDistance(cx, cy) <= maxRange))
-                {
-                    tcod::ColorRGB col =
-                        originalColors[cx + cy * map_->GetWidth()];
-                    col.r = std::min(255, static_cast<int>(col.r * 1.2f));
-                    col.g = std::min(255, static_cast<int>(col.g * 1.2f));
-                    col.b = std::min(255, static_cast<int>(col.b * 1.2f));
-
-                    TCOD_console_put_rgb(console_, cx, cy, 0, NULL, &col,
-                                         TCOD_BKGND_SET);
-                }
-            }
-        }
-
-        // Initialize cursor to player position (will move on first
-        // mouse/keyboard input)
-        mousePos_ = player_->GetPos();
-
-        // Always draw cursor at player position initially (always in range)
-        if (map_->IsExplored(mousePos_))
-        {
-            TCOD_console_put_rgb(console_, mousePos_.x, mousePos_.y, 0, NULL,
-                                 &color::white, TCOD_BKGND_SET);
-        }
-        lastMousePos = mousePos_;
-
-        TCOD_context_present(context_, console_, nullptr);
-
-        while (running_)
-        {
-            while (SDL_PollEvent(&sdlEvent))
-            {
-                if (sdlEvent.type == SDL_EVENT_QUIT)
-                {
-                    restoreConsole();
-                    this->Quit();
-                    windowState_ = previousWindowState;
-                    return false;
-                }
-
-                if (sdlEvent.type == SDL_EVENT_MOUSE_MOTION)
-                {
-                    SDL_Window* window = TCOD_context_get_sdl_window(context_);
-                    int windowWidth, windowHeight;
-                    SDL_GetWindowSize(window, &windowWidth, &windowHeight);
-
-                    int tileX =
-                        (sdlEvent.motion.x * config_.width) / windowWidth;
-                    int tileY =
-                        (sdlEvent.motion.y * config_.height) / windowHeight;
-
-                    pos_t newMousePos{ tileX, tileY };
-
-                    // Clamp to range
-                    if (maxRange > 0.0f
-                        && player_->GetDistance(newMousePos.x, newMousePos.y)
-                               > maxRange)
-                    {
-                        // Find closest valid position
-                        int bestX = newMousePos.x;
-                        int bestY = newMousePos.y;
-                        float bestDist = 1e6f;
-
-                        for (int cx = 0; cx < map_->GetWidth(); cx++)
-                        {
-                            for (int cy = 0; cy < map_->GetHeight(); cy++)
-                            {
-                                if (map_->IsExplored(pos_t{ cx, cy })
-                                    && player_->GetDistance(cx, cy) <= maxRange)
-                                {
-                                    int dx = cx - newMousePos.x;
-                                    int dy = cy - newMousePos.y;
-                                    float dist = std::sqrt(
-                                        static_cast<float>(dx * dx + dy * dy));
-                                    if (dist < bestDist)
-                                    {
-                                        bestDist = dist;
-                                        bestX = cx;
-                                        bestY = cy;
-                                    }
-                                }
-                            }
-                        }
-
-                        newMousePos = pos_t{ bestX, bestY };
-                    }
-
-                    // Only update if position changed
-                    if (newMousePos.x != mousePos_.x
-                        || newMousePos.y != mousePos_.y)
-                    {
-                        // Restore old position
-                        if (lastMousePos.x >= 0 && lastMousePos.y >= 0
-                            && map_->IsInFov(lastMousePos)
-                            && (maxRange == 0.0f
-                                || player_->GetDistance(lastMousePos.x,
-                                                        lastMousePos.y)
-                                       <= maxRange))
-                        {
-                            tcod::ColorRGB col =
-                                originalColors[lastMousePos.x
-                                               + lastMousePos.y
-                                                     * map_->GetWidth()];
-                            col.r =
-                                std::min(255, static_cast<int>(col.r * 1.2f));
-                            col.g =
-                                std::min(255, static_cast<int>(col.g * 1.2f));
-                            col.b =
-                                std::min(255, static_cast<int>(col.b * 1.2f));
-                            TCOD_console_put_rgb(console_, lastMousePos.x,
-                                                 lastMousePos.y, 0, NULL, &col,
-                                                 TCOD_BKGND_SET);
-                        }
-
-                        mousePos_ = newMousePos;
-                        lastMousePos = newMousePos;
-
-                        if (map_->IsExplored(mousePos_)
-                            && (maxRange == 0.0f
-                                || player_->GetDistance(mousePos_.x,
-                                                        mousePos_.y)
-                                       <= maxRange))
-                        {
-                            TCOD_console_put_rgb(console_, mousePos_.x,
-                                                 mousePos_.y, 0, NULL,
-                                                 &color::white, TCOD_BKGND_SET);
-                        }
-
-                        TCOD_context_present(context_, console_, nullptr);
-                    }
-                }
-
-                if (sdlEvent.type == SDL_EVENT_MOUSE_BUTTON_DOWN
-                    && sdlEvent.button.button == SDL_BUTTON_LEFT)
-                {
-                    if (map_->IsExplored(mousePos_)
-                        && (maxRange == 0.0f
-                            || player_->GetDistance(mousePos_.x, mousePos_.y)
-                                   <= maxRange))
-                    {
-                        *x = mousePos_.x;
-                        *y = mousePos_.y;
-                        restoreConsole();
-                        // Restore window state before returning
-                        windowState_ = previousWindowState;
-                        return true;
-                    }
-                }
-
-                if (sdlEvent.type == SDL_EVENT_MOUSE_BUTTON_DOWN
-                    && sdlEvent.button.button == SDL_BUTTON_RIGHT)
-                {
-                    restoreConsole();
-                    // Restore window state before returning
-                    windowState_ = previousWindowState;
-                    return false;
-                }
-
-                if (sdlEvent.type == SDL_EVENT_KEY_DOWN
-                    && sdlEvent.key.key == SDLK_ESCAPE)
-                {
-                    restoreConsole();
-                    // Restore window state before returning
-                    windowState_ = previousWindowState;
-                    return false;
-                }
-
-                if (sdlEvent.type == SDL_EVENT_KEY_DOWN)
-                {
-                    SDL_Keycode key = sdlEvent.key.key;
-                    pos_t delta{ 0, 0 };
-
-                    if (key == SDLK_UP)
-                    {
-                        delta = pos_t{ 0, -1 };
-                    }
-                    else if (key == SDLK_DOWN)
-                    {
-                        delta = pos_t{ 0, 1 };
-                    }
-                    else if (key == SDLK_LEFT)
-                    {
-                        delta = pos_t{ -1, 0 };
-                    }
-                    else if (key == SDLK_RIGHT)
-                    {
-                        delta = pos_t{ 1, 0 };
-                    }
-                    else if (key == SDLK_RETURN || key == SDLK_SPACE)
-                    {
-                        if (map_->IsExplored(mousePos_)
-                            && (maxRange == 0.0f
-                                || player_->GetDistance(mousePos_.x,
-                                                        mousePos_.y)
-                                       <= maxRange))
-                        {
-                            *x = mousePos_.x;
-                            *y = mousePos_.y;
-                            restoreConsole();
-                            // Restore window state before returning
-                            windowState_ = previousWindowState;
-                            return true;
-                        }
-                    }
-
-                    if (delta.x != 0 || delta.y != 0)
-                    {
-                        pos_t newPos = mousePos_ + delta;
-
-                        // Clamp to both map bounds AND range
-                        if (map_->IsInBounds(newPos))
-                        {
-                            // Check if new position is in range
-                            if (maxRange == 0.0f
-                                || player_->GetDistance(newPos.x, newPos.y)
-                                       <= maxRange)
-                            {
-                                // Restore old position
-                                if (lastMousePos.x >= 0 && lastMousePos.y >= 0
-                                    && map_->IsInFov(lastMousePos)
-                                    && (maxRange == 0.0f
-                                        || player_->GetDistance(lastMousePos.x,
-                                                                lastMousePos.y)
-                                               <= maxRange))
-                                {
-                                    tcod::ColorRGB col = originalColors
-                                        [lastMousePos.x
-                                         + lastMousePos.y * map_->GetWidth()];
-                                    col.r = std::min(
-                                        255, static_cast<int>(col.r * 1.2f));
-                                    col.g = std::min(
-                                        255, static_cast<int>(col.g * 1.2f));
-                                    col.b = std::min(
-                                        255, static_cast<int>(col.b * 1.2f));
-                                    TCOD_console_put_rgb(
-                                        console_, lastMousePos.x,
-                                        lastMousePos.y, 0, NULL, &col,
-                                        TCOD_BKGND_SET);
-                                }
-
-                                mousePos_ = newPos;
-                                lastMousePos = newPos;
-
-                                if (map_->IsExplored(mousePos_)
-                                    && (maxRange == 0.0f
-                                        || player_->GetDistance(mousePos_.x,
-                                                                mousePos_.y)
-                                               <= maxRange))
-                                {
-                                    TCOD_console_put_rgb(
-                                        console_, mousePos_.x, mousePos_.y, 0,
-                                        NULL, &color::white, TCOD_BKGND_SET);
-                                }
-
-                                TCOD_context_present(context_, console_,
-                                                     nullptr);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        restoreConsole();
         // Restore window state
         windowState_ = previousWindowState;
-        return false;
+
+        // Cursor destructor automatically restores console state
+        return result;
     }
 
     Entity* Engine::GetActor(int x, int y) const
@@ -1417,6 +1125,22 @@ namespace tutorial
         }
 
         TCOD_context_present(context_, console_, nullptr);
+    }
+
+    void Engine::RenderGameUI(TCOD_Console* targetConsole) const
+    {
+        // Render health bar if player exists
+        if (player_ && healthBar_)
+        {
+            healthBar_->Render(targetConsole);
+        }
+
+        // Render message log
+        if (messageLogWindow_)
+        {
+            messageLogWindow_->Render(targetConsole);
+            messageLogWindow_->RenderMouseLook(targetConsole, *this);
+        }
     }
 
     // Private methods

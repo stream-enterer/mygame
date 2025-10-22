@@ -8,6 +8,7 @@
 #include "LevelConfig.hpp"
 #include "MessageLog.hpp"
 #include "Position.hpp"
+#include "TargetingCursor.hpp"
 #include "TemplateRegistry.hpp"
 
 #include <SDL3/SDL.h>
@@ -131,6 +132,8 @@ namespace tutorial
         int GetDungeonLevel() const;
         void NextLevel();
         void ShowLevelUpMenu();
+
+        void RenderGameUI(TCOD_Console* targetConsole) const;
 
     private:
         friend class TurnManager;
