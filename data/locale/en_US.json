@@ -134,6 +134,19 @@
                 "stack": false
             }
         },
+        "chain_lightning_scroll": {
+            "name": "scroll of chain lightning",
+            "prompt": {
+                "text": "Left-click to select a direction for the lightning beam, or right-click to cancel.",
+                "color": [63, 159, 255],
+                "stack": false
+            },
+            "hit": {
+                "text": "Chain lightning strikes the {target} for {damage} hit points!",
+                "color": [255, 255, 100],
+                "stack": false
+            }
+        },
         "targeting": {
             "select_target": {
                 "text": "Left-click to select a target, or right-click to cancel.",
@@ -157,6 +170,16 @@
             },
             "no_targets_in_area": {
                 "text": "There are no targets in that area.",
+                "color": [255, 255, 255],
+                "stack": false
+            },
+            "no_line_of_sight": {
+                "text": "You don't have line-of-sight to that target!",
+                "color": [255, 128, 128],
+                "stack": false
+            },
+            "no_targets_in_beam": {
+                "text": "There are no targets in that beam!",
                 "color": [255, 255, 255],
                 "stack": false
             }

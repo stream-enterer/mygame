@@ -178,6 +178,12 @@ namespace tutorial
         return !TCOD_map_is_walkable(map_, pos.x, pos.y);
     }
 
+    bool Map::IsTransparent(pos_t pos) const
+    {
+        // Use C API to check if transparent (walls block sight)
+        return TCOD_map_is_transparent(map_, pos.x, pos.y);
+    }
+
     void Map::Render(TCOD_Console* parent) const
     {
         // Use C API blit function - this copies our console to the parent

@@ -95,5 +95,29 @@
                 }
             ]
         }
+    },
+    "chain_lightning_scroll": {
+        "name": "scroll of chain lightning",
+        "char": "#",
+        "color": [63, 159, 255],
+        "blocks": false,
+        "faction": "neutral",
+        "hp": 1,
+        "maxHp": 1,
+        "defense": 0,
+        "power": 0,
+        "item": {
+            "targeting": {
+                "type": "beam",
+                "range": 10.0
+            },
+            "effects": [
+                {
+                    "type": "health",
+                    "amount": -25,
+                    "messageKey": "items.chain_lightning_scroll.hit"
+                }
+            ]
+        }
     }
 }

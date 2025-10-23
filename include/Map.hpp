@@ -38,6 +38,7 @@ namespace tutorial
         bool IsInBounds(pos_t pos) const;
         bool IsInFov(pos_t pos) const;
         bool IsWall(pos_t pos) const;
+        bool IsTransparent(pos_t pos) const;
         void Render(TCOD_Console* parent) const;
 
         // Scent tracking accessors

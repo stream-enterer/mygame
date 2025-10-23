@@ -27,10 +27,11 @@
             "max_per_room": 1,
             "spawn_chance": 0.4,
             "spawn_table": [
-                { "id": "health_potion", "weight": 50 },
+                { "id": "health_potion", "weight": 45 },
                 { "id": "lightning_scroll", "weight": 15 },
                 { "id": "fireball_scroll", "weight": 20 },
-                { "id": "confusion_scroll", "weight": 15 }
+                { "id": "confusion_scroll", "weight": 15 },
+                { "id": "chain_lightning_scroll", "weight": 5 }
             ]
         }
     }

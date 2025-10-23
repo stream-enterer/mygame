@@ -374,6 +374,11 @@ namespace tutorial
                 float radius = targeting.radius.value_or(3.0f);
                 selector = std::make_unique<AreaTargetSelector>(range, radius);
             }
+            else if (targeting.type == "beam")
+            {
+                float range = targeting.range.value_or(8.0f);
+                selector = std::make_unique<BeamTargetSelector>(range);
+            }
             else
             {
                 throw std::runtime_error("Unknown targeting type: "

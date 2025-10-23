@@ -50,6 +50,10 @@ namespace tutorial
         // Helper methods
         void Present();
 
+        // Preview methods for different targeting types
+        void DrawAreaPreview(pos_t center, float radius);
+        void DrawBeamPreview(pos_t origin, pos_t target, float range);
+
         Engine& engine_;
         const Map* map_;
         TCOD_Console* console_;
