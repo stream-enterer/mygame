@@ -93,6 +93,14 @@ namespace tutorial
 
         window_ = TCOD_context_get_sdl_window(context_);
 
+        // Configure viewport for centered rendering with integer scaling
+        viewportOptions_.tcod_version = TCOD_COMPILEDVERSION;
+        viewportOptions_.keep_aspect = true;
+        viewportOptions_.integer_scaling = true;
+        viewportOptions_.clear_color = { 0, 0, 0, 255 }; // Black letterbox
+        viewportOptions_.align_x = 0.5f;                 // Center horizontally
+        viewportOptions_.align_y = 0.5f;                 // Center vertically
+
         this->ShowStartMenu();
     }
 
@@ -640,6 +648,11 @@ namespace tutorial
         return config_;
     }
 
+    const TCOD_ViewportOptions& Engine::GetViewportOptions() const
+    {
+        return viewportOptions_;
+    }
+
     const EntityManager& Engine::GetEntities() const
     {
         return entities_;
@@ -915,7 +928,9 @@ namespace tutorial
         eventHandler_ = std::make_unique<MainGameEventHandler>(*this);
     }
 
-    bool Engine::PickATile(int* x, int* y, float maxRange)
+    bool Engine::PickATile(int* x, int* y, float maxRange,
+                           std::function<bool(int, int)> validator)
+
     {
         // Remember previous window state to restore later
         Window previousWindowState = windowState_;
@@ -929,8 +944,8 @@ namespace tutorial
         // Create targeting cursor (handles all targeting logic)
         TargetingCursor cursor(*this, maxRange);
 
-        // Let cursor handle all input and selection
-        bool result = cursor.SelectTile(x, y);
+        // Let cursor handle all input and selection with validator
+        bool result = cursor.SelectTile(x, y, validator);
 
         // Restore window state
         windowState_ = previousWindowState;
@@ -1124,7 +1139,7 @@ namespace tutorial
             }
         }
 
-        TCOD_context_present(context_, console_, nullptr);
+        TCOD_context_present(context_, console_, &viewportOptions_);
     }
 
     void Engine::RenderGameUI(TCOD_Console* targetConsole) const

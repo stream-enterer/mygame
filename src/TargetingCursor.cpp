@@ -16,10 +16,12 @@ namespace tutorial
         map_(&engine.GetMap()),
         console_(TCOD_console_new(map_->GetWidth(), map_->GetHeight())),
         context_(engine.GetContext()),
+        viewportOptions_(&engine.GetViewportOptions()),
         maxRange_(maxRange),
         cursorPos_(engine.GetPlayer()->GetPos()),
         lastCursorPos_{ -1, -1 },
-        isInitialized_(false)
+        isInitialized_(false),
+        validator_(nullptr)
     {
         // Save original console colors
         SaveOriginalColors();
@@ -41,8 +43,12 @@ namespace tutorial
         TCOD_console_delete(console_);
     }
 
-    bool TargetingCursor::SelectTile(int* outX, int* outY)
+    bool TargetingCursor::SelectTile(int* outX, int* outY,
+                                     std::function<bool(int, int)> validator)
+
     {
+        // Store validator for use in HandleSelection
+        validator_ = validator;
         SDL_Event sdlEvent;
 
         while (engine_.IsRunning())
@@ -127,16 +133,10 @@ namespace tutorial
 
     void TargetingCursor::HandleMouseMotion(int mouseX, int mouseY)
     {
-        SDL_Window* window = TCOD_context_get_sdl_window(context_);
-        int windowWidth, windowHeight;
-        SDL_GetWindowSize(window, &windowWidth, &windowHeight);
-
-        // Use full console dimensions, not just map dimensions
-        int consoleWidth = engine_.GetConfig().width;
-        int consoleHeight = engine_.GetConfig().height;
-
-        int tileX = (mouseX * consoleWidth) / windowWidth;
-        int tileY = (mouseY * consoleHeight) / windowHeight;
+        // Use libtcod's coordinate conversion which handles viewport transforms
+        int tileX = mouseX;
+        int tileY = mouseY;
+        TCOD_context_screen_pixel_to_tile_i(context_, &tileX, &tileY);
 
         pos_t requestedPos{ tileX, tileY };
 
@@ -172,7 +172,22 @@ namespace tutorial
     bool TargetingCursor::HandleSelection()
     {
         // Only allow selection of valid, explored tiles
-        return map_->IsExplored(cursorPos_) && IsValidTarget(cursorPos_);
+        if (!map_->IsExplored(cursorPos_) || !IsValidTarget(cursorPos_))
+        {
+            return false;
+        }
+
+        // If validator provided, check custom validation logic
+        if (validator_ && !validator_(cursorPos_.x, cursorPos_.y))
+        {
+            // Validation failed - stay in targeting mode
+            // (validator has already logged the message)
+            // Re-render to show the message immediately
+            Present();
+            return false;
+        }
+
+        return true;
     }
 
     void TargetingCursor::MoveCursor(pos_t newPos)
@@ -383,7 +398,7 @@ namespace tutorial
         engine_.RenderGameUI(presentConsole);
 
         // Present the complete console
-        TCOD_context_present(context_, presentConsole, nullptr);
+        TCOD_context_present(context_, presentConsole, viewportOptions_);
 
         TCOD_console_delete(presentConsole);
     }

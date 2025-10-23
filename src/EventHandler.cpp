@@ -137,15 +137,12 @@ namespace tutorial
 
             if (sdlEvent.type == SDL_EVENT_MOUSE_MOTION)
             {
-                SDL_Window* window =
-                    TCOD_context_get_sdl_window(engine_.GetContext());
-                int windowWidth, windowHeight;
-                SDL_GetWindowSize(window, &windowWidth, &windowHeight);
-
-                int tileX = (sdlEvent.motion.x * engine_.GetConfig().width)
-                            / windowWidth;
-                int tileY = (sdlEvent.motion.y * engine_.GetConfig().height)
-                            / windowHeight;
+                // Use libtcod's coordinate conversion which handles viewport
+                // transforms
+                int tileX = static_cast<int>(sdlEvent.motion.x);
+                int tileY = static_cast<int>(sdlEvent.motion.y);
+                TCOD_context_screen_pixel_to_tile_i(engine_.GetContext(),
+                                                    &tileX, &tileY);
 
                 engine_.SetMousePos(tutorial::pos_t{ tileX, tileY });
             }

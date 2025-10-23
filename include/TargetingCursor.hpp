@@ -6,6 +6,7 @@
 #include <libtcod.h>
 #include <libtcod/color.hpp>
 
+#include <functional>
 #include <vector>
 
 namespace tutorial
@@ -22,7 +23,8 @@ namespace tutorial
         ~TargetingCursor();
 
         // Main interface - returns true if tile selected, false if cancelled
-        bool SelectTile(int* outX, int* outY);
+        bool SelectTile(int* outX, int* outY,
+                        std::function<bool(int, int)> validator = nullptr);
 
     private:
         // Input handling
@@ -52,6 +54,7 @@ namespace tutorial
         const Map* map_;
         TCOD_Console* console_;
         TCOD_Context* context_;
+        const TCOD_ViewportOptions* viewportOptions_;
         TCOD_Console* engineConsole_;
 
         float maxRange_;
@@ -61,6 +64,8 @@ namespace tutorial
         // Saved console state for restoration
         std::vector<tcod::ColorRGB> originalColors_;
         bool isInitialized_;
+
+        std::function<bool(int, int)> validator_;
     };
 
 } // namespace tutorial

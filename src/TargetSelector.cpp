@@ -52,25 +52,33 @@ namespace tutorial
         // Close inventory to allow targeting
         engine.ReturnToMainGame();
 
+        // Validator: checks if there's a target at the coordinates
+        auto validator = [&engine](int x, int y) -> bool
+        {
+            Entity* target = engine.GetActor(x, y);
+            if (!target)
+            {
+                // No target - log message and return false to stay in targeting
+                auto failMsg = StringTable::Instance().GetMessage(
+                    "items.targeting.no_target_at_location");
+                engine.LogMessage(failMsg.text, failMsg.color, failMsg.stack);
+                return false;
+            }
+            return true;
+        };
+
         int x, y;
-        if (!engine.PickATile(&x, &y, range_))
+        if (!engine.PickATile(&x, &y, range_, validator))
         {
             // Player cancelled - reopen inventory
             engine.ShowInventory();
             return false;
         }
 
+        // At this point, we know there's a valid target (validator passed)
         Entity* target = engine.GetActor(x, y);
-        if (target)
-        {
-            targets.push_back(target);
-            return true;
-        }
-
-        auto failMsg = StringTable::Instance().GetMessage(
-            "items.targeting.no_target_at_location");
-        engine.LogMessage(failMsg.text, failMsg.color, failMsg.stack);
-        return false;
+        targets.push_back(target);
+        return true;
     }
 
     // AreaTargetSelector - player picks tile, affects area

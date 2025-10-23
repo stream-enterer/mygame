@@ -15,6 +15,7 @@
 #include <libtcod.h>
 
 #include <deque>
+#include <functional>
 #include <memory>
 #include <string>
 
@@ -71,7 +72,8 @@ namespace tutorial
         void DealDamage(Entity& target, unsigned int damage);
         void NewGame();
         Entity* GetClosestMonster(int x, int y, float range) const;
-        bool PickATile(int* x, int* y, float maxRange = 0.0f);
+        bool PickATile(int* x, int* y, float maxRange = 0.0f,
+                       std::function<bool(int, int)> validator = nullptr);
         Entity* GetActor(int x, int y) const;
         void ReturnToMainGame();
         void SetMousePos(pos_t pos);
@@ -104,6 +106,7 @@ namespace tutorial
         pos_t GetMousePos() const;
         TCOD_Context* GetContext() const;
         const Configuration& GetConfig() const;
+        const TCOD_ViewportOptions& GetViewportOptions() const;
         const EntityManager& GetEntities() const;
         EventHandler* GetEventHandler() const
         {
@@ -183,6 +186,7 @@ namespace tutorial
         std::unique_ptr<MenuWindow> menuWindow_;
         TCOD_Console* console_;
         SDL_Window* window_;
+        TCOD_ViewportOptions viewportOptions_;
 
         Window windowState_;
         bool gameOver_;
