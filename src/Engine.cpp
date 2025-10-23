@@ -1179,7 +1179,10 @@ namespace tutorial
                 // For now, we'll keep the factory-created corpse as-is
                 // TODO: Add Entity::SetName() if we want custom corpse names
 
-                // Corpses already have priority 0 from CORPSES layer
+                // Set corpse priority to -1 so it renders below any items at
+                // this position (Items have default priority 0 or higher within
+                // the ITEMS layer)
+                corpse->SetRenderPriority(-1);
                 SpawnEntity(std::move(corpse), corpsePos);
             }
 
