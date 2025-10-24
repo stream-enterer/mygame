@@ -11,13 +11,16 @@
 
 namespace tutorial
 {
-    TargetingCursor::TargetingCursor(Engine& engine, float maxRange) :
+    TargetingCursor::TargetingCursor(Engine& engine, float maxRange,
+                                     TargetingType type, float radius) :
         engine_(engine),
         map_(&engine.GetMap()),
         console_(TCOD_console_new(map_->GetWidth(), map_->GetHeight())),
         context_(engine.GetContext()),
         viewportOptions_(&engine.GetViewportOptions()),
         maxRange_(maxRange),
+        radius_(radius),
+        targetingType_(type),
         cursorPos_(engine.GetPlayer()->GetPos()),
         lastCursorPos_{ -1, -1 },
         isInitialized_(false),
@@ -25,9 +28,6 @@ namespace tutorial
     {
         // Save original console colors
         SaveOriginalColors();
-
-        // Highlight valid targeting tiles
-        HighlightValidTiles();
 
         // Initialize cursor at player position
         MoveCursor(cursorPos_);
@@ -140,13 +140,11 @@ namespace tutorial
 
         pos_t requestedPos{ tileX, tileY };
 
-        // Clamp to range if needed
-        pos_t clampedPos = ClampToRange(requestedPos);
-
+        // No more clamping - cursor moves freely
         // Only update if position actually changed
-        if (clampedPos.x != cursorPos_.x || clampedPos.y != cursorPos_.y)
+        if (requestedPos.x != cursorPos_.x || requestedPos.y != cursorPos_.y)
         {
-            MoveCursor(clampedPos);
+            MoveCursor(requestedPos);
         }
     }
 
@@ -154,14 +152,8 @@ namespace tutorial
     {
         pos_t requestedPos = cursorPos_ + delta;
 
-        // Check map bounds first
+        // Check map bounds only
         if (!map_->IsInBounds(requestedPos))
-        {
-            return;
-        }
-
-        // Check if new position is valid target
-        if (!IsValidTarget(requestedPos))
         {
             return;
         }
@@ -193,10 +185,21 @@ namespace tutorial
 
     void TargetingCursor::MoveCursor(pos_t newPos)
     {
-        // Erase old cursor position
+        // Clear all previous highlights
         if (lastCursorPos_.x >= 0 && lastCursorPos_.y >= 0)
         {
-            EraseCursor();
+            // Restore original colors for the entire map (including unexplored
+            // tiles)
+            for (int x = 0; x < map_->GetWidth(); ++x)
+            {
+                for (int y = 0; y < map_->GetHeight(); ++y)
+                {
+                    const tcod::ColorRGB& col =
+                        originalColors_[x + y * map_->GetWidth()];
+                    TCOD_console_put_rgb(console_, x, y, 0, NULL, &col,
+                                         TCOD_BKGND_SET);
+                }
+            }
         }
 
         // Update position
@@ -206,97 +209,44 @@ namespace tutorial
         // Update mouse position state in engine
         engine_.SetMousePos(cursorPos_);
 
-        // Draw new cursor
-        DrawCursor();
+        // Draw new highlights and cursor
+        UpdateHighlights();
 
         Present();
     }
 
     void TargetingCursor::DrawCursor()
     {
-        // Only draw cursor on explored, valid tiles
-        if (map_->IsExplored(cursorPos_) && IsValidTarget(cursorPos_))
+        // Always draw cursor, even in unexplored areas
+        tcod::ColorRGB cursorColor;
+        if (IsValidTarget(cursorPos_))
         {
-            TCOD_console_put_rgb(console_, cursorPos_.x, cursorPos_.y, 0, NULL,
-                                 &color::white, TCOD_BKGND_SET);
+            cursorColor = color::white;
         }
-    }
-
-    void TargetingCursor::EraseCursor()
-    {
-        // Restore to highlighted state (if in FOV and range) or original
-        if (map_->IsInFov(lastCursorPos_) && IsValidTarget(lastCursorPos_))
+        else
         {
-            // Restore to highlighted color
-            tcod::ColorRGB col =
-                originalColors_[lastCursorPos_.x
-                                + lastCursorPos_.y * map_->GetWidth()];
-            col.r = std::min(255, static_cast<int>(col.r * 1.2f));
-            col.g = std::min(255, static_cast<int>(col.g * 1.2f));
-            col.b = std::min(255, static_cast<int>(col.b * 1.2f));
-            TCOD_console_put_rgb(console_, lastCursorPos_.x, lastCursorPos_.y,
-                                 0, NULL, &col, TCOD_BKGND_SET);
+            cursorColor = color::red; // Red for invalid
         }
-        else if (map_->IsExplored(lastCursorPos_))
-        {
-            // Restore to original color
-            const tcod::ColorRGB& col =
-                originalColors_[lastCursorPos_.x
-                                + lastCursorPos_.y * map_->GetWidth()];
-            TCOD_console_put_rgb(console_, lastCursorPos_.x, lastCursorPos_.y,
-                                 0, NULL, &col, TCOD_BKGND_SET);
-        }
+        TCOD_console_put_rgb(console_, cursorPos_.x, cursorPos_.y, 0, NULL,
+                             &cursorColor, TCOD_BKGND_SET);
     }
 
     bool TargetingCursor::IsValidTarget(pos_t pos) const
     {
-        // Infinite range (maxRange_ == 0) means any explored tile is valid
+        // Must be in FOV (line of sight) to be a valid target
+        if (!map_->IsInFov(pos))
+        {
+            return false;
+        }
+
+        // Infinite range (maxRange_ == 0) means any tile in FOV is valid
         if (maxRange_ == 0.0f)
         {
-            return map_->IsExplored(pos);
+            return true;
         }
 
         // Otherwise check range from player
-        return map_->IsExplored(pos)
-               && engine_.GetPlayer()->GetDistance(pos.x, pos.y) <= maxRange_;
-    }
-
-    pos_t TargetingCursor::ClampToRange(pos_t pos) const
-    {
-        // If infinite range or already in range, return as-is
-        if (maxRange_ == 0.0f
-            || engine_.GetPlayer()->GetDistance(pos.x, pos.y) <= maxRange_)
-        {
-            return pos;
-        }
-
-        // Use Bresenham to find the furthest valid tile along the line
-        // from player to requested position
-        pos_t playerPos = engine_.GetPlayer()->GetPos();
-        tcod::BresenhamLine line({ playerPos.x, playerPos.y },
-                                 { pos.x, pos.y });
-
-        pos_t bestPos = playerPos;
-
-        for (auto it = line.begin(); it != line.end(); ++it)
-        {
-            auto [x, y] = *it;
-            pos_t checkPos{ x, y };
-
-            // Stop if we exceed range
-            if (engine_.GetPlayer()->GetDistance(x, y) > maxRange_)
-            {
-                break;
-            }
-
-            // Only consider explored tiles
-            if (map_->IsExplored(checkPos))
-            {
-                bestPos = checkPos;
-            }
-        }
-
-        return bestPos;
+        return engine_.GetPlayer()->GetDistance(pos.x, pos.y) <= maxRange_;
     }
 
     void TargetingCursor::SaveOriginalColors()
@@ -358,28 +308,6 @@ namespace tutorial
         engine_.Render();
     }
 
-    void TargetingCursor::HighlightValidTiles()
-    {
-        for (int cx = 0; cx < map_->GetWidth(); cx++)
-        {
-            for (int cy = 0; cy < map_->GetHeight(); cy++)
-            {
-                if (map_->IsInFov(pos_t{ cx, cy })
-                    && IsValidTarget(pos_t{ cx, cy }))
-                {
-                    tcod::ColorRGB col =
-                        originalColors_[cx + cy * map_->GetWidth()];
-                    col.r = std::min(255, static_cast<int>(col.r * 1.2f));
-                    col.g = std::min(255, static_cast<int>(col.g * 1.2f));
-                    col.b = std::min(255, static_cast<int>(col.b * 1.2f));
-
-                    TCOD_console_put_rgb(console_, cx, cy, 0, NULL, &col,
-                                         TCOD_BKGND_SET);
-                }
-            }
-        }
-    }
-
     void TargetingCursor::Present()
     {
         // Create a full-size console for presentation that includes UI
@@ -404,75 +332,83 @@ namespace tutorial
         TCOD_console_delete(presentConsole);
     }
 
-    void TargetingCursor::DrawAreaPreview(pos_t center, float radius)
+    void TargetingCursor::UpdateHighlights()
+    {
+        // Only draw highlights if cursor is on a valid target
+        if (!IsValidTarget(cursorPos_))
+        {
+            DrawCursor(); // Just draw red cursor
+            return;
+        }
+
+        // Draw highlights based on targeting type
+        switch (targetingType_)
+        {
+            case TargetingType::Beam:
+                DrawBeamHighlight();
+                break;
+            case TargetingType::Area:
+                DrawAreaHighlight();
+                break;
+            case TargetingType::None:
+            default:
+                // No special highlighting, just draw cursor
+                break;
+        }
+
+        // Always draw cursor on top
+        DrawCursor();
+    }
+
+    void TargetingCursor::DrawBeamHighlight()
+    {
+        pos_t playerPos = engine_.GetPlayer()->GetPos();
+        tcod::BresenhamLine line({ playerPos.x, playerPos.y },
+                                 { cursorPos_.x, cursorPos_.y });
+
+        for (auto it = line.begin(); it != line.end(); ++it)
+        {
+            auto [x, y] = *it;
+
+            // Skip player position
+            if (x == playerPos.x && y == playerPos.y) continue;
+
+            // Skip cursor position (will be drawn white)
+            if (x == cursorPos_.x && y == cursorPos_.y) continue;
+
+            // Yellow highlight for entire beam path (through walls and floors)
+            TCOD_console_put_rgb(console_, x, y, 0, NULL, &color::light_yellow,
+                                 TCOD_BKGND_SET);
+        }
+    }
+    void TargetingCursor::DrawAreaHighlight()
     {
         // Highlight all tiles within radius
-        for (int dx = -static_cast<int>(radius); dx <= static_cast<int>(radius);
-             ++dx)
+        for (int dx = -static_cast<int>(radius_);
+             dx <= static_cast<int>(radius_); ++dx)
         {
-            for (int dy = -static_cast<int>(radius);
-                 dy <= static_cast<int>(radius); ++dy)
+            for (int dy = -static_cast<int>(radius_);
+                 dy <= static_cast<int>(radius_); ++dy)
             {
-                pos_t checkPos{ center.x + dx, center.y + dy };
+                pos_t checkPos{ cursorPos_.x + dx, cursorPos_.y + dy };
 
                 // Check if within radius and map bounds
                 if (!map_->IsInBounds(checkPos)) continue;
 
                 float dist = std::sqrt(static_cast<float>(dx * dx + dy * dy));
-                if (dist > radius) continue;
+                if (dist > radius_) continue;
 
-                // Only show preview for explored tiles
+                // Only show for explored tiles
                 if (!map_->IsExplored(checkPos)) continue;
 
-                // Get original color and tint it
-                int index = checkPos.x + checkPos.y * map_->GetWidth();
-                tcod::ColorRGB col = originalColors_[index];
+                // Skip cursor position (will be drawn white)
+                if (checkPos.x == cursorPos_.x && checkPos.y == cursorPos_.y)
+                    continue;
 
-                // Tint red for preview
-                col.r = std::min(255, col.r + 60);
-                col.g = std::max(0, col.g - 20);
-                col.b = std::max(0, col.b - 20);
-
+                // Yellow highlight for area
                 TCOD_console_put_rgb(console_, checkPos.x, checkPos.y, 0, NULL,
-                                     &col, TCOD_BKGND_SET);
+                                     &color::light_yellow, TCOD_BKGND_SET);
             }
-        }
-    }
-
-    void TargetingCursor::DrawBeamPreview(pos_t origin, pos_t target,
-                                          float range)
-    {
-        // Trace beam using Bresenham
-        tcod::BresenhamLine line({ origin.x, origin.y },
-                                 { target.x, target.y });
-
-        for (auto it = line.begin(); it != line.end(); ++it)
-        {
-            auto [x, y] = *it;
-            pos_t tilePos{ x, y };
-
-            // Skip origin
-            if (x == origin.x && y == origin.y) continue;
-
-            // Stop at walls
-            if (!map_->IsTransparent(tilePos)) break;
-
-            // Stop at range
-            if (engine_.GetPlayer()->GetDistance(x, y) > range) break;
-
-            // Only show for explored tiles
-            if (!map_->IsExplored(tilePos)) continue;
-
-            // Get original color and tint it
-            int index = x + y * map_->GetWidth();
-            tcod::ColorRGB col = originalColors_[index];
-
-            // Tint yellow for beam preview
-            col.r = std::min(255, col.r + 60);
-            col.g = std::min(255, col.g + 60);
-            col.b = std::max(0, col.b - 20);
-
-            TCOD_console_put_rgb(console_, x, y, 0, NULL, &col, TCOD_BKGND_SET);
         }
     }
 } // namespace tutorial

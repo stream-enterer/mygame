@@ -929,8 +929,8 @@ namespace tutorial
     }
 
     bool Engine::PickATile(int* x, int* y, float maxRange,
-                           std::function<bool(int, int)> validator)
-
+                           std::function<bool(int, int)> validator,
+                           TargetingType targetingType, float radius)
     {
         // Remember previous window state to restore later
         Window previousWindowState = windowState_;
@@ -942,7 +942,7 @@ namespace tutorial
         this->Render();
 
         // Create targeting cursor (handles all targeting logic)
-        TargetingCursor cursor(*this, maxRange);
+        TargetingCursor cursor(*this, maxRange, targetingType, radius);
 
         // Let cursor handle all input and selection with validator
         bool result = cursor.SelectTile(x, y, validator);

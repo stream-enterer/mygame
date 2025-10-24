@@ -114,7 +114,7 @@ namespace tutorial
         };
 
         int x, y;
-        if (!engine.PickATile(&x, &y, range_, validator))
+        if (!engine.PickATile(&x, &y, range_, validator, TargetingType::Beam))
         {
             // Player cancelled - reopen inventory
             engine.ShowInventory();
@@ -145,7 +145,8 @@ namespace tutorial
         engine.ReturnToMainGame();
 
         int x, y;
-        if (!engine.PickATile(&x, &y, pickRange_))
+        if (!engine.PickATile(&x, &y, pickRange_, nullptr, TargetingType::Area,
+                              effectRadius_))
         {
             // Player cancelled - reopen inventory
             engine.ShowInventory();
@@ -192,7 +193,7 @@ namespace tutorial
         engine.ReturnToMainGame();
 
         int x, y;
-        if (!engine.PickATile(&x, &y, range_))
+        if (!engine.PickATile(&x, &y, range_, nullptr, TargetingType::Beam))
         {
             // Player cancelled - reopen inventory
             engine.ShowInventory();

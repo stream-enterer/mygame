@@ -11,6 +11,14 @@
 
 namespace tutorial
 {
+    // Enum for different targeting visualization types
+    enum class TargetingType
+    {
+        None, // No special highlighting (for closest_enemy, self, etc.)
+        Beam, // Show beam from player to cursor
+        Area  // Show area effect radius around cursor
+    };
+
     class Engine;
     class Map;
 
@@ -19,7 +27,9 @@ namespace tutorial
     class TargetingCursor
     {
     public:
-        TargetingCursor(Engine& engine, float maxRange);
+        TargetingCursor(Engine& engine, float maxRange,
+                        TargetingType type = TargetingType::None,
+                        float radius = 0.0f);
         ~TargetingCursor();
 
         // Main interface - returns true if tile selected, false if cancelled
@@ -45,14 +55,14 @@ namespace tutorial
         // Visual state management
         void SaveOriginalColors();
         void RestoreOriginalColors();
-        void HighlightValidTiles();
+
+        // Highlighting based on targeting type
+        void UpdateHighlights();
+        void DrawBeamHighlight();
+        void DrawAreaHighlight();
 
         // Helper methods
         void Present();
-
-        // Preview methods for different targeting types
-        void DrawAreaPreview(pos_t center, float radius);
-        void DrawBeamPreview(pos_t origin, pos_t target, float range);
 
         Engine& engine_;
         const Map* map_;
@@ -62,6 +72,8 @@ namespace tutorial
         TCOD_Console* engineConsole_;
 
         float maxRange_;
+        float radius_; // For area targeting
+        TargetingType targetingType_;
         pos_t cursorPos_;
         pos_t lastCursorPos_;
 

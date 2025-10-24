@@ -73,7 +73,9 @@ namespace tutorial
         void NewGame();
         Entity* GetClosestMonster(int x, int y, float range) const;
         bool PickATile(int* x, int* y, float maxRange = 0.0f,
-                       std::function<bool(int, int)> validator = nullptr);
+                       std::function<bool(int, int)> validator = nullptr,
+                       TargetingType targetingType = TargetingType::None,
+                       float radius = 0.0f);
         Entity* GetActor(int x, int y) const;
         void ReturnToMainGame();
         void SetMousePos(pos_t pos);
