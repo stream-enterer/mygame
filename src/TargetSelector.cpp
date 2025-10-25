@@ -253,4 +253,74 @@ namespace tutorial
 
 		return foundAny;
 	}
+
+	// FirstInBeamTargetSelector - stops at first valid target
+	FirstInBeamTargetSelector::FirstInBeamTargetSelector(float range)
+	    : range_(range)
+	{
+	}
+
+	bool FirstInBeamTargetSelector::SelectTargets(
+	    Entity& user, Engine& engine, std::vector<Entity*>& targets) const
+	{
+		auto msg = StringTable::Instance().GetMessage(
+		    "items.targeting.select_target");
+		engine.LogMessage(msg.text, msg.color, msg.stack);
+
+		// Close inventory to allow targeting
+		engine.ReturnToMainGame();
+
+		int x, y;
+		if (!engine.PickATile(&x, &y, range_, nullptr,
+		                      TargetingType::Beam)) {
+			// Player cancelled - reopen inventory
+			engine.ShowInventory();
+			return false;
+		}
+
+		// Trace beam from user to selected tile using Bresenham
+		const Map& map = engine.GetMap();
+		pos_t userPos = user.GetPos();
+		tcod::BresenhamLine line({ userPos.x, userPos.y }, { x, y });
+
+		// Find FIRST valid target along the beam path
+		for (auto it = line.begin(); it != line.end(); ++it) {
+			auto [bx, by] = *it;
+			pos_t tilePos { bx, by };
+
+			// Skip the user's tile
+			if (bx == userPos.x && by == userPos.y) {
+				continue;
+			}
+
+			// Stop beam at walls
+			if (!map.IsTransparent(tilePos)) {
+				break;
+			}
+
+			// Stop beam at max range
+			if (user.GetDistance(bx, by) > range_) {
+				break;
+			}
+
+			// Check for entity at this position
+			for (const auto& entity : engine.GetEntities()) {
+				if (entity->GetDestructible()
+				    && !entity->GetDestructible()->IsDead()
+				    && !entity->IsCorpse() && !entity->GetItem()
+				    && entity->GetPos().x == tilePos.x
+				    && entity->GetPos().y == tilePos.y) {
+					// Found first target - add it and stop
+					targets.push_back(entity.get());
+					return true;
+				}
+			}
+		}
+
+		// No target found along beam
+		auto failMsg = StringTable::Instance().GetMessage(
+		    "items.targeting.no_targets_in_beam");
+		engine.LogMessage(failMsg.text, failMsg.color, failMsg.stack);
+		return false;
+	}
 } // namespace tutorial

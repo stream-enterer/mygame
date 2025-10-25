@@ -113,6 +113,10 @@ namespace tutorial
 		} else if (targetingType == "beam") {
 			float r = range.value_or(8.0f);
 			selector = std::make_unique<BeamTargetSelector>(r);
+		} else if (targetingType == "first_in_beam") {
+			float r = range.value_or(8.0f);
+			selector =
+			    std::make_unique<FirstInBeamTargetSelector>(r);
 		} else {
 			throw std::runtime_error("Unknown targeting type: "
 			                         + targetingType);
@@ -465,6 +469,11 @@ namespace tutorial
 				float range = targeting.range.value_or(8.0f);
 				selector =
 				    std::make_unique<BeamTargetSelector>(range);
+			} else if (targeting.type == "first_in_beam") {
+				float range = targeting.range.value_or(8.0f);
+				selector =
+				    std::make_unique<FirstInBeamTargetSelector>(
+				        range);
 			} else {
 				throw std::runtime_error(
 				    "Unknown targeting type: "

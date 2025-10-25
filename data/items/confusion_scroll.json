@@ -2,7 +2,7 @@
 	"name": "scroll of confusion",
 	"char": "#",
 	"color": [63, 159, 255],
-	"targeting": "single",
+	"targeting": "first_in_beam",
 	"range": 8.0,
 	"effects": [
 		{

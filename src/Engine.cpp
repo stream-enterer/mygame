@@ -984,7 +984,11 @@ namespace tutorial
 		target.GetDestructible()->TakeDamage(damage);
 
 		if (target.GetDestructible()->IsDead()) {
-			HandleDeathEvent(target);
+			// Create and execute DieAction to handle XP, messages,
+			// etc.
+			std::unique_ptr<Event> dieAction =
+			    std::make_unique<DieAction>(*this, target);
+			dieAction->Execute();
 		}
 	}
 
