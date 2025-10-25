@@ -6,81 +6,86 @@
 
 namespace tutorial
 {
-    InventoryWindow::InventoryWindow(std::size_t width, std::size_t height,
-                                     pos_t pos, const Entity& player) :
-        UiWindowBase(width, height, pos), title_("Inventory"), player_(player)
-    {
-    }
+	InventoryWindow::InventoryWindow(std::size_t width, std::size_t height,
+	                                 pos_t pos, const Entity& player)
+	    : UiWindowBase(width, height, pos),
+	      title_("Inventory"),
+	      player_(player)
+	{
+	}
 
-    void InventoryWindow::Render(TCOD_Console* parent) const
-    {
-        TCOD_console_clear(console_);
+	void InventoryWindow::Render(TCOD_Console* parent) const
+	{
+		TCOD_console_clear(console_);
 
-        // Draw frame
-        tcod::ColorRGB frameColor = tcod::ColorRGB{ 200, 180, 50 };
-        // Draw frame and title separately
-        TCOD_console_draw_frame_rgb(console_, 0, 0,
-                                    TCOD_console_get_width(console_),
-                                    TCOD_console_get_height(console_), NULL,
-                                    NULL, NULL, TCOD_BKGND_DEFAULT, true);
-        int titleX = (TCOD_console_get_width(console_)
-                      - static_cast<int>(title_.length()))
-                     / 2;
-        TCOD_printf_rgb(console_,
-                        (TCOD_PrintParamsRGB){ .x = titleX,
-                                               .y = 0,
-                                               .width = 0,
-                                               .height = 0,
-                                               .fg = &frameColor,
-                                               .bg = NULL,
-                                               .flag = TCOD_BKGND_NONE,
-                                               .alignment = TCOD_LEFT },
-                        "%s", title_.c_str());
+		// Draw frame
+		tcod::ColorRGB frameColor = tcod::ColorRGB { 200, 180, 50 };
+		// Draw frame and title separately
+		TCOD_console_draw_frame_rgb(
+		    console_, 0, 0, TCOD_console_get_width(console_),
+		    TCOD_console_get_height(console_), NULL, NULL, NULL,
+		    TCOD_BKGND_DEFAULT, true);
+		int titleX = (TCOD_console_get_width(console_)
+		              - static_cast<int>(title_.length()))
+		             / 2;
+		TCOD_printf_rgb(
+		    console_,
+		    (TCOD_PrintParamsRGB) { .x = titleX,
+		                            .y = 0,
+		                            .width = 0,
+		                            .height = 0,
+		                            .fg = &frameColor,
+		                            .bg = NULL,
+		                            .flag = TCOD_BKGND_NONE,
+		                            .alignment = TCOD_LEFT },
+		    "%s", title_.c_str());
 
-        // Display items with shortcuts
-        if (auto* player = dynamic_cast<const Player*>(&player_))
-        {
-            tcod::ColorRGB textColor = tcod::ColorRGB{ 255, 255, 255 };
+		// Display items with shortcuts
+		if (auto* player = dynamic_cast<const Player*>(&player_)) {
+			tcod::ColorRGB textColor =
+			    tcod::ColorRGB { 255, 255, 255 };
 
-            const auto& inventory = player->GetInventory();
-            char shortcut = 'a';
-            int y = 1;
+			const auto& inventory = player->GetInventory();
+			char shortcut = 'a';
+			int y = 1;
 
-            for (const auto& item : inventory)
-            {
-                TCOD_printf_rgb(console_,
-                                (TCOD_PrintParamsRGB){ .x = 2,
-                                                       .y = y,
-                                                       .width = 0,
-                                                       .height = 0,
-                                                       .fg = &textColor,
-                                                       .bg = NULL,
-                                                       .flag = TCOD_BKGND_NONE,
-                                                       .alignment = TCOD_LEFT },
-                                "(%c) %s", shortcut, item->GetName().c_str());
+			for (const auto& item : inventory) {
+				TCOD_printf_rgb(console_,
+				                (TCOD_PrintParamsRGB) {
+				                    .x = 2,
+				                    .y = y,
+				                    .width = 0,
+				                    .height = 0,
+				                    .fg = &textColor,
+				                    .bg = NULL,
+				                    .flag = TCOD_BKGND_NONE,
+				                    .alignment = TCOD_LEFT },
+				                "(%c) %s", shortcut,
+				                item->GetName().c_str());
 
-                y++;
-                shortcut++;
-            }
+				y++;
+				shortcut++;
+			}
 
-            if (inventory.empty())
-            {
-                TCOD_printf_rgb(console_,
-                                (TCOD_PrintParamsRGB){ .x = 2,
-                                                       .y = 1,
-                                                       .width = 0,
-                                                       .height = 0,
-                                                       .fg = &textColor,
-                                                       .bg = NULL,
-                                                       .flag = TCOD_BKGND_NONE,
-                                                       .alignment = TCOD_LEFT },
-                                "%s", "(empty)");
-            }
-        }
+			if (inventory.empty()) {
+				TCOD_printf_rgb(console_,
+				                (TCOD_PrintParamsRGB) {
+				                    .x = 2,
+				                    .y = 1,
+				                    .width = 0,
+				                    .height = 0,
+				                    .fg = &textColor,
+				                    .bg = NULL,
+				                    .flag = TCOD_BKGND_NONE,
+				                    .alignment = TCOD_LEFT },
+				                "%s", "(empty)");
+			}
+		}
 
-        // Blit to parent
-        TCOD_console_blit(console_, 0, 0, TCOD_console_get_width(console_),
-                          TCOD_console_get_height(console_), parent, pos_.x,
-                          pos_.y, 1.0f, 1.0f);
-    }
+		// Blit to parent
+		TCOD_console_blit(console_, 0, 0,
+		                  TCOD_console_get_width(console_),
+		                  TCOD_console_get_height(console_), parent,
+		                  pos_.x, pos_.y, 1.0f, 1.0f);
+	}
 } // namespace tutorial

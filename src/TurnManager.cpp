@@ -8,60 +8,56 @@
 
 namespace tutorial
 {
-    void TurnManager::ProcessCommand(std::unique_ptr<Command> command,
-                                     Engine& engine)
-    {
-        if (!command)
-        {
-            return;
-        }
+	void TurnManager::ProcessCommand(std::unique_ptr<Command> command,
+	                                 Engine& engine)
+	{
+		if (!command) {
+			return;
+		}
 
-        // Execute the player's command
-        command->Execute(engine);
+		// Execute the player's command
+		command->Execute(engine);
 
-        // Process any events created by the command
-        engine.HandleEvents();
+		// Process any events created by the command
+		engine.HandleEvents();
 
-        // If the command consumed a turn, let enemies act
-        if (command->ConsumesTurn())
-        {
-            ProcessEnemyTurn(engine);
-        }
-    }
+		// If the command consumed a turn, let enemies act
+		if (command->ConsumesTurn()) {
+			ProcessEnemyTurn(engine);
+		}
+	}
 
-    void TurnManager::ProcessEnemyTurn(Engine& engine)
-    {
-        // Queue up enemy actions
-        const auto& entities = engine.GetEntities();
+	void TurnManager::ProcessEnemyTurn(Engine& engine)
+	{
+		// Queue up enemy actions
+		const auto& entities = engine.GetEntities();
 
-        for (auto& entity : entities)
-        {
-            if (engine.IsPlayer(*entity.get()))
-            {
-                continue;
-            }
+		for (auto& entity : entities) {
+			if (engine.IsPlayer(*entity.get())) {
+				continue;
+			}
 
-            if (!entity->CanAct())
-            {
-                continue;
-            }
+			if (!entity->CanAct()) {
+				continue;
+			}
 
-            std::unique_ptr<Event> event =
-                std::make_unique<AiAction>(engine, *entity);
-            engine.AddEventFront(event);
-        }
+			std::unique_ptr<Event> event =
+			    std::make_unique<AiAction>(engine, *entity);
+			engine.AddEventFront(event);
+		}
 
-        // Process all enemy actions
-        engine.HandleEvents();
+		// Process all enemy actions
+		engine.HandleEvents();
 
-        if (engine.turnsSinceLastAutosave_ >= Engine::kAutosaveInterval)
-        {
-            SaveManager::Instance().SaveGame(engine, SaveType::Auto);
-            // Optional: Add message to game log
-            // engine.LogMessage("Game autosaved", tcod::ColorRGB{100, 100,
-            // 100}, false);
-            engine.turnsSinceLastAutosave_ = 0;
-        }
-    }
+		if (engine.turnsSinceLastAutosave_
+		    >= Engine::kAutosaveInterval) {
+			SaveManager::Instance().SaveGame(engine,
+			                                 SaveType::Auto);
+			// Optional: Add message to game log
+			// engine.LogMessage("Game autosaved",
+			// tcod::ColorRGB{100, 100, 100}, false);
+			engine.turnsSinceLastAutosave_ = 0;
+		}
+	}
 
 } // namespace tutorial

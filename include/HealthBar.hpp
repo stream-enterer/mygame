@@ -8,18 +8,18 @@
 
 namespace tutorial
 {
-    class HealthBar : public UiWindowBase
-    {
-    public:
-        HealthBar(unsigned int width, unsigned int height, pos_t pos,
-                  const Entity& entity);
+	class HealthBar : public UiWindowBase
+	{
+	public:
+		HealthBar(unsigned int width, unsigned int height, pos_t pos,
+		          const Entity& entity);
 
-        void Render(TCOD_Console* parent) const override;
+		void Render(TCOD_Console* parent) const override;
 
-    private:
-        const Entity& entity_;
-        unsigned int GetNextLevelXp(unsigned int currentLevel) const;
-    };
+	private:
+		const Entity& entity_;
+		unsigned int GetNextLevelXp(unsigned int currentLevel) const;
+	};
 } // namespace tutorial
 
 #endif // HEALTH_BAR_HPP

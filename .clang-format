@@ -1,27 +1,29 @@
 BasedOnStyle: Google
 Language: Cpp
-IndentWidth: 4
+IndentWidth: 8
+UseTab: ForIndentation
+TabWidth: 8
 AlignAfterOpenBracket: Align
-AccessModifierOffset: -4
+AccessModifierOffset: -8
 AllowShortFunctionsOnASingleLine: false
 AlwaysBreakTemplateDeclarations: Yes
 BraceWrapping:
-    AfterCaseLabel: true
-    AfterClass: true
-    AfterControlStatement: true
-    AfterEnum: true
+    AfterCaseLabel: false
+    AfterClass: false
+    AfterControlStatement: Never
+    AfterEnum: false
     AfterFunction: true
-    AfterNamespace: true
-    AfterStruct: true
-    BeforeCatch: true
-    BeforeElse: true
+    AfterNamespace: false
+    AfterStruct: false
+    BeforeCatch: false
+    BeforeElse: false
     SplitEmptyFunction: true
     SplitEmptyRecord: true
     SplitEmptyNamespace: true
 BreakBeforeBinaryOperators: NonAssignment
-BreakBeforeBraces: Allman
+BreakBeforeBraces: Linux
 BreakBeforeTernaryOperators: true
-BreakConstructorInitializers: AfterColon
+BreakConstructorInitializers: BeforeColon
 BreakInheritanceList: BeforeColon
 CompactNamespaces: true
 ConstructorInitializerAllOnOneLineOrOnePerLine: true
@@ -32,7 +34,7 @@ IndentPPDirectives: BeforeHash
 NamespaceIndentation: All
 PointerAlignment: Left
 SpaceBeforeAssignmentOperators: true
-SpaceBeforeCpp11BracedList: false
+SpaceBeforeCpp11BracedList: true
 SpaceBeforeCtorInitializerColon: true
 SpaceBeforeInheritanceColon: true
 SpaceBeforeParens: ControlStatements

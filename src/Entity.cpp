@@ -11,255 +11,247 @@
 
 namespace tutorial
 {
-    inline namespace
-    {
-        static const IconRenderable kDeadIcon{ color::dark_red, '%' };
-    }
+	inline namespace
+	{
+		static const IconRenderable kDeadIcon { color::dark_red, '%' };
+	}
 
-    // BaseEntity Constructor
-    BaseEntity::BaseEntity(pos_t pos, const std::string& name, bool blocker,
-                           AttackerComponent attack,
-                           const DestructibleComponent& defense,
-                           const IconRenderable& renderable, Faction faction,
-                           std::unique_ptr<Item> item, bool pickable,
-                           bool isCorpse) :
-        name_(name),
-        renderable_(std::make_unique<IconRenderable>(renderable)),
-        defense_(std::make_unique<DestructibleComponent>(defense)),
-        attack_(std::make_unique<AttackerComponent>(attack)),
-        item_(std::move(item)),
-        pos_(pos),
-        faction_(faction),
-        blocker_(blocker),
-        pickable_(pickable),
-        isCorpse_(isCorpse),
-        renderPriority_(0) // Default priority
-    {
-    }
+	// BaseEntity Constructor
+	BaseEntity::BaseEntity(pos_t pos, const std::string& name, bool blocker,
+	                       AttackerComponent attack,
+	                       const DestructibleComponent& defense,
+	                       const IconRenderable& renderable,
+	                       Faction faction, std::unique_ptr<Item> item,
+	                       bool pickable, bool isCorpse)
+	    : name_(name),
+	      renderable_(std::make_unique<IconRenderable>(renderable)),
+	      defense_(std::make_unique<DestructibleComponent>(defense)),
+	      attack_(std::make_unique<AttackerComponent>(attack)),
+	      item_(std::move(item)),
+	      pos_(pos),
+	      faction_(faction),
+	      blocker_(blocker),
+	      pickable_(pickable),
+	      isCorpse_(isCorpse),
+	      renderPriority_(0) // Default priority
+	{
+	}
 
-    void BaseEntity::Act(Engine&)
-    {
-        // No op
-    }
+	void BaseEntity::Act(Engine&)
+	{
+		// No op
+	}
 
-    void BaseEntity::Die()
-    {
-        // Only update visual representation
-        // Gameplay state changes (removing components, blocker status) are
-        // handled by the death event system
-        renderable_ = std::make_unique<IconRenderable>(kDeadIcon);
-    }
+	void BaseEntity::Die()
+	{
+		// Only update visual representation
+		// Gameplay state changes (removing components, blocker status)
+		// are handled by the death event system
+		renderable_ = std::make_unique<IconRenderable>(kDeadIcon);
+	}
 
-    void BaseEntity::Use(Engine& engine)
-    {
-        if (item_)
-        {
-            item_->Use(*this, engine);
-        }
-    }
+	void BaseEntity::Use(Engine& engine)
+	{
+		if (item_) {
+			item_->Use(*this, engine);
+		}
+	}
 
-    void BaseEntity::SetPos(pos_t pos)
-    {
-        pos_ = pos;
-    }
+	void BaseEntity::SetPos(pos_t pos)
+	{
+		pos_ = pos;
+	}
 
-    Item* BaseEntity::GetItem() const
-    {
-        return item_.get();
-    }
+	Item* BaseEntity::GetItem() const
+	{
+		return item_.get();
+	}
 
-    bool BaseEntity::IsPickable() const
-    {
-        return pickable_;
-    }
+	bool BaseEntity::IsPickable() const
+	{
+		return pickable_;
+	}
 
-    bool BaseEntity::IsCorpse() const
-    {
-        return isCorpse_;
-    }
+	bool BaseEntity::IsCorpse() const
+	{
+		return isCorpse_;
+	}
 
-    bool BaseEntity::CanAct() const
-    {
-        return (defense_ && !defense_->IsDead());
-    }
+	bool BaseEntity::CanAct() const
+	{
+		return (defense_ && !defense_->IsDead());
+	}
 
-    AttackerComponent* BaseEntity::GetAttacker() const
-    {
-        return attack_.get();
-    }
+	AttackerComponent* BaseEntity::GetAttacker() const
+	{
+		return attack_.get();
+	}
 
-    DestructibleComponent* BaseEntity::GetDestructible() const
-    {
-        return defense_.get();
-    }
+	DestructibleComponent* BaseEntity::GetDestructible() const
+	{
+		return defense_.get();
+	}
 
-    const std::string& BaseEntity::GetName() const
-    {
-        return name_;
-    }
+	const std::string& BaseEntity::GetName() const
+	{
+		return name_;
+	}
 
-    const RenderableComponent* BaseEntity::GetRenderable() const
-    {
-        return renderable_.get();
-    }
+	const RenderableComponent* BaseEntity::GetRenderable() const
+	{
+		return renderable_.get();
+	}
 
-    pos_t BaseEntity::GetPos() const
-    {
-        return pos_;
-    }
+	pos_t BaseEntity::GetPos() const
+	{
+		return pos_;
+	}
 
-    bool BaseEntity::IsBlocker() const
-    {
-        return blocker_;
-    }
+	bool BaseEntity::IsBlocker() const
+	{
+		return blocker_;
+	}
 
-    float BaseEntity::GetDistance(int cx, int cy) const
-    {
-        int dx = pos_.x - cx;
-        int dy = pos_.y - cy;
-        return std::sqrt(dx * dx + dy * dy);
-    }
+	float BaseEntity::GetDistance(int cx, int cy) const
+	{
+		int dx = pos_.x - cx;
+		int dy = pos_.y - cy;
+		return std::sqrt(dx * dx + dy * dy);
+	}
 
-    Faction BaseEntity::GetFaction() const
-    {
-        return faction_;
-    }
+	Faction BaseEntity::GetFaction() const
+	{
+		return faction_;
+	}
 
-    int BaseEntity::GetRenderPriority() const
-    {
-        return renderPriority_;
-    }
+	int BaseEntity::GetRenderPriority() const
+	{
+		return renderPriority_;
+	}
 
-    void BaseEntity::SetRenderPriority(int priority)
-    {
-        renderPriority_ = priority;
-    }
+	void BaseEntity::SetRenderPriority(int priority)
+	{
+		renderPriority_ = priority;
+	}
 
-    RenderLayer BaseEntity::GetRenderLayer() const
-    {
-        if (isCorpse_)
-        {
-            return RenderLayer::CORPSES;
-        }
+	RenderLayer BaseEntity::GetRenderLayer() const
+	{
+		if (isCorpse_) {
+			return RenderLayer::CORPSES;
+		}
 
-        if (!defense_)
-        {
-            return RenderLayer::CORPSES;
-        }
+		if (!defense_) {
+			return RenderLayer::CORPSES;
+		}
 
-        switch (faction_)
-        {
-            case Faction::PLAYER:
-                return RenderLayer::PLAYER;
-            case Faction::MONSTER:
-                return RenderLayer::ACTORS;
-            case Faction::NEUTRAL:
-                return RenderLayer::ITEMS;
-            default:
-                return RenderLayer::ITEMS;
-        }
-    }
+		switch (faction_) {
+			case Faction::PLAYER:
+				return RenderLayer::PLAYER;
+			case Faction::MONSTER:
+				return RenderLayer::ACTORS;
+			case Faction::NEUTRAL:
+				return RenderLayer::ITEMS;
+			default:
+				return RenderLayer::ITEMS;
+		}
+	}
 
 } // namespace tutorial
 
 namespace tutorial
 {
-    Npc::Npc(pos_t pos, const std::string& name, bool blocker,
-             AttackerComponent attack, const DestructibleComponent& defense,
-             const IconRenderable& renderable, Faction faction,
-             std::unique_ptr<AiComponent> ai, bool pickable, bool isCorpse) :
-        BaseEntity(pos, name, blocker, attack, defense, renderable, faction,
-                   nullptr, pickable, isCorpse),
-        ai_(std::move(ai))
-    {
-    }
+	Npc::Npc(pos_t pos, const std::string& name, bool blocker,
+	         AttackerComponent attack, const DestructibleComponent& defense,
+	         const IconRenderable& renderable, Faction faction,
+	         std::unique_ptr<AiComponent> ai, bool pickable, bool isCorpse)
+	    : BaseEntity(pos, name, blocker, attack, defense, renderable,
+	                 faction, nullptr, pickable, isCorpse),
+	      ai_(std::move(ai))
+	{
+	}
 
-    void Npc::Act(Engine& engine)
-    {
-        if (defense_ && defense_->IsDead())
-        {
-            return;
-        }
+	void Npc::Act(Engine& engine)
+	{
+		if (defense_ && defense_->IsDead()) {
+			return;
+		}
 
-        ai_->Perform(engine, *this);
-    }
+		ai_->Perform(engine, *this);
+	}
 
-    std::unique_ptr<AiComponent> Npc::SwapAi(std::unique_ptr<AiComponent> newAi)
-    {
-        std::unique_ptr<AiComponent> oldAi = std::move(ai_);
-        ai_ = std::move(newAi);
-        return oldAi;
-    }
+	std::unique_ptr<AiComponent> Npc::SwapAi(
+	    std::unique_ptr<AiComponent> newAi)
+	{
+		std::unique_ptr<AiComponent> oldAi = std::move(ai_);
+		ai_ = std::move(newAi);
+		return oldAi;
+	}
 } // namespace tutorial
 
 namespace tutorial
 {
-    Player::Player(pos_t pos, const std::string& name, bool blocker,
-                   AttackerComponent attack,
-                   const DestructibleComponent& defense,
-                   const IconRenderable& renderable, Faction faction,
-                   bool pickable, bool isCorpse) :
-        BaseEntity(pos, name, blocker, attack, defense, renderable, faction,
-                   nullptr, pickable, isCorpse)
-    {
-    }
+	Player::Player(pos_t pos, const std::string& name, bool blocker,
+	               AttackerComponent attack,
+	               const DestructibleComponent& defense,
+	               const IconRenderable& renderable, Faction faction,
+	               bool pickable, bool isCorpse)
+	    : BaseEntity(pos, name, blocker, attack, defense, renderable,
+	                 faction, nullptr, pickable, isCorpse)
+	{
+	}
 
-    void Player::Use(Engine& /*engine*/)
-    {
-        // Using an item from inventory is now handled by UseItemAction
-        // This method is for when the player entity itself is "used" (not
-        // applicable)
-    }
+	void Player::Use(Engine& /*engine*/)
+	{
+		// Using an item from inventory is now handled by UseItemAction
+		// This method is for when the player entity itself is "used"
+		// (not applicable)
+	}
 
-    bool Player::AddToInventory(std::unique_ptr<Entity> item)
-    {
-        size_t maxSize = static_cast<size_t>(
-            ConfigManager::Instance().GetMaxInventorySize());
+	bool Player::AddToInventory(std::unique_ptr<Entity> item)
+	{
+		size_t maxSize = static_cast<size_t>(
+		    ConfigManager::Instance().GetMaxInventorySize());
 
-        if (inventory_.size() >= maxSize)
-        {
-            return false;
-        }
-        inventory_.push_back(std::move(item));
-        return true;
-    }
+		if (inventory_.size() >= maxSize) {
+			return false;
+		}
+		inventory_.push_back(std::move(item));
+		return true;
+	}
 
-    Entity* Player::GetInventoryItem(size_t index)
-    {
-        if (index < inventory_.size())
-        {
-            return inventory_[index].get();
-        }
-        return nullptr;
-    }
+	Entity* Player::GetInventoryItem(size_t index)
+	{
+		if (index < inventory_.size()) {
+			return inventory_[index].get();
+		}
+		return nullptr;
+	}
 
-    size_t Player::GetInventorySize() const
-    {
-        return inventory_.size();
-    }
+	size_t Player::GetInventorySize() const
+	{
+		return inventory_.size();
+	}
 
-    const std::vector<std::unique_ptr<Entity>>& Player::GetInventory() const
-    {
-        return inventory_;
-    }
+	const std::vector<std::unique_ptr<Entity>>& Player::GetInventory() const
+	{
+		return inventory_;
+	}
 
-    void Player::RemoveFromInventory(size_t index)
-    {
-        if (index < inventory_.size())
-        {
-            inventory_.erase(inventory_.begin() + index);
-        }
-    }
+	void Player::RemoveFromInventory(size_t index)
+	{
+		if (index < inventory_.size()) {
+			inventory_.erase(inventory_.begin() + index);
+		}
+	}
 
-    std::unique_ptr<Entity> Player::ExtractFromInventory(size_t index)
-    {
-        if (index < inventory_.size())
-        {
-            auto item = std::move(inventory_[index]);
-            inventory_.erase(inventory_.begin() + index);
-            return item;
-        }
-        return nullptr;
-    }
+	std::unique_ptr<Entity> Player::ExtractFromInventory(size_t index)
+	{
+		if (index < inventory_.size()) {
+			auto item = std::move(inventory_[index]);
+			inventory_.erase(inventory_.begin() + index);
+			return item;
+		}
+		return nullptr;
+	}
 
 } // namespace tutorial

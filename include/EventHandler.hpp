@@ -11,120 +11,120 @@
 
 namespace tutorial
 {
-    enum Actions
-    {
-        MOVE_UP = 0,
-        MOVE_DOWN,
-        MOVE_LEFT,
-        MOVE_RIGHT,
-        WAIT,
-        PICKUP,
-        INVENTORY,
-        DROP_ITEM,
-        MESSAGE_HISTORY,
-        RETURN_TO_GAME,
-        NEW_GAME,
-        QUIT,
-        OPEN_PAUSE_MENU,
-        DESCEND_STAIRS
-    };
+	enum Actions {
+		MOVE_UP = 0,
+		MOVE_DOWN,
+		MOVE_LEFT,
+		MOVE_RIGHT,
+		WAIT,
+		PICKUP,
+		INVENTORY,
+		DROP_ITEM,
+		MESSAGE_HISTORY,
+		RETURN_TO_GAME,
+		NEW_GAME,
+		QUIT,
+		OPEN_PAUSE_MENU,
+		DESCEND_STAIRS
+	};
 
-    class Engine;
+	class Engine;
 
-    class EventHandler
-    {
-    public:
-        virtual ~EventHandler() = default;
+	class EventHandler
+	{
+	public:
+		virtual ~EventHandler() = default;
 
-        virtual void SetKeyMap(
-            const std::unordered_map<KeyPress, Actions, KeyPressHash>&
-                keyMap) = 0;
-        virtual std::unique_ptr<Command> Dispatch() const = 0;
-    };
+		virtual void SetKeyMap(
+		    const std::unordered_map<KeyPress, Actions, KeyPressHash>&
+		        keyMap) = 0;
+		virtual std::unique_ptr<Command> Dispatch() const = 0;
+	};
 
-    class BaseEventHandler : public EventHandler
-    {
-    public:
-        BaseEventHandler(Engine& engine);
+	class BaseEventHandler : public EventHandler
+	{
+	public:
+		BaseEventHandler(Engine& engine);
 
-        void SetKeyMap(const std::unordered_map<KeyPress, Actions,
-                                                KeyPressHash>& keyMap) override;
+		void SetKeyMap(
+		    const std::unordered_map<KeyPress, Actions, KeyPressHash>&
+		        keyMap) override;
 
-        std::unique_ptr<Command> Dispatch() const override;
+		std::unique_ptr<Command> Dispatch() const override;
 
-    protected:
-        std::unordered_map<KeyPress, Actions, KeyPressHash> keyMap_;
-        Engine& engine_;
-    };
+	protected:
+		std::unordered_map<KeyPress, Actions, KeyPressHash> keyMap_;
+		Engine& engine_;
+	};
 
-    class MainGameEventHandler final : public BaseEventHandler
-    {
-    public:
-        MainGameEventHandler(Engine& engine);
-    };
+	class MainGameEventHandler final : public BaseEventHandler
+	{
+	public:
+		MainGameEventHandler(Engine& engine);
+	};
 
-    class MessageHistoryEventHandler final : public BaseEventHandler
-    {
-    public:
-        MessageHistoryEventHandler(Engine& engine);
-    };
+	class MessageHistoryEventHandler final : public BaseEventHandler
+	{
+	public:
+		MessageHistoryEventHandler(Engine& engine);
+	};
 
-    class GameOverEventHandler final : public BaseEventHandler
-    {
-    public:
-        GameOverEventHandler(Engine& engine);
-    };
+	class GameOverEventHandler final : public BaseEventHandler
+	{
+	public:
+		GameOverEventHandler(Engine& engine);
+	};
 
-    class PauseMenuEventHandler final : public BaseEventHandler
-    {
-    public:
-        PauseMenuEventHandler(Engine& engine);
+	class PauseMenuEventHandler final : public BaseEventHandler
+	{
+	public:
+		PauseMenuEventHandler(Engine& engine);
 
-        std::unique_ptr<Command> Dispatch() const override;
-    };
+		std::unique_ptr<Command> Dispatch() const override;
+	};
 
-    class StartMenuEventHandler final : public BaseEventHandler
-    {
-    public:
-        StartMenuEventHandler(Engine& engine);
+	class StartMenuEventHandler final : public BaseEventHandler
+	{
+	public:
+		StartMenuEventHandler(Engine& engine);
 
-        std::unique_ptr<Command> Dispatch() const override;
-    };
+		std::unique_ptr<Command> Dispatch() const override;
+	};
 
-    class LevelUpMenuEventHandler final : public BaseEventHandler
-    {
-    public:
-        LevelUpMenuEventHandler(Engine& engine);
+	class LevelUpMenuEventHandler final : public BaseEventHandler
+	{
+	public:
+		LevelUpMenuEventHandler(Engine& engine);
 
-        std::unique_ptr<Command> Dispatch() const override;
-    };
+		std::unique_ptr<Command> Dispatch() const override;
+	};
 
-    class InventoryEventHandler final : public BaseEventHandler
-    {
-    public:
-        InventoryEventHandler(Engine& engine);
+	class InventoryEventHandler final : public BaseEventHandler
+	{
+	public:
+		InventoryEventHandler(Engine& engine);
 
-        std::unique_ptr<Command> Dispatch() const override;
-        void SetMode(InventoryMode mode)
-        {
-            mode_ = mode;
-        }
-        InventoryMode GetMode() const
-        {
-            return mode_;
-        }
+		std::unique_ptr<Command> Dispatch() const override;
+		void SetMode(InventoryMode mode)
+		{
+			mode_ = mode;
+		}
+		InventoryMode GetMode() const
+		{
+			return mode_;
+		}
 
-    private:
-        InventoryMode mode_;
-    };
+	private:
+		InventoryMode mode_;
+	};
 
-    class ItemSelectionEventHandler final : public BaseEventHandler
-    {
-    public:
-        ItemSelectionEventHandler(Engine& engine);
+	class ItemSelectionEventHandler final : public BaseEventHandler
+	{
+	public:
+		ItemSelectionEventHandler(Engine& engine);
 
-        std::unique_ptr<Command> Dispatch() const override;
-    };
+		std::unique_ptr<Command> Dispatch() const override;
+	};
 } // namespace tutorial
 
 #endif // EVENT_HANDLER_HPP

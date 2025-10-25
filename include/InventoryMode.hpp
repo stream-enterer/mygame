@@ -3,11 +3,7 @@
 
 namespace tutorial
 {
-    enum class InventoryMode
-    {
-        Use,
-        Drop
-    };
+	enum class InventoryMode { Use, Drop };
 } // namespace tutorial
 
 #endif // INVENTORY_MODE_HPP

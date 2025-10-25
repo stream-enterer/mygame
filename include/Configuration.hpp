@@ -5,14 +5,13 @@
 
 namespace tutorial
 {
-    struct Configuration
-    {
-        std::string title;
-        unsigned int width;
-        unsigned int height;
-        unsigned int fps;
-        std::string fontPath;
-    };
+	struct Configuration {
+		std::string title;
+		unsigned int width;
+		unsigned int height;
+		unsigned int fps;
+		std::string fontPath;
+	};
 } // namespace tutorial
 
 #endif // CONFIGURATION_HPP

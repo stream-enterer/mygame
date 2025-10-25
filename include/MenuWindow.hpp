@@ -12,63 +12,61 @@
 
 namespace tutorial
 {
-    // Menu actions returned when user selects an option
-    enum class MenuAction
-    {
-        None, // No selection (window closed or ESC pressed)
-        NewGame,
-        Continue,
-        SaveAndQuit,
-        Quit,
-        LevelUpConstitution, // +20 HP
-        LevelUpStrength,     // +1 attack power
-        LevelUpAgility       // +1 defense
-    };
+	// Menu actions returned when user selects an option
+	enum class MenuAction {
+		None, // No selection (window closed or ESC pressed)
+		NewGame,
+		Continue,
+		SaveAndQuit,
+		Quit,
+		LevelUpConstitution, // +20 HP
+		LevelUpStrength,     // +1 attack power
+		LevelUpAgility       // +1 defense
+	};
 
-    // Individual menu item with label and action
-    struct MenuItem
-    {
-        MenuAction action;
-        std::string label;
-    };
+	// Individual menu item with label and action
+	struct MenuItem {
+		MenuAction action;
+		std::string label;
+	};
 
-    // Window for displaying menus (start menu, pause menu)
-    class MenuWindow : public UiWindowBase
-    {
-    public:
-        MenuWindow(std::size_t width, std::size_t height, pos_t pos,
-                   const std::string& title);
+	// Window for displaying menus (start menu, pause menu)
+	class MenuWindow : public UiWindowBase
+	{
+	public:
+		MenuWindow(std::size_t width, std::size_t height, pos_t pos,
+		           const std::string& title);
 
-        void Render(TCOD_Console* parent) const override;
+		void Render(TCOD_Console* parent) const override;
 
-        // Build menu options
-        void Clear();
-        void AddItem(MenuAction action, const std::string& label);
+		// Build menu options
+		void Clear();
+		void AddItem(MenuAction action, const std::string& label);
 
-        // Get menu options for rendering
-        const std::vector<MenuItem>& GetItems() const
-        {
-            return items_;
-        }
+		// Get menu options for rendering
+		const std::vector<MenuItem>& GetItems() const
+		{
+			return items_;
+		}
 
-        // Get currently selected item index
-        int GetSelectedIndex() const
-        {
-            return selectedIndex_;
-        }
+		// Get currently selected item index
+		int GetSelectedIndex() const
+		{
+			return selectedIndex_;
+		}
 
-        // Navigation
-        void SelectPrevious();
-        void SelectNext();
+		// Navigation
+		void SelectPrevious();
+		void SelectNext();
 
-        // Get the action for currently selected item
-        MenuAction GetSelectedAction() const;
+		// Get the action for currently selected item
+		MenuAction GetSelectedAction() const;
 
-    private:
-        std::string title_;
-        std::vector<MenuItem> items_;
-        int selectedIndex_;
-    };
+	private:
+		std::string title_;
+		std::vector<MenuItem> items_;
+		int selectedIndex_;
+	};
 
 } // namespace tutorial
 

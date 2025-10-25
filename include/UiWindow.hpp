@@ -10,25 +10,25 @@
 
 namespace tutorial
 {
-    class UiWindow
-    {
-    public:
-        virtual ~UiWindow() = default;
+	class UiWindow
+	{
+	public:
+		virtual ~UiWindow() = default;
 
-        virtual void Render(TCOD_Console* parent) const = 0;
-    };
+		virtual void Render(TCOD_Console* parent) const = 0;
+	};
 
-    class UiWindowBase : public UiWindow
-    {
-    public:
-        UiWindowBase(std::size_t width, std::size_t height, pos_t pos);
-        virtual ~UiWindowBase();
-        virtual void Render(TCOD_Console* parent) const;
+	class UiWindowBase : public UiWindow
+	{
+	public:
+		UiWindowBase(std::size_t width, std::size_t height, pos_t pos);
+		virtual ~UiWindowBase();
+		virtual void Render(TCOD_Console* parent) const;
 
-    protected:
-        TCOD_Console* console_;
-        pos_t pos_;
-    };
+	protected:
+		TCOD_Console* console_;
+		pos_t pos_;
+	};
 
 } // namespace tutorial
 

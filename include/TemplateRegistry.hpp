@@ -10,45 +10,47 @@
 
 namespace tutorial
 {
-    class Entity;
+	class Entity;
 
-    class TemplateRegistry
-    {
-    public:
-        // Get singleton instance
-        static TemplateRegistry& Instance();
+	class TemplateRegistry
+	{
+	public:
+		// Get singleton instance
+		static TemplateRegistry& Instance();
 
-        // Load templates from a JSON file
-        void LoadFromFile(const std::string& filepath);
+		// Load templates from a JSON file
+		void LoadFromFile(const std::string& filepath);
 
-        // Load all templates from a directory
-        void LoadFromDirectory(const std::string& directory);
+		// Load all templates from a directory
+		void LoadFromDirectory(const std::string& directory);
 
-        // Get a template by ID (returns nullptr if not found)
-        const EntityTemplate* Get(const std::string& id) const;
+		// Get a template by ID (returns nullptr if not found)
+		const EntityTemplate* Get(const std::string& id) const;
 
-        // Check if a template exists
-        bool Has(const std::string& id) const;
+		// Check if a template exists
+		bool Has(const std::string& id) const;
 
-        // Create an entity from a template
-        std::unique_ptr<Entity> Create(const std::string& id, pos_t pos) const;
+		// Create an entity from a template
+		std::unique_ptr<Entity> Create(const std::string& id,
+		                               pos_t pos) const;
 
-        // Clear all templates (useful for testing/reloading)
-        void Clear();
+		// Clear all templates (useful for testing/reloading)
+		void Clear();
 
-        // Get all template IDs (useful for debugging)
-        std::vector<std::string> GetAllIds() const;
+		// Get all template IDs (useful for debugging)
+		std::vector<std::string> GetAllIds() const;
 
-    private:
-        TemplateRegistry() = default; // Private constructor for singleton
-        ~TemplateRegistry() = default;
+	private:
+		TemplateRegistry() =
+		    default; // Private constructor for singleton
+		~TemplateRegistry() = default;
 
-        // Prevent copying
-        TemplateRegistry(const TemplateRegistry&) = delete;
-        TemplateRegistry& operator=(const TemplateRegistry&) = delete;
+		// Prevent copying
+		TemplateRegistry(const TemplateRegistry&) = delete;
+		TemplateRegistry& operator=(const TemplateRegistry&) = delete;
 
-        std::unordered_map<std::string, EntityTemplate> templates_;
-    };
+		std::unordered_map<std::string, EntityTemplate> templates_;
+	};
 } // namespace tutorial
 
 #endif // TEMPLATE_REGISTRY_HPP

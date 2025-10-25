@@ -12,460 +12,470 @@
 
 namespace tutorial
 {
-    MessageHistoryEvent::MessageHistoryEvent(Engine& engine) :
-        EngineEvent(engine)
-    {
-    }
+	MessageHistoryEvent::MessageHistoryEvent(Engine& engine)
+	    : EngineEvent(engine)
+	{
+	}
 
-    void MessageHistoryEvent::Execute()
-    {
-        engine_.ShowMessageHistory();
-    }
+	void MessageHistoryEvent::Execute()
+	{
+		engine_.ShowMessageHistory();
+	}
 } // namespace tutorial
 
 namespace tutorial
 {
-    NewGameEvent::NewGameEvent(Engine& engine) : EngineEvent(engine)
-    {
-    }
+	NewGameEvent::NewGameEvent(Engine& engine) : EngineEvent(engine)
+	{
+	}
 
-    void NewGameEvent::Execute()
-    {
-        engine_.NewGame();
-    }
+	void NewGameEvent::Execute()
+	{
+		engine_.NewGame();
+	}
 } // namespace tutorial
 
 namespace tutorial
 {
-    ReturnToGameEvent::ReturnToGameEvent(Engine& engine) : EngineEvent(engine)
-    {
-    }
+	ReturnToGameEvent::ReturnToGameEvent(Engine& engine)
+	    : EngineEvent(engine)
+	{
+	}
 
-    void ReturnToGameEvent::Execute()
-    {
-        engine_.ReturnToMainGame();
-    }
+	void ReturnToGameEvent::Execute()
+	{
+		engine_.ReturnToMainGame();
+	}
 } // namespace tutorial
 
 namespace tutorial
 {
-    QuitEvent::QuitEvent(Engine& engine) : EngineEvent(engine)
-    {
-    }
+	QuitEvent::QuitEvent(Engine& engine) : EngineEvent(engine)
+	{
+	}
 
-    void QuitEvent::Execute()
-    {
-        engine_.Quit();
-    }
+	void QuitEvent::Execute()
+	{
+		engine_.Quit();
+	}
 } // namespace tutorial
 
 namespace tutorial
 {
-    void Action::Execute()
-    {
-        if (!engine_.IsValid(entity_))
-        {
-            return;
-        }
-    }
+	void Action::Execute()
+	{
+		if (!engine_.IsValid(entity_)) {
+			return;
+		}
+	}
 } // namespace tutorial
 
 namespace tutorial
 {
-    AiAction::AiAction(Engine& engine, Entity& entity) : Action(engine, entity)
-    {
-    }
+	AiAction::AiAction(Engine& engine, Entity& entity)
+	    : Action(engine, entity)
+	{
+	}
 
-    void AiAction::Execute()
-    {
-        Action::Execute();
+	void AiAction::Execute()
+	{
+		Action::Execute();
 
-        entity_.Act(engine_);
-    }
+		entity_.Act(engine_);
+	}
 } // namespace tutorial
 
 namespace tutorial
 {
-    DieAction::DieAction(Engine& engine, Entity& entity) :
-        Action(engine, entity)
-    {
-    }
+	DieAction::DieAction(Engine& engine, Entity& entity)
+	    : Action(engine, entity)
+	{
+	}
 
-    void DieAction::Execute()
-    {
-        Action::Execute();
+	void DieAction::Execute()
+	{
+		Action::Execute();
 
-        // Update visual state
-        entity_.Die();
+		// Update visual state
+		entity_.Die();
 
-        if (engine_.IsPlayer(entity_))
-        {
-            auto msg =
-                StringTable::Instance().GetMessage("messages.death.player");
-            engine_.LogMessage(msg.text, msg.color, msg.stack);
+		if (engine_.IsPlayer(entity_)) {
+			auto msg = StringTable::Instance().GetMessage(
+			    "messages.death.player");
+			engine_.LogMessage(msg.text, msg.color, msg.stack);
 
-            // Wipe save on player death (which triggers game over)
-            SaveManager::Instance().DeleteSave();
-        }
-        else
-        {
-            auto msg = StringTable::Instance().GetMessage(
-                "messages.death.npc",
-                { { "name", util::capitalize(entity_.GetName()) } });
-            engine_.LogMessage(msg.text, msg.color, msg.stack);
+			// Wipe save on player death (which triggers game over)
+			SaveManager::Instance().DeleteSave();
+		} else {
+			auto msg = StringTable::Instance().GetMessage(
+			    "messages.death.npc",
+			    { { "name",
+			        util::capitalize(entity_.GetName()) } });
+			engine_.LogMessage(msg.text, msg.color, msg.stack);
 
-            // ADD THIS: Grant XP to player when monster dies
-            if (entity_.GetDestructible())
-            {
-                unsigned int xpReward =
-                    entity_.GetDestructible()->GetXpReward();
-                if (xpReward > 0 && engine_.GetPlayer()
-                    && engine_.GetPlayer()->GetDestructible())
-                {
-                    auto* playerDestructible =
-                        engine_.GetPlayer()->GetDestructible();
-                    unsigned int oldXp = playerDestructible->GetXp();
-                    playerDestructible->AddXp(xpReward);
+			// ADD THIS: Grant XP to player when monster dies
+			if (entity_.GetDestructible()) {
+				unsigned int xpReward =
+				    entity_.GetDestructible()->GetXpReward();
+				if (xpReward > 0 && engine_.GetPlayer()
+				    && engine_.GetPlayer()->GetDestructible()) {
+					auto* playerDestructible =
+					    engine_.GetPlayer()
+					        ->GetDestructible();
+					unsigned int oldXp =
+					    playerDestructible->GetXp();
+					playerDestructible->AddXp(xpReward);
 
-                    // Log XP gain
-                    engine_.LogMessage(
-                        "You gain " + std::to_string(xpReward) + " experience!",
-                        { 0, 255, 0 }, false);
+					// Log XP gain
+					engine_.LogMessage(
+					    "You gain "
+					        + std::to_string(xpReward)
+					        + " experience!",
+					    { 0, 255, 0 }, false);
 
-                    // Check for level up (XP thresholds: 350, 500, 650...)
-                    unsigned int xpLevel = 1;
-                    unsigned int xpForCurrentLevel = 0;
-                    const unsigned int LEVEL_UP_BASE = 200;
-                    const unsigned int LEVEL_UP_FACTOR = 150;
+					// Check for level up (XP thresholds:
+					// 350, 500, 650...)
+					unsigned int xpLevel = 1;
+					unsigned int xpForCurrentLevel = 0;
+					const unsigned int LEVEL_UP_BASE = 200;
+					const unsigned int LEVEL_UP_FACTOR =
+					    150;
 
-                    // Calculate which level the player should be at
-                    while (xpForCurrentLevel + LEVEL_UP_BASE
-                               + xpLevel * LEVEL_UP_FACTOR
-                           <= playerDestructible->GetXp())
-                    {
-                        xpForCurrentLevel +=
-                            LEVEL_UP_BASE + xpLevel * LEVEL_UP_FACTOR;
-                        xpLevel++;
-                    }
+					// Calculate which level the player
+					// should be at
+					while (xpForCurrentLevel + LEVEL_UP_BASE
+					           + xpLevel * LEVEL_UP_FACTOR
+					       <= playerDestructible->GetXp()) {
+						xpForCurrentLevel +=
+						    LEVEL_UP_BASE
+						    + xpLevel * LEVEL_UP_FACTOR;
+						xpLevel++;
+					}
 
-                    // Calculate which level they were at before
-                    unsigned int oldXpLevel = 1;
-                    unsigned int oldXpForCurrentLevel = 0;
-                    while (oldXpForCurrentLevel + LEVEL_UP_BASE
-                               + oldXpLevel * LEVEL_UP_FACTOR
-                           <= oldXp)
-                    {
-                        oldXpForCurrentLevel +=
-                            LEVEL_UP_BASE + oldXpLevel * LEVEL_UP_FACTOR;
-                        oldXpLevel++;
-                    }
+					// Calculate which level they were at
+					// before
+					unsigned int oldXpLevel = 1;
+					unsigned int oldXpForCurrentLevel = 0;
+					while (
+					    oldXpForCurrentLevel + LEVEL_UP_BASE
+					        + oldXpLevel * LEVEL_UP_FACTOR
+					    <= oldXp) {
+						oldXpForCurrentLevel +=
+						    LEVEL_UP_BASE
+						    + oldXpLevel
+						          * LEVEL_UP_FACTOR;
+						oldXpLevel++;
+					}
 
-                    // If they leveled up, show the level-up menu
-                    if (xpLevel > oldXpLevel)
-                    {
-                        engine_.LogMessage(
-                            "Your battle skills grow stronger! You reached "
-                            "level "
-                                + std::to_string(xpLevel) + "!",
-                            { 255, 255, 0 }, false);
-                        engine_.ShowLevelUpMenu();
-                    }
-                }
-            }
-        }
+					// If they leveled up, show the level-up
+					// menu
+					if (xpLevel > oldXpLevel) {
+						engine_.LogMessage(
+						    "Your battle skills grow "
+						    "stronger! You reached "
+						    "level "
+						        + std::to_string(
+						            xpLevel)
+						        + "!",
+						    { 255, 255, 0 }, false);
+						engine_.ShowLevelUpMenu();
+					}
+				}
+			}
+		}
 
-        engine_.HandleDeathEvent(entity_);
-    }
+		engine_.HandleDeathEvent(entity_);
+	}
 } // namespace tutorial
 
 namespace tutorial
 {
-    WaitAction::WaitAction(Engine& engine, Entity& entity) :
-        Action(engine, entity)
-    {
-    }
+	WaitAction::WaitAction(Engine& engine, Entity& entity)
+	    : Action(engine, entity)
+	{
+	}
 
-    void WaitAction::Execute()
-    {
-        // No op
-    }
+	void WaitAction::Execute()
+	{
+		// No op
+	}
 } // namespace tutorial
 
 namespace tutorial
 {
-    BumpAction::BumpAction(Engine& engine, Entity& entity, pos_t pos) :
-        DirectionalAction(engine, entity, pos)
-    {
-    }
+	BumpAction::BumpAction(Engine& engine, Entity& entity, pos_t pos)
+	    : DirectionalAction(engine, entity, pos)
+	{
+	}
 
-    void BumpAction::Execute()
-    {
-        Action::Execute();
+	void BumpAction::Execute()
+	{
+		Action::Execute();
 
-        if (entity_.GetDestructible()->IsDead())
-        {
-            return;
-        }
+		if (entity_.GetDestructible()->IsDead()) {
+			return;
+		}
 
-        auto targetPos = entity_.GetPos() + pos_;
+		auto targetPos = entity_.GetPos() + pos_;
 
-        // Execute the resolved action directly instead of queueing it
-        if (engine_.GetBlockingEntity(targetPos))
-        {
-            MeleeAction(engine_, entity_, pos_).Execute();
-        }
-        else
-        {
-            MoveAction(engine_, entity_, pos_).Execute();
-        }
-    }
+		// Execute the resolved action directly instead of queueing it
+		if (engine_.GetBlockingEntity(targetPos)) {
+			MeleeAction(engine_, entity_, pos_).Execute();
+		} else {
+			MoveAction(engine_, entity_, pos_).Execute();
+		}
+	}
 } // namespace tutorial
 
 namespace tutorial
 {
-    MeleeAction::MeleeAction(Engine& engine, Entity& entity, pos_t pos) :
-        DirectionalAction(engine, entity, pos)
-    {
-    }
+	MeleeAction::MeleeAction(Engine& engine, Entity& entity, pos_t pos)
+	    : DirectionalAction(engine, entity, pos)
+	{
+	}
 
-    void MeleeAction::Execute()
-    {
-        Action::Execute();
+	void MeleeAction::Execute()
+	{
+		Action::Execute();
 
-        if (!entity_.GetAttacker())
-        {
-            return;
-        }
+		if (!entity_.GetAttacker()) {
+			return;
+		}
 
-        auto targetPos = entity_.GetPos() + pos_;
-        auto* target = engine_.GetBlockingEntity(targetPos);
+		auto targetPos = entity_.GetPos() + pos_;
+		auto* target = engine_.GetBlockingEntity(targetPos);
 
-        if (target && !target->GetDestructible()->IsDead())
-        {
-            auto* attacker = entity_.GetAttacker();
-            auto* defender = target->GetDestructible();
-            auto damage = attacker->Attack() - defender->GetDefense();
+		if (target && !target->GetDestructible()->IsDead()) {
+			auto* attacker = entity_.GetAttacker();
+			auto* defender = target->GetDestructible();
+			auto damage =
+			    attacker->Attack() - defender->GetDefense();
 
-            if (damage > 0)
-            {
-                auto msg = StringTable::Instance().GetMessage(
-                    "messages.combat.attack_hit",
-                    { { "attacker", util::capitalize(entity_.GetName()) },
-                      { "target", target->GetName() },
-                      { "damage", std::to_string(damage) } });
-                engine_.LogMessage(msg.text, msg.color, msg.stack);
+			if (damage > 0) {
+				auto msg = StringTable::Instance().GetMessage(
+				    "messages.combat.attack_hit",
+				    { { "attacker",
+				        util::capitalize(entity_.GetName()) },
+				      { "target", target->GetName() },
+				      { "damage", std::to_string(damage) } });
+				engine_.LogMessage(msg.text, msg.color,
+				                   msg.stack);
 
-                engine_.DealDamage(*target, damage);
-            }
-            else
-            {
-                auto msg = StringTable::Instance().GetMessage(
-                    "messages.combat.attack_miss",
-                    { { "attacker", util::capitalize(entity_.GetName()) },
-                      { "target", target->GetName() } });
-                engine_.LogMessage(msg.text, msg.color, msg.stack);
-            }
-        }
-    }
+				engine_.DealDamage(*target, damage);
+			} else {
+				auto msg = StringTable::Instance().GetMessage(
+				    "messages.combat.attack_miss",
+				    { { "attacker",
+				        util::capitalize(entity_.GetName()) },
+				      { "target", target->GetName() } });
+				engine_.LogMessage(msg.text, msg.color,
+				                   msg.stack);
+			}
+		}
+	}
 } // namespace tutorial
 
 namespace tutorial
 {
-    MoveAction::MoveAction(Engine& engine, Entity& entity, pos_t pos) :
-        DirectionalAction(engine, entity, pos)
-    {
-    }
+	MoveAction::MoveAction(Engine& engine, Entity& entity, pos_t pos)
+	    : DirectionalAction(engine, entity, pos)
+	{
+	}
 
-    void MoveAction::Execute()
-    {
-        Action::Execute();
+	void MoveAction::Execute()
+	{
+		Action::Execute();
 
-        auto targetPos = entity_.GetPos() + pos_;
+		auto targetPos = entity_.GetPos() + pos_;
 
-        if (engine_.IsInBounds(targetPos) && !engine_.IsWall(targetPos))
-        {
-            entity_.SetPos(entity_.GetPos() + pos_);
+		if (engine_.IsInBounds(targetPos)
+		    && !engine_.IsWall(targetPos)) {
+			entity_.SetPos(entity_.GetPos() + pos_);
 
-            // FOV computation handled by Engine::HandleEvents() post-processing
-            // This separates rendering concerns from movement logic
-        }
-    }
+			// FOV computation handled by Engine::HandleEvents()
+			// post-processing This separates rendering concerns
+			// from movement logic
+		}
+	}
 } // namespace tutorial
 
 namespace tutorial
 {
-    PickupAction::PickupAction(Engine& engine, Entity& entity) :
-        Action(engine, entity)
-    {
-    }
+	PickupAction::PickupAction(Engine& engine, Entity& entity)
+	    : Action(engine, entity)
+	{
+	}
 
-    void PickupAction::Execute()
-    {
-        Action::Execute();
+	void PickupAction::Execute()
+	{
+		Action::Execute();
 
-        auto entityPos = entity_.GetPos();
+		auto entityPos = entity_.GetPos();
 
-        // Collect all pickable items at this position
-        std::vector<Entity*> itemsHere;
-        const auto& entities = engine_.GetEntities();
+		// Collect all pickable items at this position
+		std::vector<Entity*> itemsHere;
+		const auto& entities = engine_.GetEntities();
 
-        for (auto it = entities.begin(); it != entities.end(); ++it)
-        {
-            const auto& actor = *it;
+		for (auto it = entities.begin(); it != entities.end(); ++it) {
+			const auto& actor = *it;
 
-            if (actor->GetItem() && actor->GetPos() == entityPos
-                && !actor->IsBlocker() && actor->IsPickable())
-            {
-                itemsHere.push_back(actor.get());
-            }
-        }
+			if (actor->GetItem() && actor->GetPos() == entityPos
+			    && !actor->IsBlocker() && actor->IsPickable()) {
+				itemsHere.push_back(actor.get());
+			}
+		}
 
-        if (itemsHere.empty())
-        {
-            auto msg =
-                StringTable::Instance().GetMessage("messages.pickup.fail");
-            engine_.LogMessage(msg.text, msg.color, msg.stack);
-            return;
-        }
+		if (itemsHere.empty()) {
+			auto msg = StringTable::Instance().GetMessage(
+			    "messages.pickup.fail");
+			engine_.LogMessage(msg.text, msg.color, msg.stack);
+			return;
+		}
 
-        // If only one item, pick it up directly
-        if (itemsHere.size() == 1)
-        {
-            PickupItemAction(engine_, entity_, itemsHere[0]).Execute();
-        }
-        else
-        {
-            // Multiple items - show selection menu
-            engine_.ShowItemSelection(itemsHere);
-        }
-    }
+		// If only one item, pick it up directly
+		if (itemsHere.size() == 1) {
+			PickupItemAction(engine_, entity_, itemsHere[0])
+			    .Execute();
+		} else {
+			// Multiple items - show selection menu
+			engine_.ShowItemSelection(itemsHere);
+		}
+	}
 } // namespace tutorial
 
 namespace tutorial
 {
-    PickupItemAction::PickupItemAction(Engine& engine, Entity& entity,
-                                       Entity* item) :
-        Action(engine, entity), item_(item)
-    {
-    }
+	PickupItemAction::PickupItemAction(Engine& engine, Entity& entity,
+	                                   Entity* item)
+	    : Action(engine, entity), item_(item)
+	{
+	}
 
-    void PickupItemAction::Execute()
-    {
-        Action::Execute();
+	void PickupItemAction::Execute()
+	{
+		Action::Execute();
 
-        if (!item_)
-        {
-            return;
-        }
+		if (!item_) {
+			return;
+		}
 
-        // Try to pick up the item (only works for Player)
-        if (auto* player = dynamic_cast<Player*>(&entity_))
-        {
-            auto actorName = item_->GetName();
+		// Try to pick up the item (only works for Player)
+		if (auto* player = dynamic_cast<Player*>(&entity_)) {
+			auto actorName = item_->GetName();
 
-            // Remove from world and add to inventory
-            if (player->AddToInventory(engine_.RemoveEntity(item_)))
-            {
-                auto msg = StringTable::Instance().GetMessage(
-                    "messages.pickup.success", { { "item", actorName } });
-                engine_.LogMessage(msg.text, msg.color, msg.stack);
+			// Remove from world and add to inventory
+			if (player->AddToInventory(
+			        engine_.RemoveEntity(item_))) {
+				auto msg = StringTable::Instance().GetMessage(
+				    "messages.pickup.success",
+				    { { "item", actorName } });
+				engine_.LogMessage(msg.text, msg.color,
+				                   msg.stack);
 
-                // Close the item selection menu after successful pickup
-                engine_.ReturnToMainGame();
-            }
-            else
-            {
-                auto msg = StringTable::Instance().GetMessage(
-                    "messages.pickup.inventory_full");
-                engine_.LogMessage(msg.text, msg.color, msg.stack);
+				// Close the item selection menu after
+				// successful pickup
+				engine_.ReturnToMainGame();
+			} else {
+				auto msg = StringTable::Instance().GetMessage(
+				    "messages.pickup.inventory_full");
+				engine_.LogMessage(msg.text, msg.color,
+				                   msg.stack);
 
-                // Close menu even if inventory is full
-                engine_.ReturnToMainGame();
-            }
-        }
-    }
+				// Close menu even if inventory is full
+				engine_.ReturnToMainGame();
+			}
+		}
+	}
 } // namespace tutorial
 
 namespace tutorial
 {
-    UseItemAction::UseItemAction(Engine& engine, Entity& entity,
-                                 size_t itemIndex) :
-        Action(engine, entity), itemIndex_(itemIndex)
-    {
-    }
+	UseItemAction::UseItemAction(Engine& engine, Entity& entity,
+	                             size_t itemIndex)
+	    : Action(engine, entity), itemIndex_(itemIndex)
+	{
+	}
 
-    void UseItemAction::Execute()
-    {
-        Action::Execute();
+	void UseItemAction::Execute()
+	{
+		Action::Execute();
 
-        if (auto* player = dynamic_cast<Player*>(&entity_))
-        {
-            if (Entity* item = player->GetInventoryItem(itemIndex_))
-            {
-                if (item->GetItem())
-                {
-                    if (item->GetItem()->Use(*player, engine_))
-                    {
-                        // Item was used successfully, remove from inventory
-                        player->RemoveFromInventory(itemIndex_);
-                    }
-                }
-            }
-        }
-    }
+		if (auto* player = dynamic_cast<Player*>(&entity_)) {
+			if (Entity* item =
+			        player->GetInventoryItem(itemIndex_)) {
+				if (item->GetItem()) {
+					if (item->GetItem()->Use(*player,
+					                         engine_)) {
+						// Item was used successfully,
+						// remove from inventory
+						player->RemoveFromInventory(
+						    itemIndex_);
+					}
+				}
+			}
+		}
+	}
 } // namespace tutorial
 
 namespace tutorial
 {
-    DropItemAction::DropItemAction(Engine& engine, Entity& entity,
-                                   size_t itemIndex) :
-        Action(engine, entity), itemIndex_(itemIndex)
-    {
-    }
+	DropItemAction::DropItemAction(Engine& engine, Entity& entity,
+	                               size_t itemIndex)
+	    : Action(engine, entity), itemIndex_(itemIndex)
+	{
+	}
 
-    void DropItemAction::Execute()
-    {
-        Action::Execute();
+	void DropItemAction::Execute()
+	{
+		Action::Execute();
 
-        if (auto* player = dynamic_cast<Player*>(&entity_))
-        {
-            if (Entity* item = player->GetInventoryItem(itemIndex_))
-            {
-                std::string itemName = item->GetName();
+		if (auto* player = dynamic_cast<Player*>(&entity_)) {
+			if (Entity* item =
+			        player->GetInventoryItem(itemIndex_)) {
+				std::string itemName = item->GetName();
 
-                auto extractedItem = player->ExtractFromInventory(itemIndex_);
-                if (extractedItem)
-                {
-                    pos_t dropPos = player->GetPos();
+				auto extractedItem =
+				    player->ExtractFromInventory(itemIndex_);
+				if (extractedItem) {
+					pos_t dropPos = player->GetPos();
 
-                    // Auto-assign render priority: higher than anything at this
-                    // position
-                    int newPriority =
-                        engine_.GetMaxRenderPriorityAtPosition(dropPos) + 1;
-                    extractedItem->SetRenderPriority(newPriority);
+					// Auto-assign render priority: higher
+					// than anything at this position
+					int newPriority =
+					    engine_
+					        .GetMaxRenderPriorityAtPosition(
+					            dropPos)
+					    + 1;
+					extractedItem->SetRenderPriority(
+					    newPriority);
 
-                    // Spawn with proper priority (sorting handles placement)
-                    engine_.SpawnEntity(std::move(extractedItem), dropPos);
+					// Spawn with proper priority (sorting
+					// handles placement)
+					engine_.SpawnEntity(
+					    std::move(extractedItem), dropPos);
 
-                    auto msg = StringTable::Instance().GetMessage(
-                        "messages.drop.success", { { "item", itemName } });
-                    engine_.LogMessage(msg.text, msg.color, msg.stack);
+					auto msg =
+					    StringTable::Instance().GetMessage(
+					        "messages.drop.success",
+					        { { "item", itemName } });
+					engine_.LogMessage(msg.text, msg.color,
+					                   msg.stack);
 
-                    engine_.ReturnToMainGame();
-                }
-            }
-        }
-    }
+					engine_.ReturnToMainGame();
+				}
+			}
+		}
+	}
 } // namespace tutorial
 
 namespace tutorial
 {
-    InventoryEvent::InventoryEvent(Engine& engine) : EngineEvent(engine)
-    {
-    }
+	InventoryEvent::InventoryEvent(Engine& engine) : EngineEvent(engine)
+	{
+	}
 
-    void InventoryEvent::Execute()
-    {
-        engine_.ShowInventory();
-    }
+	void InventoryEvent::Execute()
+	{
+		engine_.ShowInventory();
+	}
 } // namespace tutorial

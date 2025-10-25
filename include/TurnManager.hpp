@@ -5,18 +5,19 @@
 
 namespace tutorial
 {
-    class Command;
-    class Engine;
+	class Command;
+	class Engine;
 
-    class TurnManager
-    {
-    public:
-        // Process a player command and handle turn logic
-        void ProcessCommand(std::unique_ptr<Command> command, Engine& engine);
+	class TurnManager
+	{
+	public:
+		// Process a player command and handle turn logic
+		void ProcessCommand(std::unique_ptr<Command> command,
+		                    Engine& engine);
 
-    private:
-        void ProcessEnemyTurn(Engine& engine);
-    };
+	private:
+		void ProcessEnemyTurn(Engine& engine);
+	};
 
 } // namespace tutorial
 

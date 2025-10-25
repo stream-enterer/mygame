@@ -11,28 +11,27 @@
 
 int main()
 {
-    // Load all configuration files before creating engine
-    tutorial::ConfigManager::Instance().LoadAll();
+	// Load all configuration files before creating engine
+	tutorial::ConfigManager::Instance().LoadAll();
 
-    // Load default locale
-    tutorial::StringTable::Instance().LoadLocale("en_US");
+	// Load default locale
+	tutorial::StringTable::Instance().LoadLocale("en_US");
 
-    static const tutorial::Configuration config{
-        "libtcod C++ tutorial 8", // title
-        80,                       // width
-        50,                       // height
-        60,                       // fps
-        "font.bdf"                // fontPath - UPDATE THIS PATH!
-    };
-    tutorial::Engine engine{ config };
-    tutorial::TurnManager turnManager;
+	static const tutorial::Configuration config {
+		"libtcod C++ tutorial 8", // title
+		80,                       // width
+		50,                       // height
+		60,                       // fps
+		"font.bdf"                // fontPath
+	};
+	tutorial::Engine engine { config };
+	tutorial::TurnManager turnManager;
 
-    while (engine.IsRunning())
-    {
-        auto command = engine.GetInput();
-        turnManager.ProcessCommand(std::move(command), engine);
-        engine.Render();
-    }
+	while (engine.IsRunning()) {
+		auto command = engine.GetInput();
+		turnManager.ProcessCommand(std::move(command), engine);
+		engine.Render();
+	}
 
-    return 0;
+	return 0;
 }
