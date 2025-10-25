@@ -442,12 +442,12 @@ namespace tutorial
 
 			// Build level-up options
 			menuWindow_->Clear();
-			menuWindow_->AddItem(MenuAction::LevelUpConstitution,
-			                     "Constitution (+20 HP)");
 			menuWindow_->AddItem(MenuAction::LevelUpStrength,
 			                     "Strength (+1 attack)");
-			menuWindow_->AddItem(MenuAction::LevelUpAgility,
-			                     "Agility (+1 defense)");
+			menuWindow_->AddItem(MenuAction::LevelUpDexterity,
+			                     "Dexterity (+1 defense)");
+			menuWindow_->AddItem(MenuAction::LevelUpIntelligence,
+			                     "Intelligence (+1 mana)");
 
 			eventHandler_ =
 			    std::make_unique<LevelUpMenuEventHandler>(*this);
@@ -563,19 +563,16 @@ namespace tutorial
 			auto* destructible = player_->GetDestructible();
 			auto* attacker = player_->GetAttacker();
 
-			switch (action) {
-				case MenuAction::LevelUpConstitution:
-					// +20 max HP and current HP
-					destructible->IncreaseMaxHealth(20);
-					LogMessage(
-					    "Your health increases by 20 HP!",
-					    { 0, 255, 0 }, false);
-					break;
+			// Every level up grants +4 HP
+			destructible->IncreaseMaxHealth(4);
+			LogMessage("Your health increases by 4 HP!",
+			           { 0, 255, 0 }, false);
 
+			switch (action) {
 				case MenuAction::LevelUpStrength:
-					// +1 attack power
+					// +1 STR (increases attack by 1)
 					if (attacker) {
-						attacker->IncreasePower(1);
+						attacker->IncreaseStrength(1);
 						LogMessage(
 						    "Your strength increases "
 						    "by 1!",
@@ -583,14 +580,24 @@ namespace tutorial
 					}
 					break;
 
-				case MenuAction::LevelUpAgility:
-					// +1 defense
-					destructible->IncreaseDefense(1);
+				case MenuAction::LevelUpDexterity:
+					// +1 DEX (increases defense by 1)
+					destructible->IncreaseDexterity(1);
 					LogMessage(
-					    "Your agility increases by 1!",
+					    "Your dexterity increases by 1!",
 					    { 100, 100, 255 }, false);
 					break;
 
+				case MenuAction::LevelUpIntelligence:
+					// +1 INT (increases max mana by 1)
+					destructible->IncreaseIntelligence(1);
+					LogMessage(
+					    "Your intelligence increases by 1!",
+					    { 138, 43, 226 }, false);
+					LogMessage(
+					    "Your maximum mana increases by 1!",
+					    { 0, 100, 200 }, false);
+					break;
 				case MenuAction::None:
 				default:
 					break;
@@ -969,13 +976,15 @@ namespace tutorial
 
 	void Engine::DealDamage(Entity& target, unsigned int damage)
 	{
+		// Don't deal damage to corpses - they're already dead
+		if (target.IsCorpse()) {
+			return;
+		}
+
 		target.GetDestructible()->TakeDamage(damage);
 
 		if (target.GetDestructible()->IsDead()) {
-			auto action = DieAction(*this, target);
-			std::unique_ptr<Event> event =
-			    std::make_unique<DieAction>(action);
-			AddEventFront(event);
+			HandleDeathEvent(target);
 		}
 	}
 
@@ -1146,13 +1155,8 @@ namespace tutorial
 
 			if (corpse) {
 				// Override the generic name with specific
-				// corpse name (can't change through template
-				// since name is per-instance) Note: This
-				// requires adding a SetName() method to Entity
-				// For now, we'll keep the factory-created
-				// corpse as-is
-				// TODO: Add Entity::SetName() if we want custom
-				// corpse names
+				// corpse name
+				corpse->SetName(corpseName);
 
 				// Set corpse priority to -1 so it renders below
 				// any items at this position (Items have

@@ -1,0 +1,15 @@
+{
+	"corpse": {
+		"name": "corpse",
+		"char": "%",
+		"color": [191, 0, 0],
+		"blocks": false,
+		"faction": "neutral",
+		"hp": 1,
+		"maxHp": 1,
+		"defense": 0,
+		"power": 0,
+		"pickable": false,
+		"isCorpse": true
+	}
+}

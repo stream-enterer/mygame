@@ -19,9 +19,9 @@ namespace tutorial
 		Continue,
 		SaveAndQuit,
 		Quit,
-		LevelUpConstitution, // +20 HP
-		LevelUpStrength,     // +1 attack power
-		LevelUpAgility       // +1 defense
+		LevelUpStrength,    // +1 attack power
+		LevelUpDexterity,   // +1 defense (renamed from Agility)
+		LevelUpIntelligence // +1 INT and max mana
 	};
 
 	// Individual menu item with label and action

@@ -97,6 +97,11 @@ namespace tutorial
 		return name_;
 	}
 
+	void BaseEntity::SetName(const std::string& name)
+	{
+		name_ = name;
+	}
+
 	const RenderableComponent* BaseEntity::GetRenderable() const
 	{
 		return renderable_.get();

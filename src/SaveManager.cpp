@@ -551,12 +551,17 @@ namespace tutorial
 
 		// Components
 		if (const auto* attacker = entity.GetAttacker()) {
-			j["attacker"]["power"] = attacker->Attack();
+			j["attacker"]["strength"] = attacker->GetStrength();
 		}
 
 		if (const auto* destructible = entity.GetDestructible()) {
-			j["destructible"]["defense"] =
-			    destructible->GetDefense();
+			j["destructible"]["dexterity"] =
+			    destructible->GetDexterity();
+			j["destructible"]["intelligence"] =
+			    destructible->GetIntelligence();
+			j["destructible"]["mana"] = destructible->GetMana();
+			j["destructible"]["maxMana"] =
+			    destructible->GetMaxMana();
 			j["destructible"]["hp"] = destructible->GetHealth();
 			j["destructible"]["maxHp"] =
 			    destructible->GetMaxHealth();
@@ -641,25 +646,48 @@ namespace tutorial
 			}
 
 			// Parse components
-			AttackerComponent attacker { 0 };
+			AttackerComponent attacker { 1 }; // Default STR = 1
 			if (j.contains("attacker")) {
-				attacker = AttackerComponent {
-					j["attacker"]["power"]
-					    .get<unsigned int>()
-				};
+				// Try new format first (strength), fall back to
+				// old format (power)
+				unsigned int strength = 1;
+				if (j["attacker"].contains("strength")) {
+					strength = j["attacker"]["strength"]
+					               .get<unsigned int>();
+				} else if (j["attacker"].contains("power")) {
+					// Backwards compatibility with old
+					// saves
+					strength = j["attacker"]["power"]
+					               .get<unsigned int>();
+				}
+				attacker = AttackerComponent { strength };
 			}
 
-			DestructibleComponent destructible { 0, 1, 1 };
+			DestructibleComponent destructible {
+				1, 1, 1
+			}; // Default DEX = 1
 			if (j.contains("destructible")) {
-				unsigned int defense =
-				    j["destructible"]["defense"]
-				        .get<unsigned int>();
+				// Try new format first (dexterity), fall back
+				// to old format (defense)
+				unsigned int dexterity = 1;
+				if (j["destructible"].contains("dexterity")) {
+					dexterity =
+					    j["destructible"]["dexterity"]
+					        .get<unsigned int>();
+				} else if (j["destructible"].contains(
+				               "defense")) {
+					// Backwards compatibility with old
+					// saves
+					dexterity = j["destructible"]["defense"]
+					                .get<unsigned int>();
+				}
+
 				unsigned int maxHp = j["destructible"]["maxHp"]
 				                         .get<unsigned int>();
 				unsigned int hp =
 				    j["destructible"]["hp"].get<unsigned int>();
 				destructible =
-				    DestructibleComponent { defense, maxHp,
+				    DestructibleComponent { dexterity, maxHp,
 					                    hp };
 
 				// Restore XP data if present
@@ -674,6 +702,34 @@ namespace tutorial
 					    j["destructible"]["xpReward"]
 					        .get<unsigned int>();
 					destructible.SetXpReward(xpReward);
+				}
+
+				// Restore mana/INT data if present (new format)
+				if (j["destructible"].contains(
+				        "intelligence")) {
+					unsigned int intelligence =
+					    j["destructible"]["intelligence"]
+					        .get<unsigned int>();
+					// Set INT by increasing from base (1)
+					if (intelligence > 1) {
+						destructible
+						    .IncreaseIntelligence(
+						        intelligence - 1);
+					}
+				}
+				if (j["destructible"].contains("mana")) {
+					unsigned int mana =
+					    j["destructible"]["mana"]
+					        .get<unsigned int>();
+					unsigned int currentMana =
+					    destructible.GetMana();
+					if (mana < currentMana) {
+						destructible.SpendMana(
+						    currentMana - mana);
+					} else if (mana > currentMana) {
+						destructible.RestoreMana(
+						    mana - currentMana);
+					}
 				}
 			}
 

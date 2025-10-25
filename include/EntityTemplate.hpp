@@ -121,7 +121,10 @@ namespace tutorial
 
 		// Can this item be picked up? (defaults to true for items,
 		// false for corpses)
-		bool pickable = true; // ADD THIS LINE
+		bool pickable = true;
+
+		// Is this entity a corpse? (defaults to false)
+		bool isCorpse = false;
 
 		// Parse from JSON object
 		static EntityTemplate FromJson(const std::string& id,

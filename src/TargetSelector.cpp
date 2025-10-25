@@ -158,7 +158,7 @@ namespace tutorial
 		for (const auto& entity : engine.GetEntities()) {
 			if (entity->GetDestructible()
 			    && !entity->GetDestructible()->IsDead()
-			    && !entity->IsCorpse()
+			    && !entity->IsCorpse() && !entity->GetItem()
 			    && entity->GetDistance(x, y) <= effectRadius_
 			    && HasLineOfSight(engine, user.GetPos(),
 			                      entity->GetPos())) {
@@ -235,7 +235,7 @@ namespace tutorial
 			for (const auto& entity : engine.GetEntities()) {
 				if (entity->GetDestructible()
 				    && !entity->GetDestructible()->IsDead()
-				    && !entity->IsCorpse()
+				    && !entity->IsCorpse() && !entity->GetItem()
 				    && entity->GetPos().x == tilePos.x
 				    && entity->GetPos().y == tilePos.y) {
 					targets.push_back(entity.get());

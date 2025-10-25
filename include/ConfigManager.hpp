@@ -42,6 +42,8 @@ namespace tutorial
 		tcod::ColorRGB GetHealthBarEmptyColor() const;
 		tcod::ColorRGB GetXpBarFullColor() const;
 		tcod::ColorRGB GetXpBarEmptyColor() const;
+		tcod::ColorRGB GetManaBarFullColor() const;
+		tcod::ColorRGB GetManaBarEmptyColor() const;
 
 		// Message log
 		int GetMessageLogWidth() const;

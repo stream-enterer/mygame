@@ -11,26 +11,28 @@ namespace tutorial
 	class AttackerComponent
 	{
 	public:
-		AttackerComponent(unsigned int power);
+		AttackerComponent(unsigned int strength);
 
-		unsigned int Attack() const;
-		void IncreasePower(unsigned int amount);
+		unsigned int Attack() const; // Returns STR value
+		unsigned int GetStrength() const;
+		void IncreaseStrength(unsigned int amount);
 
 	private:
-		unsigned int power_;
+		unsigned int strength_; // STR stat (1 STR = 1 attack damage)
 	};
 
 	class DestructibleComponent
 	{
 	public:
-		DestructibleComponent(unsigned int defense, unsigned int hp);
-		DestructibleComponent(unsigned int defense, unsigned int maxHp,
-		                      unsigned int hp);
+		DestructibleComponent(unsigned int dexterity, unsigned int hp);
+		DestructibleComponent(unsigned int dexterity,
+		                      unsigned int maxHp, unsigned int hp);
 
 		unsigned int Heal(unsigned int value);
 		void TakeDamage(unsigned int value);
 
-		unsigned int GetDefense() const;
+		unsigned int GetDefense() const; // Returns DEX value
+		unsigned int GetDexterity() const;
 		int GetHealth() const;
 		unsigned int GetMaxHealth() const;
 		bool IsDead() const;
@@ -41,16 +43,26 @@ namespace tutorial
 		unsigned int GetXpReward() const;
 		void SetXpReward(unsigned int reward);
 		void IncreaseMaxHealth(unsigned int amount);
-		void IncreaseDefense(unsigned int amount);
+		void IncreaseDexterity(unsigned int amount);
+
+		// Mana management
+		unsigned int GetMana() const;
+		unsigned int GetMaxMana() const;
+		void SpendMana(unsigned int amount);
+		void RestoreMana(unsigned int amount);
+		unsigned int GetIntelligence() const;
+		void IncreaseIntelligence(unsigned int amount);
 
 	private:
-		unsigned int defense_;
+		unsigned int dexterity_; // DEX stat (1 DEX = 1 defense)
 		unsigned int maxHp_;
 		int hp_;
-		unsigned int xp_;       // Current XP (for player)
-		unsigned int xpReward_; // XP granted when this entity dies
+		unsigned int xp_;           // Current XP (for player)
+		unsigned int xpReward_;     // XP granted when this entity dies
+		unsigned int intelligence_; // INT stat (1 INT = 1 max mana)
+		unsigned int mana_;         // Current mana
+		unsigned int maxMana_;      // Maximum mana (based on INT)
 	};
-
 	class RenderableComponent
 	{
 	public:

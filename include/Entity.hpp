@@ -36,6 +36,7 @@ namespace tutorial
 		virtual AttackerComponent* GetAttacker() const = 0;
 		virtual DestructibleComponent* GetDestructible() const = 0;
 		virtual const std::string& GetName() const = 0;
+		virtual void SetName(const std::string& name) = 0;
 		virtual const RenderableComponent* GetRenderable() const = 0;
 		virtual pos_t GetPos() const = 0;
 		virtual bool IsBlocker() const = 0;
@@ -124,6 +125,7 @@ namespace tutorial
 		virtual AttackerComponent* GetAttacker() const override;
 		virtual DestructibleComponent* GetDestructible() const override;
 		virtual const std::string& GetName() const override;
+		virtual void SetName(const std::string& name) override;
 		virtual const RenderableComponent* GetRenderable()
 		    const override;
 		virtual pos_t GetPos() const override;

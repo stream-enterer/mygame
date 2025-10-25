@@ -82,7 +82,49 @@ namespace tutorial
 			                            .alignment = TCOD_LEFT },
 			    "%s", hpBuffer);
 
-			// === XP BAR (Row 2) ===
+			// === MANA BAR (Row 1) ===
+			// Fill background with empty mana color
+			tcod::ColorRGB manaEmpty =
+			    ConfigManager::Instance().GetManaBarEmptyColor();
+			for (int i = 0; i < consoleWidth; ++i) {
+				TCOD_console_put_rgb(console_, i, 1, 0, NULL,
+				                     &manaEmpty,
+				                     TCOD_BKGND_SET);
+			}
+
+			// Fill foreground with full mana color
+			const int manaWidth =
+			    (int)((float)destructible->GetMana()
+			          / destructible->GetMaxMana() * consoleWidth);
+			if (manaWidth > 0) {
+				tcod::ColorRGB manaFull =
+				    ConfigManager::Instance()
+				        .GetManaBarFullColor();
+				for (int i = 0; i < manaWidth; ++i) {
+					TCOD_console_put_rgb(console_, i, 1, 0,
+					                     NULL, &manaFull,
+					                     TCOD_BKGND_SET);
+				}
+			}
+
+			// Print mana text
+			char manaBuffer[50];
+			snprintf(manaBuffer, sizeof(manaBuffer), "MP: %u/%u",
+			         destructible->GetMana(),
+			         destructible->GetMaxMana());
+			TCOD_printf_rgb(
+			    console_,
+			    (TCOD_PrintParamsRGB) { .x = 1,
+			                            .y = 1,
+			                            .width = 0,
+			                            .height = 0,
+			                            .fg = NULL,
+			                            .bg = NULL,
+			                            .flag = TCOD_BKGND_NONE,
+			                            .alignment = TCOD_LEFT },
+			    "%s", manaBuffer);
+
+			// === XP BAR (Row 3) ===
 			// Calculate XP level from current XP
 			unsigned int currentXp = destructible->GetXp();
 			unsigned int xpLevel = 1;
@@ -104,7 +146,7 @@ namespace tutorial
 			tcod::ColorRGB xpEmpty =
 			    ConfigManager::Instance().GetXpBarEmptyColor();
 			for (int i = 0; i < consoleWidth; ++i) {
-				TCOD_console_put_rgb(console_, i, 2, 0, NULL,
+				TCOD_console_put_rgb(console_, i, 3, 0, NULL,
 				                     &xpEmpty, TCOD_BKGND_SET);
 			}
 
@@ -117,7 +159,7 @@ namespace tutorial
 				    ConfigManager::Instance()
 				        .GetXpBarFullColor();
 				for (int i = 0; i < xpWidth; ++i) {
-					TCOD_console_put_rgb(console_, i, 2, 0,
+					TCOD_console_put_rgb(console_, i, 3, 0,
 					                     NULL, &xpFull,
 					                     TCOD_BKGND_SET);
 				}
@@ -131,7 +173,7 @@ namespace tutorial
 			TCOD_printf_rgb(
 			    console_,
 			    (TCOD_PrintParamsRGB) { .x = 1,
-			                            .y = 2,
+			                            .y = 3,
 			                            .width = 0,
 			                            .height = 0,
 			                            .fg = NULL,
@@ -139,6 +181,38 @@ namespace tutorial
 			                            .flag = TCOD_BKGND_NONE,
 			                            .alignment = TCOD_LEFT },
 			    "%s", xpBuffer);
+
+			// === STAT DISPLAY (Row 4) ===
+			// Get stats from components
+			unsigned int str = 0;
+			unsigned int dex = 0;
+			unsigned int intel = 0;
+
+			if (auto* attacker = entity_.GetAttacker()) {
+				str = attacker->GetStrength();
+			}
+			dex = destructible->GetDexterity();
+			intel = destructible->GetIntelligence();
+
+			// Print stats
+			char statBuffer[50];
+			snprintf(statBuffer, sizeof(statBuffer),
+			         "STR:%u DEX:%u INT:%u", str, dex, intel);
+
+			tcod::ColorRGB statColor =
+			    ConfigManager::Instance().GetUITextColor();
+
+			TCOD_printf_rgb(
+			    console_,
+			    (TCOD_PrintParamsRGB) { .x = 1,
+			                            .y = 4,
+			                            .width = 0,
+			                            .height = 0,
+			                            .fg = &statColor,
+			                            .bg = NULL,
+			                            .flag = TCOD_BKGND_NONE,
+			                            .alignment = TCOD_LEFT },
+			    "%s", statBuffer);
 		}
 
 		TCOD_console_blit(console_, 0, 0,

@@ -359,6 +359,11 @@ namespace tutorial
 			tpl.pickable = j["pickable"];
 		}
 
+		// Corpse flag (defaults to false if not specified)
+		if (j.contains("isCorpse")) {
+			tpl.isCorpse = j["isCorpse"];
+		}
+
 		// Optional spawn data
 		if (j.contains("spawns") && j["spawns"].is_array()) {
 			for (const auto& spawnJson : j["spawns"]) {
@@ -539,7 +544,8 @@ namespace tutorial
 			    AttackerComponent {
 			        static_cast<unsigned int>(power) },
 			    destructible, IconRenderable { color, icon },
-			    factionEnum, std::move(aiComponent), pickable);
+			    factionEnum, std::move(aiComponent), pickable,
+			    isCorpse);
 		} else {
 			// Item or neutral entity without AI
 			return std::make_unique<BaseEntity>(
@@ -551,7 +557,7 @@ namespace tutorial
 			        static_cast<unsigned int>(maxHp),
 			        static_cast<unsigned int>(hp) },
 			    IconRenderable { color, icon }, factionEnum,
-			    std::move(itemComponent), pickable);
+			    std::move(itemComponent), pickable, isCorpse);
 		}
 	}
 } // namespace tutorial

@@ -21,6 +21,11 @@ namespace tutorial
 			return false;
 		}
 
+		// Don't apply health effects to corpses - they're already dead
+		if (target.IsCorpse()) {
+			return false;
+		}
+
 		if (amount_ > 0) {
 			// Healing
 			unsigned int healed = destructible->Heal(amount_);
@@ -57,7 +62,6 @@ namespace tutorial
 			return true;
 		}
 	}
-
 	// AiChangeEffect implementation
 	AiChangeEffect::AiChangeEffect(const std::string& aiType, int duration,
 	                               const std::string& messageKey)

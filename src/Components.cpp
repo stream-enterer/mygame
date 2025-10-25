@@ -7,23 +7,48 @@ namespace tutorial
 		using uint = unsigned int;
 	}
 
-	AttackerComponent::AttackerComponent(uint power) : power_(power)
+	AttackerComponent::AttackerComponent(uint strength)
+	    : strength_(strength)
 	{
 	}
 
 	uint AttackerComponent::Attack() const
 	{
-		return power_;
+		return strength_; // 1 STR = 1 attack damage
 	}
 
-	DestructibleComponent::DestructibleComponent(uint defense, uint hp)
-	    : defense_(defense), maxHp_(hp), hp_(hp), xp_(0), xpReward_(0)
+	uint AttackerComponent::GetStrength() const
+	{
+		return strength_;
+	}
+
+	void AttackerComponent::IncreaseStrength(uint amount)
+	{
+		strength_ += amount;
+	}
+
+	DestructibleComponent::DestructibleComponent(uint dexterity, uint hp)
+	    : dexterity_(dexterity),
+	      maxHp_(hp),
+	      hp_(hp),
+	      xp_(0),
+	      xpReward_(0),
+	      intelligence_(1),
+	      mana_(1),
+	      maxMana_(1)
 	{
 	}
 
-	DestructibleComponent::DestructibleComponent(uint defense, uint maxHp,
+	DestructibleComponent::DestructibleComponent(uint dexterity, uint maxHp,
 	                                             uint hp)
-	    : defense_(defense), maxHp_(maxHp), hp_(hp), xp_(0), xpReward_(0)
+	    : dexterity_(dexterity),
+	      maxHp_(maxHp),
+	      hp_(hp),
+	      xp_(0),
+	      xpReward_(0),
+	      intelligence_(1),
+	      mana_(1),
+	      maxMana_(1)
 	{
 	}
 
@@ -41,7 +66,12 @@ namespace tutorial
 
 	uint DestructibleComponent::GetDefense() const
 	{
-		return defense_;
+		return dexterity_; // 1 DEX = 1 defense
+	}
+
+	uint DestructibleComponent::GetDexterity() const
+	{
+		return dexterity_;
 	}
 
 	int DestructibleComponent::GetHealth() const
@@ -85,14 +115,45 @@ namespace tutorial
 		hp_ += amount; // Also heal by the same amount
 	}
 
-	void DestructibleComponent::IncreaseDefense(uint amount)
+	void DestructibleComponent::IncreaseDexterity(uint amount)
 	{
-		defense_ += amount;
+		dexterity_ += amount;
 	}
 
-	void AttackerComponent::IncreasePower(uint amount)
+	unsigned int DestructibleComponent::GetMana() const
 	{
-		power_ += amount;
+		return mana_;
+	}
+
+	unsigned int DestructibleComponent::GetMaxMana() const
+	{
+		return maxMana_;
+	}
+
+	void DestructibleComponent::SpendMana(unsigned int amount)
+	{
+		if (amount > mana_) {
+			mana_ = 0;
+		} else {
+			mana_ -= amount;
+		}
+	}
+
+	void DestructibleComponent::RestoreMana(unsigned int amount)
+	{
+		mana_ = std::min(maxMana_, mana_ + amount);
+	}
+
+	unsigned int DestructibleComponent::GetIntelligence() const
+	{
+		return intelligence_;
+	}
+
+	void DestructibleComponent::IncreaseIntelligence(unsigned int amount)
+	{
+		intelligence_ += amount;
+		maxMana_ += amount; // Each INT point = +1 max mana
+		mana_ += amount;    // Also restore mana by the same amount
 	}
 
 	IconRenderable::IconRenderable(tcod::ColorRGB color, char icon)
