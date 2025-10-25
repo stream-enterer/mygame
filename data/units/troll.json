@@ -1,0 +1,11 @@
+{
+	"name": "troll",
+	"char": "T",
+	"color": [0, 127, 0],
+	"blocks": true,
+	"hp": 16,
+	"defense": 1,
+	"power": 4,
+	"xp": 100,
+	"ai": "hostile"
+}

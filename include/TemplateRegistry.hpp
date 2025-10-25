@@ -21,8 +21,15 @@ namespace tutorial
 		// Load templates from a JSON file
 		void LoadFromFile(const std::string& filepath);
 
-		// Load all templates from a directory
+		// Load all templates from a directory (legacy format: multiple
+		// templates per file)
 		void LoadFromDirectory(const std::string& directory);
+
+		// Load simplified templates from directory (one JSON per
+		// template) type: "item" or "unit" - determines which parser to
+		// use
+		void LoadSimplifiedDirectory(const std::string& directory,
+		                             const std::string& type);
 
 		// Get a template by ID (returns nullptr if not found)
 		const EntityTemplate* Get(const std::string& id) const;

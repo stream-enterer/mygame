@@ -1,0 +1,13 @@
+{
+	"name": "health potion",
+	"char": "!",
+	"color": [63, 159, 255],
+	"targeting": "self",
+	"effects": [
+		{
+			"type": "health",
+			"amount": 4,
+			"message": "items.health_potion.use_success"
+		}
+	]
+}

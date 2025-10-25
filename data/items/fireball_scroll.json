@@ -1,0 +1,15 @@
+{
+	"name": "scroll of fireball",
+	"char": "#",
+	"color": [63, 159, 255],
+	"targeting": "area",
+	"range": 5.0,
+	"radius": 3.0,
+	"effects": [
+		{
+			"type": "health",
+			"amount": -12,
+			"message": "items.fireball_scroll.hit"
+		}
+	]
+}

@@ -1,0 +1,14 @@
+{
+	"name": "scroll of chain lightning",
+	"char": "#",
+	"color": [63, 159, 255],
+	"targeting": "beam",
+	"range": 10.0,
+	"effects": [
+		{
+			"type": "health",
+			"amount": -25,
+			"message": "items.chain_lightning_scroll.hit"
+		}
+	]
+}

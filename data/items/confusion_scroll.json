@@ -1,0 +1,15 @@
+{
+	"name": "scroll of confusion",
+	"char": "#",
+	"color": [63, 159, 255],
+	"targeting": "single",
+	"range": 8.0,
+	"effects": [
+		{
+			"type": "ai_change",
+			"ai": "confused",
+			"duration": 10,
+			"message": "items.confusion_scroll.use_success"
+		}
+	]
+}

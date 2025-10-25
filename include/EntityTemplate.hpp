@@ -21,32 +21,76 @@ namespace tutorial
 		static SpawnData FromJson(const nlohmann::json& j);
 	};
 
-	// Effect data parsed from JSON
+	struct ItemTemplate {
+		std::string id;   // Filename becomes ID (e.g., "health_potion")
+		std::string name; // Display name
+		char icon;        // Character to render
+		tcod::ColorRGB color; // RGB color
+
+		// Targeting - flat structure
+		std::string targetingType; // "self", "closest_enemy", "single",
+		                           // "area", "beam"
+		std::optional<float> range;
+		std::optional<float> radius;
+
+		// Effects stored as JSON, parsed when creating Item component
+		nlohmann::json effects;
+
+		// Parse from JSON (expects flattened item structure)
+		static ItemTemplate FromJson(const std::string& id,
+		                             const nlohmann::json& j);
+
+		// Create entity with item component
+		std::unique_ptr<Entity> CreateEntity(pos_t pos) const;
+	};
+
+	struct UnitTemplate {
+		std::string id;       // Filename becomes ID (e.g., "orc")
+		std::string name;     // Display name
+		char icon;            // Character to render
+		tcod::ColorRGB color; // RGB color
+		bool blocks;          // Blocks movement?
+
+		// Combat stats
+		int hp;
+		int defense;
+		int power;
+		int xp; // XP reward when killed
+
+		// AI type (e.g., "hostile")
+		std::string ai;
+
+		// Parse from JSON (expects flattened unit structure)
+		static UnitTemplate FromJson(const std::string& id,
+		                             const nlohmann::json& j);
+
+		// Create entity (monster with AI)
+		std::unique_ptr<Entity> CreateEntity(pos_t pos) const;
+	};
+
+	// Effect data parsed from JSON (used internally by
+	// LoadItemsFromDirectory)
 	struct EffectData {
-		std::string type;                      // "health", "ai_change"
-		std::optional<int> amount;             // For health effects
-		std::optional<std::string> aiType;     // For AI change effects
-		std::optional<int> duration;           // For AI change effects
-		std::optional<std::string> messageKey; // Localization key
-
-		static EffectData FromJson(const nlohmann::json& j);
+		std::string type;
+		std::optional<int> amount;
+		std::optional<std::string> aiType;
+		std::optional<int> duration;
+		std::optional<std::string> messageKey;
 	};
 
-	// Target selector data parsed from JSON
+	// Target selector data parsed from JSON (used internally by
+	// LoadItemsFromDirectory)
 	struct TargetingData {
-		std::string type; // "self", "closest_enemy", "single", "area"
-		std::optional<float> range;  // For ranged selectors
-		std::optional<float> radius; // For area selectors
-
-		static TargetingData FromJson(const nlohmann::json& j);
+		std::string type;
+		std::optional<float> range;
+		std::optional<float> radius;
 	};
 
-	// Item data parsed from JSON
+	// Item data parsed from JSON (used internally by
+	// LoadItemsFromDirectory)
 	struct ItemData {
 		TargetingData targeting;
 		std::vector<EffectData> effects;
-
-		static ItemData FromJson(const nlohmann::json& j);
 	};
 
 	// Complete entity definition from JSON

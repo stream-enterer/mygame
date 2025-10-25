@@ -1,0 +1,11 @@
+{
+	"name": "orc",
+	"char": "o",
+	"color": [63, 127, 63],
+	"blocks": true,
+	"hp": 10,
+	"defense": 0,
+	"power": 3,
+	"xp": 35,
+	"ai": "hostile"
+}

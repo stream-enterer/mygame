@@ -1,0 +1,14 @@
+{
+	"name": "scroll of lightning bolt",
+	"char": "#",
+	"color": [63, 159, 255],
+	"targeting": "closest_enemy",
+	"range": 5.0,
+	"effects": [
+		{
+			"type": "health",
+			"amount": -20,
+			"message": "items.lightning_scroll.hit"
+		}
+	]
+}

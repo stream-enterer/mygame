@@ -215,12 +215,25 @@ namespace tutorial
 
 		try {
 			TemplateRegistry::Instance().Clear();
+
+			// Load special entities (player, corpse, stairs) from
+			// legacy format
 			TemplateRegistry::Instance().LoadFromDirectory(
 			    "data/entities");
+
+			// Load units (monsters/NPCs) - one file per unit
+			TemplateRegistry::Instance().LoadSimplifiedDirectory(
+			    "data/units", "unit");
+
+			// Load items - one file per item
+			TemplateRegistry::Instance().LoadSimplifiedDirectory(
+			    "data/items", "item");
+
 			std::cout
 			    << "[Engine] Loaded "
 			    << TemplateRegistry::Instance().GetAllIds().size()
-			    << " entity templates" << std::endl;
+			    << " templates (special + units + items)"
+			    << std::endl;
 		} catch (const std::exception& e) {
 			std::cerr << "[Engine] FATAL: Failed to load entity "
 			             "templates: "
