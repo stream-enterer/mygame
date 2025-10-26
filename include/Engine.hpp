@@ -72,6 +72,7 @@ namespace tutorial
 		void LogMessage(const std::string& text, tcod::ColorRGB color,
 		                bool stack);
 		void DealDamage(Entity& target, unsigned int damage);
+		void GrantXpToPlayer(unsigned int xpAmount);
 		void NewGame();
 		Entity* GetClosestMonster(int x, int y, float range) const;
 		bool PickATile(
@@ -167,9 +168,6 @@ namespace tutorial
 		void HandleStartMenuConfirm(MenuAction action);
 		void HandlePauseMenuConfirm(MenuAction action);
 		void HandleLevelUpConfirm(MenuAction action);
-
-		// XP and level-up helpers
-		void GrantXpToPlayer(unsigned int xpAmount);
 
 		static constexpr int kAutosaveInterval = 100;
 
