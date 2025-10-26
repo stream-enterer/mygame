@@ -813,29 +813,28 @@ namespace tutorial
 
 	Engine::PlayerState Engine::SavePlayerState()
 	{
-		PlayerState state;
+		std::string name = player_ ? player_->GetName() : "player";
+		AttackerComponent attacker =
+		    (player_ && player_->GetAttacker())
+		        ? *player_->GetAttacker()
+		        : AttackerComponent { 5 };
+		DestructibleComponent destructible =
+		    (player_ && player_->GetDestructible())
+		        ? *player_->GetDestructible()
+		        : DestructibleComponent { 1, 30, 30 };
 
-		if (!player_) {
-			state.name = "player";
-			state.attacker = AttackerComponent { 5 };
-			state.destructible = DestructibleComponent { 1, 30, 30 };
-			return state;
-		}
+		PlayerState state(name, attacker, destructible);
 
-		state.name = player_->GetName();
-		state.attacker = player_->GetAttacker()
-		                     ? *player_->GetAttacker()
-		                     : AttackerComponent { 5 };
-		state.destructible = player_->GetDestructible()
-		                         ? *player_->GetDestructible()
-		                         : DestructibleComponent { 1, 30, 30 };
-
-		if (auto* playerPtr = dynamic_cast<Player*>(player_)) {
-			size_t invSize = playerPtr->GetInventorySize();
-			for (size_t i = 0; i < invSize; ++i) {
-				auto item = playerPtr->ExtractFromInventory(0);
-				if (item) {
-					state.inventory.push_back(std::move(item));
+		if (player_) {
+			if (auto* playerPtr = dynamic_cast<Player*>(player_)) {
+				size_t invSize = playerPtr->GetInventorySize();
+				for (size_t i = 0; i < invSize; ++i) {
+					auto item =
+					    playerPtr->ExtractFromInventory(0);
+					if (item) {
+						state.inventory.push_back(
+						    std::move(item));
+					}
 				}
 			}
 		}
