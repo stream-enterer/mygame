@@ -177,8 +177,14 @@ namespace tutorial
 			DestructibleComponent destructible;
 			std::vector<std::unique_ptr<Entity>> inventory;
 
+			// Provide explicit constructor with default values
+			PlayerState(const std::string& n, const AttackerComponent& atk,
+			           const DestructibleComponent& dest)
+			    : name(n), attacker(atk), destructible(dest)
+			{
+			}
+
 			// Make this movable but not copyable
-			PlayerState() = default;
 			PlayerState(PlayerState&&) = default;
 			PlayerState& operator=(PlayerState&&) = default;
 			PlayerState(const PlayerState&) = delete;
