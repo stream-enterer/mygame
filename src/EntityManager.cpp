@@ -50,9 +50,9 @@ namespace tutorial
 		    });
 	}
 
-	void EntityManager::PlaceEntities(const Room& room,
-	                                  const SpawnConfig& spawnConfig,
-	                                  const std::string& levelId)
+	void EntityManager::PlaceEntitiesFromTable(
+	    const Room& room, const SpawnTable* table,
+	    const SpawnConfig& spawnConfig, bool checkBlockingOnly)
 	{
 		auto* rand = TCODRandom::getInstance();
 
@@ -60,6 +60,51 @@ namespace tutorial
 			return;
 		}
 
+		if (!table) {
+			return;
+		}
+
+		int maxEntities = spawnConfig.maxPerRoom;
+		int numEntities = rand->getInt(0, maxEntities);
+
+		for (int i = 0; i < numEntities; ++i) {
+			auto origin = room.GetOrigin();
+			auto end = room.GetEnd();
+			int x = rand->getInt(origin.x + 1, end.x - 1);
+			int y = rand->getInt(origin.y + 1, end.y - 1);
+			pos_t pos { x, y };
+
+			bool blocked = false;
+			if (checkBlockingOnly) {
+				blocked = (GetBlockingEntity(pos) != nullptr);
+			} else {
+				for (const auto& entity : entities_) {
+					if (entity->GetPos() == pos) {
+						blocked = true;
+						break;
+					}
+				}
+			}
+
+			if (blocked) {
+				continue;
+			}
+
+			std::string templateId = table->Roll();
+			if (templateId.empty()) {
+				continue;
+			}
+
+			auto entity =
+			    TemplateRegistry::Instance().Create(templateId, pos);
+			Spawn(std::move(entity));
+		}
+	}
+
+	void EntityManager::PlaceEntities(const Room& room,
+	                                  const SpawnConfig& spawnConfig,
+	                                  const std::string& levelId)
+	{
 		const SpawnTable* monsterTable =
 		    DynamicSpawnSystem::Instance().GetMonsterTable(levelId);
 
@@ -70,29 +115,7 @@ namespace tutorial
 			return;
 		}
 
-		int maxMonsters = spawnConfig.maxPerRoom;
-		int numMonsters = rand->getInt(0, maxMonsters);
-
-		for (int i = 0; i < numMonsters; ++i) {
-			auto origin = room.GetOrigin();
-			auto end = room.GetEnd();
-			int x = rand->getInt(origin.x + 1, end.x - 1);
-			int y = rand->getInt(origin.y + 1, end.y - 1);
-			pos_t pos { x, y };
-
-			if (GetBlockingEntity(pos)) {
-				continue;
-			}
-
-			std::string templateId = monsterTable->Roll();
-			if (templateId.empty()) {
-				continue;
-			}
-
-			auto entity = TemplateRegistry::Instance().Create(
-			    templateId, pos);
-			Spawn(std::move(entity));
-		}
+		PlaceEntitiesFromTable(room, monsterTable, spawnConfig, true);
 	}
 
 	std::unique_ptr<Entity>& EntityManager::Spawn(
@@ -131,12 +154,6 @@ namespace tutorial
 	                               const SpawnConfig& spawnConfig,
 	                               const std::string& levelId)
 	{
-		auto* rand = TCODRandom::getInstance();
-
-		if (rand->getFloat(0.0f, 1.0f) > spawnConfig.spawnChance) {
-			return;
-		}
-
 		const SpawnTable* itemTable =
 		    DynamicSpawnSystem::Instance().GetItemTable(levelId);
 
@@ -147,37 +164,6 @@ namespace tutorial
 			return;
 		}
 
-		int maxItems = spawnConfig.maxPerRoom;
-		int numItems = rand->getInt(0, maxItems);
-
-		for (int i = 0; i < numItems; ++i) {
-			auto origin = room.GetOrigin();
-			auto end = room.GetEnd();
-			int x = rand->getInt(origin.x + 1, end.x - 1);
-			int y = rand->getInt(origin.y + 1, end.y - 1);
-			pos_t pos { x, y };
-
-			bool blocked = false;
-			for (const auto& entity : entities_) {
-				if (entity->GetPos() == pos) {
-					blocked = true;
-					break;
-				}
-			}
-
-			if (!blocked) {
-				std::string itemTemplateId = itemTable->Roll();
-				if (itemTemplateId.empty()) {
-					continue;
-				}
-
-				auto item = TemplateRegistry::Instance().Create(
-				    itemTemplateId, pos);
-				std::cout << "[EntityManager] Spawning item: "
-				          << itemTemplateId << " at (" << pos.x
-				          << ", " << pos.y << ")" << std::endl;
-				Spawn(std::move(item));
-			}
-		}
+		PlaceEntitiesFromTable(room, itemTable, spawnConfig, false);
 	}
 } // namespace tutorial

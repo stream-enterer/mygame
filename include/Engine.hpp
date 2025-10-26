@@ -1,6 +1,7 @@
 #ifndef ENGINE_HPP
 #define ENGINE_HPP
 
+#include "Components.hpp"
 #include "ConfigManager.hpp"
 #include "Configuration.hpp"
 #include "EntityManager.hpp"
@@ -168,6 +169,29 @@ namespace tutorial
 		void HandleStartMenuConfirm(MenuAction action);
 		void HandlePauseMenuConfirm(MenuAction action);
 		void HandleLevelUpConfirm(MenuAction action);
+
+		// Level transition helpers
+		struct PlayerState {
+			std::string name;
+			AttackerComponent attacker;
+			DestructibleComponent destructible;
+			std::vector<std::unique_ptr<Entity>> inventory;
+
+			// Make this movable but not copyable
+			PlayerState() = default;
+			PlayerState(PlayerState&&) = default;
+			PlayerState& operator=(PlayerState&&) = default;
+			PlayerState(const PlayerState&) = delete;
+			PlayerState& operator=(const PlayerState&) = delete;
+		};
+
+		PlayerState SavePlayerState();
+		void LoadLevelConfiguration(int dungeonLevel);
+		void ClearCurrentLevel();
+		void PopulateLevelWithEntities();
+		void RestorePlayerWithState(PlayerState&& state, pos_t position);
+		void RecreatePlayerUI();
+		pos_t CalculateWindowPosition(int width, int height, bool center) const;
 
 		static constexpr int kAutosaveInterval = 100;
 

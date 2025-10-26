@@ -83,6 +83,11 @@ namespace tutorial
 		}
 
 	private:
+		void PlaceEntitiesFromTable(
+		    const Room& room, const class SpawnTable* table,
+		    const SpawnConfig& spawnConfig,
+		    bool checkBlockingOnly);
+
 		std::deque<Entity_ptr> entities_;
 	};
 } // namespace tutorial

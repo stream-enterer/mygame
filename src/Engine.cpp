@@ -297,16 +297,8 @@ namespace tutorial
 
 		int invWidth = cfg.GetInventoryWindowWidth();
 		int invHeight = cfg.GetInventoryWindowHeight();
-		pos_t invPos;
-
-		if (cfg.GetInventoryCenterOnScreen()) {
-			invPos = pos_t { static_cast<int>(config_.width) / 2
-				             - invWidth / 2,
-				         static_cast<int>(config_.height) / 2
-				             - invHeight / 2 };
-		} else {
-			invPos = pos_t { 0, 0 };
-		}
+		pos_t invPos = CalculateWindowPosition(
+		    invWidth, invHeight, cfg.GetInventoryCenterOnScreen());
 
 		inventoryWindow_ = std::make_unique<InventoryWindow>(
 		    invWidth, invHeight, invPos, *player_);
@@ -375,17 +367,8 @@ namespace tutorial
 			auto& cfg = ConfigManager::Instance();
 			int width = cfg.GetInventoryWindowWidth();
 			int height = cfg.GetInventoryWindowHeight();
-			pos_t pos;
-
-			if (cfg.GetInventoryCenterOnScreen()) {
-				pos =
-				    pos_t { static_cast<int>(config_.width / 2)
-					        - width / 2,
-					    static_cast<int>(config_.height / 2)
-					        - height / 2 };
-			} else {
-				pos = pos_t { 0, 0 };
-			}
+			pos_t pos = CalculateWindowPosition(
+			    width, height, cfg.GetInventoryCenterOnScreen());
 
 			itemSelectionWindow_ =
 			    std::make_unique<ItemSelectionWindow>(
@@ -828,33 +811,50 @@ namespace tutorial
 		return dungeonLevel_;
 	}
 
-	void tutorial::Engine::NextLevel()
+	Engine::PlayerState Engine::SavePlayerState()
 	{
-		// Increment dungeon level
-		dungeonLevel_++;
+		PlayerState state;
 
-		std::cout << "[Engine] Descending to dungeon level "
-		          << dungeonLevel_ << std::endl;
+		if (!player_) {
+			state.name = "player";
+			state.attacker = AttackerComponent { 5 };
+			state.destructible = DestructibleComponent { 1, 30, 30 };
+			return state;
+		}
 
-		LogMessage(
-		    "After a rare moment of peace, you descend deeper into "
-		    "the heart of the dungeon...",
-		    { 255, 60, 60 }, false);
+		state.name = player_->GetName();
+		state.attacker = player_->GetAttacker()
+		                     ? *player_->GetAttacker()
+		                     : AttackerComponent { 5 };
+		state.destructible = player_->GetDestructible()
+		                         ? *player_->GetDestructible()
+		                         : DestructibleComponent { 1, 30, 30 };
 
-		// Determine which level config to load based on depth
+		if (auto* playerPtr = dynamic_cast<Player*>(player_)) {
+			size_t invSize = playerPtr->GetInventorySize();
+			for (size_t i = 0; i < invSize; ++i) {
+				auto item = playerPtr->ExtractFromInventory(0);
+				if (item) {
+					state.inventory.push_back(std::move(item));
+				}
+			}
+		}
+
+		return state;
+	}
+
+	void Engine::LoadLevelConfiguration(int dungeonLevel)
+	{
 		std::string levelConfigPath;
-		if (dungeonLevel_ == 1) {
+
+		if (dungeonLevel == 1) {
 			levelConfigPath = "data/levels/dungeon_1.json";
-		} else if (dungeonLevel_ == 2) {
+		} else if (dungeonLevel == 2) {
 			levelConfigPath = "data/levels/dungeon_2.json";
 		} else {
-			// For deeper levels, cycle between dungeon_1 and
-			// dungeon_2 Or use dungeon_2 for all deeper levels
-			// (harder difficulty)
 			levelConfigPath = "data/levels/dungeon_2.json";
 		}
 
-		// Load the new level configuration
 		try {
 			currentLevel_ =
 			    LevelConfig::LoadFromFile(levelConfigPath);
@@ -868,7 +868,6 @@ namespace tutorial
 			    "data/levels/dungeon_1.json");
 		}
 
-		// Rebuild spawn tables for the new level
 		try {
 			DynamicSpawnSystem::Instance().Clear();
 			DynamicSpawnSystem::Instance().BuildSpawnTablesForLevel(
@@ -879,46 +878,19 @@ namespace tutorial
 			    << e.what() << std::endl;
 			throw;
 		}
+	}
 
-		// Save player's inventory before clearing entities
-		std::vector<std::unique_ptr<Entity>> savedInventory;
-		if (player_) {
-			// Cast to Player to access inventory methods
-			if (auto* playerPtr = dynamic_cast<Player*>(player_)) {
-				// Extract items from player's inventory
-				size_t invSize = playerPtr->GetInventorySize();
-				for (size_t i = 0; i < invSize; ++i) {
-					auto item =
-					    playerPtr->ExtractFromInventory(
-					        0); // Always extract first
-					if (item) {
-						savedInventory.push_back(
-						    std::move(item));
-					}
-				}
-			}
-		}
-
-		// Save player stats before clearing (position is reset to first
-		// room)
-		std::string playerName =
-		    player_ ? player_->GetName() : "player";
-		DestructibleComponent savedDestructible =
-		    player_ && player_->GetDestructible()
-		        ? *player_->GetDestructible()
-		        : DestructibleComponent { 1, 30, 30 };
-		AttackerComponent savedAttacker =
-		    player_ && player_->GetAttacker() ? *player_->GetAttacker()
-		                                      : AttackerComponent { 5 };
-
-		// Clear all entities (including player and stairs)
+	void Engine::ClearCurrentLevel()
+	{
 		entities_.Clear();
 		eventQueue_.clear();
 		entitiesToRemove_.clear();
 		player_ = nullptr;
 		stairs_ = nullptr;
+	}
 
-		// Regenerate the map
+	void Engine::PopulateLevelWithEntities()
+	{
 		GenerateMap(currentLevel_.generation.width,
 		            currentLevel_.generation.height);
 		map_->Update();
@@ -930,7 +902,6 @@ namespace tutorial
 			return;
 		}
 
-		// Spawn monsters and items in all rooms except the first
 		for (auto it = rooms.begin() + 1; it != rooms.end(); ++it) {
 			entities_.PlaceItems(*it, currentLevel_.itemSpawning,
 			                     currentLevel_.id);
@@ -939,44 +910,6 @@ namespace tutorial
 			                        currentLevel_.id);
 		}
 
-		// Recreate player in first room with saved stats
-		pos_t playerPos = rooms[0].GetCenter();
-		auto playerEntity = std::make_unique<Player>(
-		    playerPos, playerName, true, savedAttacker,
-		    savedDestructible,
-		    IconRenderable { { 255, 255, 255 }, '@' }, Faction::PLAYER);
-
-		// Restore inventory to new player entity
-		for (auto& item : savedInventory) {
-			playerEntity->AddToInventory(std::move(item));
-		}
-
-		player_ = entities_.Spawn(std::move(playerEntity)).get();
-
-		// Recreate UI components that reference the player
-		auto& cfg = ConfigManager::Instance();
-		healthBar_ = std::make_unique<HealthBar>(
-		    cfg.GetHealthBarWidth(), cfg.GetHealthBarHeight(),
-		    pos_t { cfg.GetHealthBarX(), cfg.GetHealthBarY() },
-		    *player_);
-
-		int invWidth = cfg.GetInventoryWindowWidth();
-		int invHeight = cfg.GetInventoryWindowHeight();
-		pos_t invPos;
-
-		if (cfg.GetInventoryCenterOnScreen()) {
-			invPos = pos_t { static_cast<int>(config_.width) / 2
-				             - invWidth / 2,
-				         static_cast<int>(config_.height) / 2
-				             - invHeight / 2 };
-		} else {
-			invPos = pos_t { 0, 0 };
-		}
-
-		inventoryWindow_ = std::make_unique<InventoryWindow>(
-		    invWidth, invHeight, invPos, *player_);
-
-		// Place stairs in the last room
 		if (!rooms.empty()) {
 			pos_t stairsPos = rooms.back().GetCenter();
 			auto stairsEntity = TemplateRegistry::Instance().Create(
@@ -987,17 +920,86 @@ namespace tutorial
 			          << stairsPos.x << ", " << stairsPos.y << ")"
 			          << std::endl;
 		}
+	}
 
-		// Recompute FOV for new position
+	void Engine::RestorePlayerWithState(PlayerState&& state,
+	                                    pos_t position)
+	{
+		auto playerEntity = std::make_unique<Player>(
+		    position, state.name, true, state.attacker,
+		    state.destructible,
+		    IconRenderable { { 255, 255, 255 }, '@' },
+		    Faction::PLAYER);
+
+		for (auto& item : state.inventory) {
+			playerEntity->AddToInventory(std::move(item));
+		}
+
+		player_ = entities_.Spawn(std::move(playerEntity)).get();
+	}
+
+	void Engine::RecreatePlayerUI()
+	{
+		auto& cfg = ConfigManager::Instance();
+
+		healthBar_ = std::make_unique<HealthBar>(
+		    cfg.GetHealthBarWidth(), cfg.GetHealthBarHeight(),
+		    pos_t { cfg.GetHealthBarX(), cfg.GetHealthBarY() },
+		    *player_);
+
+		int invWidth = cfg.GetInventoryWindowWidth();
+		int invHeight = cfg.GetInventoryWindowHeight();
+		pos_t invPos =
+		    CalculateWindowPosition(invWidth, invHeight,
+		                            cfg.GetInventoryCenterOnScreen());
+
+		inventoryWindow_ = std::make_unique<InventoryWindow>(
+		    invWidth, invHeight, invPos, *player_);
+	}
+
+	pos_t Engine::CalculateWindowPosition(int width, int height,
+	                                       bool center) const
+	{
+		if (center) {
+			return pos_t { static_cast<int>(config_.width) / 2
+				           - width / 2,
+				       static_cast<int>(config_.height) / 2
+				           - height / 2 };
+		}
+		return pos_t { 0, 0 };
+	}
+
+	void tutorial::Engine::NextLevel()
+	{
+		dungeonLevel_++;
+
+		std::cout << "[Engine] Descending to dungeon level "
+		          << dungeonLevel_ << std::endl;
+
+		LogMessage(
+		    "After a rare moment of peace, you descend deeper into "
+		    "the heart of the dungeon...",
+		    { 255, 60, 60 }, false);
+
+		PlayerState savedState = SavePlayerState();
+		LoadLevelConfiguration(dungeonLevel_);
+		ClearCurrentLevel();
+		PopulateLevelWithEntities();
+
+		auto rooms = map_->GetRooms();
+		if (!rooms.empty()) {
+			pos_t playerPos = rooms[0].GetCenter();
+			RestorePlayerWithState(std::move(savedState), playerPos);
+			RecreatePlayerUI();
+		}
+
 		ComputeFOV();
 		map_->Update();
 
-		// Log the new level
 		LogMessage("Welcome to dungeon level "
 		               + std::to_string(dungeonLevel_) + "!",
 		           { 255, 255, 0 }, false);
 
-		// Return to game state (in case we were in a menu)
 		windowState_ = MainGame;
 		eventHandler_ = std::make_unique<MainGameEventHandler>(*this);
 	}
