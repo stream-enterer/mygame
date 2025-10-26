@@ -15,7 +15,7 @@ namespace tutorial
 {
 	inline namespace
 	{
-		constexpr std::size_t kNumActions = 14;
+		constexpr std::size_t kNumActions = 19;
 
 		static const std::array<
 		    std::function<std::unique_ptr<tutorial::Command>(Engine&)>,
@@ -44,6 +44,30 @@ namespace tutorial
 			            (void)engine;
 			            return std::make_unique<
 			                tutorial::MoveCommand>(1, 0);
+			    },
+			    // Up-Left
+			    [](auto& engine) {
+			            (void)engine;
+			            return std::make_unique<
+			                tutorial::MoveCommand>(-1, -1);
+			    },
+			    // Up-Right
+			    [](auto& engine) {
+			            (void)engine;
+			            return std::make_unique<
+			                tutorial::MoveCommand>(1, -1);
+			    },
+			    // Down-Left
+			    [](auto& engine) {
+			            (void)engine;
+			            return std::make_unique<
+			                tutorial::MoveCommand>(-1, 1);
+			    },
+			    // Down-Right
+			    [](auto& engine) {
+			            (void)engine;
+			            return std::make_unique<
+			                tutorial::MoveCommand>(1, 1);
 			    },
 			    // Wait action
 			    [](auto& engine) {
@@ -104,6 +128,12 @@ namespace tutorial
 			            (void)engine;
 			            return std::make_unique<
 			                tutorial::DescendStairsCommand>();
+			    },
+			    // Show start menu
+			    [](auto& engine) {
+			            (void)engine;
+			            return std::make_unique<
+			                tutorial::StartMenuCommand>();
 			    }
 		    };
 	}; // namespace
@@ -162,6 +192,33 @@ namespace tutorial
 						break;
 					case SDLK_RIGHT:
 						tcodKey = TCODK_RIGHT;
+						break;
+					case SDLK_KP_8:
+						tcodKey = TCODK_UP;
+						break;
+					case SDLK_KP_2:
+						tcodKey = TCODK_DOWN;
+						break;
+					case SDLK_KP_4:
+						tcodKey = TCODK_LEFT;
+						break;
+					case SDLK_KP_6:
+						tcodKey = TCODK_RIGHT;
+						break;
+					case SDLK_KP_7:
+						tcodKey = TCODK_KP7;
+						break;
+					case SDLK_KP_9:
+						tcodKey = TCODK_KP9;
+						break;
+					case SDLK_KP_1:
+						tcodKey = TCODK_KP1;
+						break;
+					case SDLK_KP_3:
+						tcodKey = TCODK_KP3;
+						break;
+					case SDLK_KP_5:
+						tcodKey = TCODK_KP5;
 						break;
 					case SDLK_SPACE:
 						tcodKey = TCODK_SPACE;
@@ -223,7 +280,12 @@ namespace tutorial
 		    { TCODK_DOWN, tutorial::Actions::MOVE_DOWN },
 		    { TCODK_LEFT, tutorial::Actions::MOVE_LEFT },
 		    { TCODK_RIGHT, tutorial::Actions::MOVE_RIGHT },
+		    { TCODK_KP7, tutorial::Actions::MOVE_UP_LEFT },
+		    { TCODK_KP9, tutorial::Actions::MOVE_UP_RIGHT },
+		    { TCODK_KP1, tutorial::Actions::MOVE_DOWN_LEFT },
+		    { TCODK_KP3, tutorial::Actions::MOVE_DOWN_RIGHT },
 		    { TCODK_SPACE, tutorial::Actions::WAIT },
+		    { TCODK_KP5, tutorial::Actions::WAIT },
 		    { { TCODK_CHAR, 'g' }, tutorial::Actions::PICKUP },
 		    { { TCODK_CHAR, 'i' }, tutorial::Actions::INVENTORY },
 		    { { TCODK_CHAR, 'v' }, tutorial::Actions::MESSAGE_HISTORY },
@@ -254,8 +316,8 @@ namespace tutorial
 
 	static const std::unordered_map<tutorial::KeyPress, tutorial::Actions,
 	                                tutorial::KeyPressHash>
-	    GameOverKeyMap { { TCODK_ENTER, tutorial::Actions::NEW_GAME },
-		             { TCODK_ESCAPE, tutorial::Actions::QUIT } };
+	    GameOverKeyMap { { TCODK_ESCAPE,
+		               tutorial::Actions::SHOW_START_MENU } };
 
 	tutorial::GameOverEventHandler::GameOverEventHandler(Engine& engine)
 	    : BaseEventHandler(engine)
@@ -351,9 +413,62 @@ namespace tutorial
 					    MenuConfirmCommand>();
 				}
 
-				// ESCAPE - quit game from start menu
+				// ESCAPE - do nothing on start menu
+				// (Player must explicitly select "Exit")
 				if (sdlKey == SDLK_ESCAPE) {
-					return std::make_unique<QuitCommand>();
+					// Do nothing - don't quit
+					continue;
+				}
+			}
+		}
+
+		return command;
+	}
+
+	CharacterCreationEventHandler::CharacterCreationEventHandler(
+	    Engine& engine)
+	    : BaseEventHandler(engine)
+	{
+		// No keymap needed - custom Dispatch handles all input
+	}
+
+	std::unique_ptr<Command> CharacterCreationEventHandler::Dispatch() const
+	{
+		SDL_Event sdlEvent;
+		std::unique_ptr<Command> command { nullptr };
+
+		while (SDL_PollEvent(&sdlEvent)) {
+			if (sdlEvent.type == SDL_EVENT_QUIT) {
+				return std::make_unique<QuitCommand>();
+			}
+
+			if (sdlEvent.type == SDL_EVENT_KEY_DOWN) {
+				SDL_Keycode sdlKey = sdlEvent.key.key;
+
+				// UP key - select previous option
+				if (sdlKey == SDLK_UP) {
+					return std::make_unique<
+					    MenuNavigateUpCommand>();
+				}
+
+				// DOWN key - select next option
+				if (sdlKey == SDLK_DOWN) {
+					return std::make_unique<
+					    MenuNavigateDownCommand>();
+				}
+
+				// ENTER or SPACE - confirm character creation
+				if (sdlKey == SDLK_RETURN
+				    || sdlKey == SDLK_SPACE) {
+					return std::make_unique<
+					    MenuConfirmCommand>();
+				}
+
+				// ESCAPE - back to start menu (cancel character
+				// creation)
+				if (sdlKey == SDLK_ESCAPE) {
+					return std::make_unique<
+					    StartMenuCommand>();
 				}
 			}
 		}

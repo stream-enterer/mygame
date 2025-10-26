@@ -17,19 +17,23 @@ inline namespace
 {
 	using tutorial::pos_t;
 
-	auto checkCardinalPoints = [](pos_t pos,
-	                              pos_t target) -> tcod::BresenhamLine {
-		constexpr std::array<pos_t, 4> cardinals { {
-		    { 0, -1 }, // up
-		    { 0, 1 },  // down
-		    { -1, 0 }, // left
-		    { 1, 0 }   // right
+	auto check8Directions = [](pos_t pos,
+	                           pos_t target) -> tcod::BresenhamLine {
+		constexpr std::array<pos_t, 8> directions { {
+		    { 0, -1 },  // up
+		    { 0, 1 },   // down
+		    { -1, 0 },  // left
+		    { 1, 0 },   // right
+		    { -1, -1 }, // up-left
+		    { 1, -1 },  // up-right
+		    { -1, 1 },  // down-left
+		    { 1, 1 }    // down-right
 		} };
 
 		std::vector<tcod::BresenhamLine> lines;
-		lines.reserve(4);
+		lines.reserve(8);
 
-		for (auto [x, y] : cardinals) {
+		for (auto [x, y] : directions) {
 			auto new_pos = pos_t { x, y } + target;
 
 			auto line =
@@ -91,10 +95,9 @@ namespace tutorial
 		auto delta = targetPos - pos;
 
 		auto distance = std::max(std::abs(delta.x), std::abs(delta.y));
-		auto is_diagonal = (std::abs(delta.x) + std::abs(delta.y)) > 1;
 
-		// At melee range - attack
-		if (distance == 1 && !is_diagonal) {
+		// At melee range - attack (now includes diagonal attacks)
+		if (distance == 1) {
 			std::unique_ptr<Event> event =
 			    std::make_unique<MeleeAction>(engine, entity,
 			                                  delta);
@@ -104,7 +107,7 @@ namespace tutorial
 
 		// Player is visible - move directly toward them
 		if (engine.GetMap().IsInFov(targetPos)) {
-			auto path = checkCardinalPoints(pos, targetPos);
+			auto path = check8Directions(pos, targetPos);
 
 			auto canPathToTarget =
 			    [](const tcod::BresenhamLine& path,
@@ -128,7 +131,6 @@ namespace tutorial
 				return;
 			}
 		}
-
 		// Player not visible - use scent tracking
 		// Scan the 8 adjacent cells for the strongest scent
 		unsigned int bestLevel = 0;

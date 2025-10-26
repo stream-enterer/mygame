@@ -39,7 +39,8 @@ namespace tutorial
 		Inventory,
 		ItemSelection,
 		PauseMenu,
-		LevelUpMenu
+		LevelUpMenu,
+		CharacterCreation
 	};
 
 	class Entity;
@@ -84,6 +85,7 @@ namespace tutorial
 		void ShowItemSelection(const std::vector<Entity*>& items);
 		void ShowPauseMenu();
 		void ShowStartMenu();
+		void ShowCharacterCreation();
 		void MenuNavigateUp();
 		void MenuNavigateDown();
 		void MenuConfirm();
@@ -173,6 +175,10 @@ namespace tutorial
 		std::unique_ptr<MessageLogWindow> messageLogWindow_;
 		std::unique_ptr<InventoryWindow> inventoryWindow_;
 		std::unique_ptr<ItemSelectionWindow> itemSelectionWindow_;
+
+		struct CharacterCreationData {
+			int selectedClass = 0; // 0=Warrior, 1=Rogue, 2=Mage
+		} characterCreation_;
 
 		Entity* player_;
 		std::unique_ptr<HealthBar> healthBar_;

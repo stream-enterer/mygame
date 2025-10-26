@@ -16,6 +16,10 @@ namespace tutorial
 		MOVE_DOWN,
 		MOVE_LEFT,
 		MOVE_RIGHT,
+		MOVE_UP_LEFT,
+		MOVE_UP_RIGHT,
+		MOVE_DOWN_LEFT,
+		MOVE_DOWN_RIGHT,
 		WAIT,
 		PICKUP,
 		INVENTORY,
@@ -25,7 +29,8 @@ namespace tutorial
 		NEW_GAME,
 		QUIT,
 		OPEN_PAUSE_MENU,
-		DESCEND_STAIRS
+		DESCEND_STAIRS,
+		SHOW_START_MENU
 	};
 
 	class Engine;
@@ -87,6 +92,14 @@ namespace tutorial
 	{
 	public:
 		StartMenuEventHandler(Engine& engine);
+
+		std::unique_ptr<Command> Dispatch() const override;
+	};
+
+	class CharacterCreationEventHandler final : public BaseEventHandler
+	{
+	public:
+		CharacterCreationEventHandler(Engine& engine);
 
 		std::unique_ptr<Command> Dispatch() const override;
 	};

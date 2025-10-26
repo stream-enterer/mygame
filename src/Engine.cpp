@@ -416,7 +416,6 @@ namespace tutorial
 			menuWindow_->Clear();
 			menuWindow_->AddItem(MenuAction::Continue,
 			                     "Resume Game");
-			menuWindow_->AddItem(MenuAction::NewGame, "New Game");
 			menuWindow_->AddItem(MenuAction::SaveAndQuit,
 			                     "Save and Quit");
 
@@ -468,17 +467,46 @@ namespace tutorial
 
 		// Build start menu options
 		menuWindow_->Clear();
-		menuWindow_->AddItem(MenuAction::NewGame, "New Game");
 
-		// Only show "Continue" if a save file exists
+		// Only show "Continue" if a save file exists - make it first
+		// option
 		if (SaveManager::Instance().HasSave()) {
 			menuWindow_->AddItem(MenuAction::Continue, "Continue");
 		}
 
+		menuWindow_->AddItem(MenuAction::NewGame, "New Game");
 		menuWindow_->AddItem(MenuAction::Quit, "Exit");
 
 		eventHandler_ = std::make_unique<StartMenuEventHandler>(*this);
 		windowState_ = StartMenu;
+	}
+
+	void Engine::ShowCharacterCreation()
+	{
+		// Create character creation menu centered on screen
+		int width = 50;
+		int height = 25;
+		pos_t pos { static_cast<int>(config_.width) / 2 - width / 2,
+			    static_cast<int>(config_.height) / 2 - height / 2 };
+
+		menuWindow_ = std::make_unique<MenuWindow>(
+		    width, height, pos, "Create Your Character");
+
+		// Build character class options with placeholder descriptions
+		menuWindow_->Clear();
+		menuWindow_->AddItem(
+		    MenuAction::CharacterClass1,
+		    "Warrior - Masters of melee combat and heavy armor");
+		menuWindow_->AddItem(
+		    MenuAction::CharacterClass2,
+		    "Rogue - Swift assassins specializing in critical strikes");
+		menuWindow_->AddItem(
+		    MenuAction::CharacterClass3,
+		    "Mage - Wielders of arcane magic and elemental power");
+
+		eventHandler_ =
+		    std::make_unique<CharacterCreationEventHandler>(*this);
+		windowState_ = CharacterCreation;
 	}
 
 	void Engine::MenuNavigateUp()
@@ -504,12 +532,37 @@ namespace tutorial
 		MenuAction action = menuWindow_->GetSelectedAction();
 
 		// Handle differently based on which menu we're in
-		if (windowState_ == StartMenu) {
+		if (windowState_ == CharacterCreation) {
+			// Character creation confirmation
+			switch (action) {
+				case MenuAction::CharacterClass1:
+					characterCreation_.selectedClass = 0;
+					NewGame(); // Actually start the game
+					           // now
+					ReturnToMainGame();
+					break;
+
+				case MenuAction::CharacterClass2:
+					characterCreation_.selectedClass = 1;
+					NewGame();
+					ReturnToMainGame();
+					break;
+
+				case MenuAction::CharacterClass3:
+					characterCreation_.selectedClass = 2;
+					NewGame();
+					ReturnToMainGame();
+					break;
+
+				case MenuAction::None:
+				default:
+					break;
+			}
+		} else if (windowState_ == StartMenu) {
 			// Start Menu actions
 			switch (action) {
 				case MenuAction::NewGame:
-					NewGame();
-					ReturnToMainGame();
+					ShowCharacterCreation();
 					break;
 
 				case MenuAction::Continue:
@@ -538,15 +591,10 @@ namespace tutorial
 					ReturnToMainGame();
 					break;
 
-				case MenuAction::NewGame:
-					NewGame();
-					ReturnToMainGame();
-					break;
-
 				case MenuAction::SaveAndQuit:
 					SaveManager::Instance().SaveGame(
 					    *this, SaveType::Manual);
-					Quit();
+					ShowStartMenu();
 					break;
 
 				case MenuAction::None:
@@ -998,6 +1046,12 @@ namespace tutorial
 
 		if (windowState_ == StartMenu) {
 			// Start menu - only render the menu on black background
+			if (menuWindow_) {
+				menuWindow_->Render(console_);
+			}
+		} else if (windowState_ == CharacterCreation) {
+			// Character creation - only render the menu on black
+			// background
 			if (menuWindow_) {
 				menuWindow_->Render(console_);
 			}

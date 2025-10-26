@@ -19,9 +19,12 @@ namespace tutorial
 		Continue,
 		SaveAndQuit,
 		Quit,
-		LevelUpStrength,    // +1 attack power
-		LevelUpDexterity,   // +1 defense (renamed from Agility)
-		LevelUpIntelligence // +1 INT and max mana
+		LevelUpStrength,     // +1 attack power
+		LevelUpDexterity,    // +1 defense (renamed from Agility)
+		LevelUpIntelligence, // +1 INT and max mana
+		CharacterClass1,     // Warrior class
+		CharacterClass2,     // Rogue class
+		CharacterClass3      // Mage class
 	};
 
 	// Individual menu item with label and action

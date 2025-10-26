@@ -31,7 +31,7 @@ namespace tutorial
 
 	void NewGameEvent::Execute()
 	{
-		engine_.NewGame();
+		engine_.ShowCharacterCreation();
 	}
 } // namespace tutorial
 

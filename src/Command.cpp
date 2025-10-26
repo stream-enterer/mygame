@@ -32,6 +32,11 @@ namespace tutorial
 		engine.ReturnToMainGame();
 	}
 
+	void StartMenuCommand::Execute(Engine& engine)
+	{
+		engine.ShowStartMenu();
+	}
+
 	void NewGameCommand::Execute(Engine& engine)
 	{
 		engine.NewGame();

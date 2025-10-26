@@ -62,6 +62,16 @@ namespace tutorial
 		}
 	};
 
+	class StartMenuCommand final : public Command
+	{
+	public:
+		void Execute(Engine& engine) override;
+		bool ConsumesTurn() override
+		{
+			return false;
+		}
+	};
+
 	class NewGameCommand final : public Command
 	{
 	public:
