@@ -523,6 +523,124 @@ namespace tutorial
 		}
 	}
 
+	void Engine::HandleCharacterCreationConfirm(MenuAction action)
+	{
+		switch (action) {
+			case MenuAction::CharacterClass1:
+				characterCreation_.selectedClass = 0;
+				NewGame();
+				ReturnToMainGame();
+				break;
+
+			case MenuAction::CharacterClass2:
+				characterCreation_.selectedClass = 1;
+				NewGame();
+				ReturnToMainGame();
+				break;
+
+			case MenuAction::CharacterClass3:
+				characterCreation_.selectedClass = 2;
+				NewGame();
+				ReturnToMainGame();
+				break;
+
+			case MenuAction::None:
+			default:
+				break;
+		}
+	}
+
+	void Engine::HandleStartMenuConfirm(MenuAction action)
+	{
+		switch (action) {
+			case MenuAction::NewGame:
+				ShowCharacterCreation();
+				break;
+
+			case MenuAction::Continue:
+				if (SaveManager::Instance().LoadGame(*this)) {
+					ReturnToMainGame();
+				} else {
+					NewGame();
+					ReturnToMainGame();
+				}
+				break;
+
+			case MenuAction::Quit:
+				Quit();
+				break;
+
+			case MenuAction::None:
+			default:
+				break;
+		}
+	}
+
+	void Engine::HandlePauseMenuConfirm(MenuAction action)
+	{
+		switch (action) {
+			case MenuAction::Continue:
+				ReturnToMainGame();
+				break;
+
+			case MenuAction::SaveAndQuit:
+				SaveManager::Instance().SaveGame(*this,
+				                                  SaveType::Manual);
+				ShowStartMenu();
+				break;
+
+			case MenuAction::None:
+			default:
+				break;
+		}
+	}
+
+	void Engine::HandleLevelUpConfirm(MenuAction action)
+	{
+		if (!player_ || !player_->GetDestructible()) {
+			ReturnToMainGame();
+			return;
+		}
+
+		auto* destructible = player_->GetDestructible();
+		auto* attacker = player_->GetAttacker();
+
+		// Every level up grants +4 HP
+		destructible->IncreaseMaxHealth(4);
+		LogMessage("Your health increases by 4 HP!", { 0, 255, 0 },
+		           false);
+
+		switch (action) {
+			case MenuAction::LevelUpStrength:
+				if (attacker) {
+					attacker->IncreaseStrength(1);
+					LogMessage("Your strength increases by 1!",
+					           { 255, 100, 0 }, false);
+				}
+				break;
+
+			case MenuAction::LevelUpDexterity:
+				destructible->IncreaseDexterity(1);
+				LogMessage("Your dexterity increases by 1!",
+				           { 100, 100, 255 }, false);
+				break;
+
+			case MenuAction::LevelUpIntelligence:
+				destructible->IncreaseIntelligence(1);
+				LogMessage("Your intelligence increases by 1!",
+				           { 138, 43, 226 }, false);
+				LogMessage("Your maximum mana increases by 1!",
+				           { 0, 100, 200 }, false);
+				break;
+
+			case MenuAction::None:
+			default:
+				break;
+		}
+
+		ReturnToMainGame();
+	}
+
 	void Engine::MenuConfirm()
 	{
 		if (!menuWindow_) {
@@ -531,128 +649,40 @@ namespace tutorial
 
 		MenuAction action = menuWindow_->GetSelectedAction();
 
-		// Handle differently based on which menu we're in
 		if (windowState_ == CharacterCreation) {
-			// Character creation confirmation
-			switch (action) {
-				case MenuAction::CharacterClass1:
-					characterCreation_.selectedClass = 0;
-					NewGame(); // Actually start the game
-					           // now
-					ReturnToMainGame();
-					break;
-
-				case MenuAction::CharacterClass2:
-					characterCreation_.selectedClass = 1;
-					NewGame();
-					ReturnToMainGame();
-					break;
-
-				case MenuAction::CharacterClass3:
-					characterCreation_.selectedClass = 2;
-					NewGame();
-					ReturnToMainGame();
-					break;
-
-				case MenuAction::None:
-				default:
-					break;
-			}
+			HandleCharacterCreationConfirm(action);
 		} else if (windowState_ == StartMenu) {
-			// Start Menu actions
-			switch (action) {
-				case MenuAction::NewGame:
-					ShowCharacterCreation();
-					break;
-
-				case MenuAction::Continue:
-					if (SaveManager::Instance().LoadGame(
-					        *this)) {
-						ReturnToMainGame();
-					} else {
-						// Load failed, start new game
-						NewGame();
-						ReturnToMainGame();
-					}
-					break;
-
-				case MenuAction::Quit:
-					Quit();
-					break;
-
-				case MenuAction::None:
-				default:
-					break;
-			}
+			HandleStartMenuConfirm(action);
 		} else if (windowState_ == PauseMenu) {
-			// Pause Menu actions
-			switch (action) {
-				case MenuAction::Continue:
-					ReturnToMainGame();
-					break;
-
-				case MenuAction::SaveAndQuit:
-					SaveManager::Instance().SaveGame(
-					    *this, SaveType::Manual);
-					ShowStartMenu();
-					break;
-
-				case MenuAction::None:
-				default:
-					break;
-			}
+			HandlePauseMenuConfirm(action);
 		} else if (windowState_ == LevelUpMenu) {
-			// Level-up stat selection
-			if (!player_ || !player_->GetDestructible()) {
-				ReturnToMainGame();
-				return;
-			}
+			HandleLevelUpConfirm(action);
+		}
+	}
 
-			auto* destructible = player_->GetDestructible();
-			auto* attacker = player_->GetAttacker();
+	void Engine::GrantXpToPlayer(unsigned int xpAmount)
+	{
+		if (!player_ || !player_->GetDestructible()) {
+			return;
+		}
 
-			// Every level up grants +4 HP
-			destructible->IncreaseMaxHealth(4);
-			LogMessage("Your health increases by 4 HP!",
-			           { 0, 255, 0 }, false);
+		auto* destructible = player_->GetDestructible();
+		unsigned int oldXp = destructible->GetXp();
 
-			switch (action) {
-				case MenuAction::LevelUpStrength:
-					// +1 STR (increases attack by 1)
-					if (attacker) {
-						attacker->IncreaseStrength(1);
-						LogMessage(
-						    "Your strength increases "
-						    "by 1!",
-						    { 255, 100, 0 }, false);
-					}
-					break;
+		destructible->AddXp(xpAmount);
 
-				case MenuAction::LevelUpDexterity:
-					// +1 DEX (increases defense by 1)
-					destructible->IncreaseDexterity(1);
-					LogMessage(
-					    "Your dexterity increases by 1!",
-					    { 100, 100, 255 }, false);
-					break;
+		LogMessage("You gain " + std::to_string(xpAmount)
+		               + " experience!",
+		           { 0, 255, 0 }, false);
 
-				case MenuAction::LevelUpIntelligence:
-					// +1 INT (increases max mana by 1)
-					destructible->IncreaseIntelligence(1);
-					LogMessage(
-					    "Your intelligence increases by 1!",
-					    { 138, 43, 226 }, false);
-					LogMessage(
-					    "Your maximum mana increases by 1!",
-					    { 0, 100, 200 }, false);
-					break;
-				case MenuAction::None:
-				default:
-					break;
-			}
-
-			// Return to game after selecting upgrade
-			ReturnToMainGame();
+		if (destructible->CheckLevelUp(oldXp, destructible->GetXp())) {
+			unsigned int newLevel =
+			    destructible->CalculateLevel(destructible->GetXp());
+			LogMessage("Your battle skills grow stronger! You "
+			           "reached level "
+			               + std::to_string(newLevel) + "!",
+			           { 255, 255, 0 }, false);
+			ShowLevelUpMenu();
 		}
 	}
 
@@ -1040,126 +1070,57 @@ namespace tutorial
 		}
 	}
 
+	void Engine::RenderGameBackground(TCOD_Console* console)
+	{
+		map_->Render(console);
+
+		// Render all entities in FOV
+		for (const auto& entity : entities_) {
+			const auto pos = entity->GetPos();
+			if (map_->IsInFov(pos)) {
+				const auto& renderable = entity->GetRenderable();
+				renderable->Render(console, pos);
+			}
+		}
+
+		// Render health bar if player exists
+		if (player_ && healthBar_) {
+			healthBar_->Render(console);
+		}
+
+		messageLogWindow_->Render(console);
+	}
+
 	void Engine::Render()
 	{
 		TCOD_console_clear(console_);
 
 		if (windowState_ == StartMenu) {
-			// Start menu - only render the menu on black background
 			if (menuWindow_) {
 				menuWindow_->Render(console_);
 			}
 		} else if (windowState_ == CharacterCreation) {
-			// Character creation - only render the menu on black
-			// background
 			if (menuWindow_) {
 				menuWindow_->Render(console_);
 			}
 		} else if (windowState_ == MainGame) {
-			map_->Render(console_);
-
-			// Render all entities in FOV
-			for (const auto& entity : entities_) {
-				const auto pos = entity->GetPos();
-				if (map_->IsInFov(pos)) {
-					const auto& renderable =
-					    entity->GetRenderable();
-					renderable->Render(console_, pos);
-				}
-			}
-
-			// Only render health bar if player exists
-			if (player_ && healthBar_) {
-				healthBar_->Render(console_);
-			}
-
-			messageLogWindow_->Render(console_);
+			RenderGameBackground(console_);
 			messageLogWindow_->RenderMouseLook(console_, *this);
 		} else if (windowState_ == MessageHistory) {
 			messageHistoryWindow_->Render(console_);
 		} else if (windowState_ == Inventory) {
-			map_->Render(console_);
-
-			for (const auto& entity : entities_) {
-				const auto pos = entity->GetPos();
-				if (map_->IsInFov(pos)) {
-					const auto& renderable =
-					    entity->GetRenderable();
-					renderable->Render(console_, pos);
-				}
-			}
-
-			// Only render health bar if player exists
-			if (player_ && healthBar_) {
-				healthBar_->Render(console_);
-			}
-
-			messageLogWindow_->Render(console_);
-
+			RenderGameBackground(console_);
 			inventoryWindow_->Render(console_);
 		} else if (windowState_ == ItemSelection) {
-			map_->Render(console_);
-
-			for (const auto& entity : entities_) {
-				const auto pos = entity->GetPos();
-				if (map_->IsInFov(pos)) {
-					const auto& renderable =
-					    entity->GetRenderable();
-					renderable->Render(console_, pos);
-				}
-			}
-
-			// Only render health bar if player exists
-			if (player_ && healthBar_) {
-				healthBar_->Render(console_);
-			}
-
-			messageLogWindow_->Render(console_);
-
+			RenderGameBackground(console_);
 			itemSelectionWindow_->Render(console_);
 		} else if (windowState_ == PauseMenu) {
-			// Render game in background
-			map_->Render(console_);
-
-			for (const auto& entity : entities_) {
-				const auto pos = entity->GetPos();
-				if (map_->IsInFov(pos)) {
-					const auto& renderable =
-					    entity->GetRenderable();
-					renderable->Render(console_, pos);
-				}
-			}
-
-			if (player_ && healthBar_) {
-				healthBar_->Render(console_);
-			}
-
-			messageLogWindow_->Render(console_);
-
-			// Render menu on top
+			RenderGameBackground(console_);
 			if (menuWindow_) {
 				menuWindow_->Render(console_);
 			}
 		} else if (windowState_ == LevelUpMenu) {
-			// Render game in background
-			map_->Render(console_);
-
-			for (const auto& entity : entities_) {
-				const auto pos = entity->GetPos();
-				if (map_->IsInFov(pos)) {
-					const auto& renderable =
-					    entity->GetRenderable();
-					renderable->Render(console_, pos);
-				}
-			}
-
-			if (player_ && healthBar_) {
-				healthBar_->Render(console_);
-			}
-
-			messageLogWindow_->Render(console_);
-
-			// Render level-up menu on top
+			RenderGameBackground(console_);
 			if (menuWindow_) {
 				menuWindow_->Render(console_);
 			}

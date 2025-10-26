@@ -113,73 +113,12 @@ namespace tutorial
 			        util::capitalize(entity_.GetName()) } });
 			engine_.LogMessage(msg.text, msg.color, msg.stack);
 
-			// ADD THIS: Grant XP to player when monster dies
+			// Grant XP to player when monster dies
 			if (entity_.GetDestructible()) {
 				unsigned int xpReward =
 				    entity_.GetDestructible()->GetXpReward();
-				if (xpReward > 0 && engine_.GetPlayer()
-				    && engine_.GetPlayer()->GetDestructible()) {
-					auto* playerDestructible =
-					    engine_.GetPlayer()
-					        ->GetDestructible();
-					unsigned int oldXp =
-					    playerDestructible->GetXp();
-					playerDestructible->AddXp(xpReward);
-
-					// Log XP gain
-					engine_.LogMessage(
-					    "You gain "
-					        + std::to_string(xpReward)
-					        + " experience!",
-					    { 0, 255, 0 }, false);
-
-					// Check for level up (XP thresholds:
-					// 350, 500, 650...)
-					unsigned int xpLevel = 1;
-					unsigned int xpForCurrentLevel = 0;
-					const unsigned int LEVEL_UP_BASE = 200;
-					const unsigned int LEVEL_UP_FACTOR =
-					    150;
-
-					// Calculate which level the player
-					// should be at
-					while (xpForCurrentLevel + LEVEL_UP_BASE
-					           + xpLevel * LEVEL_UP_FACTOR
-					       <= playerDestructible->GetXp()) {
-						xpForCurrentLevel +=
-						    LEVEL_UP_BASE
-						    + xpLevel * LEVEL_UP_FACTOR;
-						xpLevel++;
-					}
-
-					// Calculate which level they were at
-					// before
-					unsigned int oldXpLevel = 1;
-					unsigned int oldXpForCurrentLevel = 0;
-					while (
-					    oldXpForCurrentLevel + LEVEL_UP_BASE
-					        + oldXpLevel * LEVEL_UP_FACTOR
-					    <= oldXp) {
-						oldXpForCurrentLevel +=
-						    LEVEL_UP_BASE
-						    + oldXpLevel
-						          * LEVEL_UP_FACTOR;
-						oldXpLevel++;
-					}
-
-					// If they leveled up, show the level-up
-					// menu
-					if (xpLevel > oldXpLevel) {
-						engine_.LogMessage(
-						    "Your battle skills grow "
-						    "stronger! You reached "
-						    "level "
-						        + std::to_string(
-						            xpLevel)
-						        + "!",
-						    { 255, 255, 0 }, false);
-						engine_.ShowLevelUpMenu();
-					}
+				if (xpReward > 0) {
+					engine_.GrantXpToPlayer(xpReward);
 				}
 			}
 		}

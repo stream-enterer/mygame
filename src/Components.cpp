@@ -156,6 +156,31 @@ namespace tutorial
 		mana_ += amount;    // Also restore mana by the same amount
 	}
 
+	unsigned int DestructibleComponent::CalculateLevel(unsigned int xp) const
+	{
+		const unsigned int LEVEL_UP_BASE = 200;
+		const unsigned int LEVEL_UP_FACTOR = 150;
+
+		unsigned int level = 1;
+		unsigned int xpForCurrentLevel = 0;
+
+		while (xpForCurrentLevel + LEVEL_UP_BASE + level * LEVEL_UP_FACTOR
+		       <= xp) {
+			xpForCurrentLevel += LEVEL_UP_BASE + level * LEVEL_UP_FACTOR;
+			level++;
+		}
+
+		return level;
+	}
+
+	bool DestructibleComponent::CheckLevelUp(unsigned int oldXp,
+	                                         unsigned int newXp) const
+	{
+		unsigned int oldLevel = CalculateLevel(oldXp);
+		unsigned int newLevel = CalculateLevel(newXp);
+		return newLevel > oldLevel;
+	}
+
 	IconRenderable::IconRenderable(tcod::ColorRGB color, char icon)
 	    : color_(color), icon_(icon)
 	{

@@ -45,6 +45,10 @@ namespace tutorial
 		void IncreaseMaxHealth(unsigned int amount);
 		void IncreaseDexterity(unsigned int amount);
 
+		// Level calculation helpers
+		unsigned int CalculateLevel(unsigned int xp) const;
+		bool CheckLevelUp(unsigned int oldXp, unsigned int newXp) const;
+
 		// Mana management
 		unsigned int GetMana() const;
 		unsigned int GetMaxMana() const;

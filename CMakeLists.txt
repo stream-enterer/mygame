@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.0)
+cmake_minimum_required(VERSION 3.20)
 
 # Set the default toolchain to use a Vcpkg submodule.
 if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)

@@ -54,6 +54,8 @@ namespace tutorial
 	class ItemSelectionWindow;
 	class MenuWindow;
 
+	enum class MenuAction;
+
 	class Engine
 	{
 		using Event_ptr = std::unique_ptr<Event>;
@@ -156,6 +158,18 @@ namespace tutorial
 		void GenerateMap(int width, int height);
 		void ProcessDeferredRemovals();
 		void EnsureInitialized();
+
+		// Rendering helpers
+		void RenderGameBackground(TCOD_Console* console);
+
+		// Menu confirmation handlers
+		void HandleCharacterCreationConfirm(MenuAction action);
+		void HandleStartMenuConfirm(MenuAction action);
+		void HandlePauseMenuConfirm(MenuAction action);
+		void HandleLevelUpConfirm(MenuAction action);
+
+		// XP and level-up helpers
+		void GrantXpToPlayer(unsigned int xpAmount);
 
 		static constexpr int kAutosaveInterval = 100;
 
