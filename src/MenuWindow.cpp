@@ -7,8 +7,11 @@
 namespace tutorial
 {
 	MenuWindow::MenuWindow(std::size_t width, std::size_t height, pos_t pos,
-	                       const std::string& title)
-	    : UiWindowBase(width, height, pos), title_(title), selectedIndex_(0)
+	                       const std::string& title,
+	                       bool fullScreenBorder)
+	    : UiWindowBase(width, height, pos), title_(title), selectedIndex_(0),
+	      markedIndex_(-1), fullScreenBorder_(fullScreenBorder),
+	      showLetters_(false), showMarker_(false), gameLogoStub_("")
 	{
 	}
 
@@ -25,7 +28,7 @@ namespace tutorial
 		// Clear console
 		TCOD_console_clear(console_);
 
-		// Draw frame
+		// Draw frame (always at edges of the console)
 		const int width = TCOD_console_get_width(console_);
 		const int height = TCOD_console_get_height(console_);
 
@@ -45,12 +48,32 @@ namespace tutorial
 			                     &frameColor, TCOD_BKGND_SET);
 		}
 
+		// Draw game logo stub if present
+		int contentStartY = 2;
+		if (!gameLogoStub_.empty()) {
+			int logoX =
+			    (width - static_cast<int>(gameLogoStub_.length()))
+			    / 2;
+			TCOD_printf_rgb(
+			    console_,
+			    (TCOD_PrintParamsRGB) { .x = logoX,
+			                            .y = contentStartY,
+			                            .width = 0,
+			                            .height = 0,
+			                            .fg = &textColor,
+			                            .bg = NULL,
+			                            .flag = TCOD_BKGND_NONE,
+			                            .alignment = TCOD_LEFT },
+			    "%s", gameLogoStub_.c_str());
+			contentStartY += 3;
+		}
+
 		// Draw title
 		int titleX = (width - static_cast<int>(title_.length())) / 2;
 		TCOD_printf_rgb(
 		    console_,
 		    (TCOD_PrintParamsRGB) { .x = titleX,
-		                            .y = 2,
+		                            .y = contentStartY,
 		                            .width = 0,
 		                            .height = 0,
 		                            .fg = &textColor,
@@ -60,7 +83,7 @@ namespace tutorial
 		    "%s", title_.c_str());
 
 		// Draw menu items
-		int startY = 5;
+		int startY = contentStartY + 3;
 		for (size_t i = 0; i < items_.size(); ++i) {
 			tcod::ColorRGB itemColor;
 			if (static_cast<int>(i) == selectedIndex_) {
@@ -73,9 +96,27 @@ namespace tutorial
 			}
 
 			int itemY = startY + static_cast<int>(i) * 2;
+
+			// Build the item string with optional letter prefix and
+			// asterisk
+			std::string itemText;
+			if (showMarker_ && static_cast<int>(i) == markedIndex_) {
+				itemText += "* ";
+			} else if (showMarker_) {
+				itemText += "  ";
+			}
+
+			if (showLetters_) {
+				char letter = 'a' + static_cast<char>(i);
+				itemText += "(";
+				itemText += letter;
+				itemText += ") ";
+			}
+
+			itemText += items_[i].label;
+
 			int itemX =
-			    (width - static_cast<int>(items_[i].label.length()))
-			    / 2;
+			    (width - static_cast<int>(itemText.length())) / 2;
 			TCOD_printf_rgb(
 			    console_,
 			    (TCOD_PrintParamsRGB) { .x = itemX,
@@ -86,19 +127,20 @@ namespace tutorial
 			                            .bg = NULL,
 			                            .flag = TCOD_BKGND_NONE,
 			                            .alignment = TCOD_LEFT },
-			    "%s", items_[i].label.c_str());
+			    "%s", itemText.c_str());
 		}
 
 		// Blit to parent
+		float bgAlpha = fullScreenBorder_ ? 1.0f : 0.8f;
 		TCOD_console_blit(console_, 0, 0, width, height, parent, pos_.x,
-		                  pos_.y, 1.0f,
-		                  0.8f); // Semi-transparent background
+		                  pos_.y, 1.0f, bgAlpha);
 	}
 
 	void MenuWindow::Clear()
 	{
 		items_.clear();
 		selectedIndex_ = 0;
+		markedIndex_ = -1;
 	}
 
 	void MenuWindow::AddItem(MenuAction action, const std::string& label)
@@ -135,6 +177,32 @@ namespace tutorial
 			return items_[selectedIndex_].action;
 		}
 		return MenuAction::None;
+	}
+
+	bool MenuWindow::SelectByLetter(char letter)
+	{
+		if (!showLetters_ || items_.empty()) {
+			return false;
+		}
+
+		// Convert to lowercase
+		if (letter >= 'A' && letter <= 'Z') {
+			letter = letter - 'A' + 'a';
+		}
+
+		// Calculate index from letter
+		int index = letter - 'a';
+		if (index >= 0 && index < static_cast<int>(items_.size())) {
+			selectedIndex_ = index;
+			return true;
+		}
+
+		return false;
+	}
+
+	void MenuWindow::MarkCurrentSelection()
+	{
+		markedIndex_ = selectedIndex_;
 	}
 
 } // namespace tutorial

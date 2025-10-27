@@ -12,6 +12,7 @@
 #include "Map.hpp"
 #include "MapGenerator.hpp"
 #include "MenuWindow.hpp"
+#include "CharacterCreationWindow.hpp"
 #include "MessageHistoryWindow.hpp"
 #include "MessageLogWindow.hpp"
 #include "SaveManager.hpp"
@@ -439,14 +440,17 @@ namespace tutorial
 
 	void Engine::ShowStartMenu()
 	{
-		// Create menu window centered on screen
-		int width = 40;
-		int height = 20;
-		pos_t pos { static_cast<int>(config_.width) / 2 - width / 2,
-			    static_cast<int>(config_.height) / 2 - height / 2 };
+		// Create full-screen menu window with border at screen edges
+		int width = static_cast<int>(config_.width);
+		int height = static_cast<int>(config_.height);
+		pos_t pos { 0, 0 };
 
-		menuWindow_ = std::make_unique<MenuWindow>(width, height, pos,
-		                                           "Main Menu");
+		menuWindow_ =
+		    std::make_unique<MenuWindow>(width, height, pos, "My Game",
+		                                 true); // fullScreenBorder = true
+
+		// Set game logo stub
+		menuWindow_->SetGameLogoStub("[GameLogo]");
 
 		// Build start menu options
 		menuWindow_->Clear();
@@ -466,26 +470,14 @@ namespace tutorial
 
 	void Engine::ShowCharacterCreation()
 	{
-		// Create character creation menu centered on screen
-		int width = 50;
-		int height = 25;
-		pos_t pos { static_cast<int>(config_.width) / 2 - width / 2,
-			    static_cast<int>(config_.height) / 2 - height / 2 };
+		// Create full-screen character creation window
+		int width = static_cast<int>(config_.width);
+		int height = static_cast<int>(config_.height);
+		pos_t pos { 0, 0 };
 
-		menuWindow_ = std::make_unique<MenuWindow>(
-		    width, height, pos, "Create Your Character");
-
-		// Build character class options with placeholder descriptions
-		menuWindow_->Clear();
-		menuWindow_->AddItem(
-		    MenuAction::CharacterClass1,
-		    "Warrior - Masters of melee combat and heavy armor");
-		menuWindow_->AddItem(
-		    MenuAction::CharacterClass2,
-		    "Rogue - Swift assassins specializing in critical strikes");
-		menuWindow_->AddItem(
-		    MenuAction::CharacterClass3,
-		    "Mage - Wielders of arcane magic and elemental power");
+		characterCreationWindow_ =
+		    std::make_unique<CharacterCreationWindow>(width, height,
+		                                              pos);
 
 		eventHandler_ =
 		    std::make_unique<CharacterCreationEventHandler>(*this);
@@ -522,6 +514,10 @@ namespace tutorial
 		if (menuWindow_) {
 			menuWindow_->SelectPrevious();
 		}
+
+		if (characterCreationWindow_) {
+			characterCreationWindow_->SelectPrevious();
+		}
 	}
 
 	void Engine::MenuNavigateDown()
@@ -529,27 +525,75 @@ namespace tutorial
 		if (menuWindow_) {
 			menuWindow_->SelectNext();
 		}
+
+		if (characterCreationWindow_) {
+			characterCreationWindow_->SelectNext();
+		}
+	}
+
+	void Engine::MenuNavigateLeft()
+	{
+		if (characterCreationWindow_) {
+			characterCreationWindow_->SelectPreviousTab();
+		}
+	}
+
+	void Engine::MenuNavigateRight()
+	{
+		if (characterCreationWindow_) {
+			characterCreationWindow_->SelectNextTab();
+		}
+	}
+
+	void Engine::MenuSelectByLetter(char letter)
+	{
+		if (menuWindow_) {
+			menuWindow_->SelectByLetter(letter);
+		}
+
+		if (characterCreationWindow_) {
+			characterCreationWindow_->SelectByLetter(letter);
+		}
+	}
+
+	void Engine::MenuIncrementStat()
+	{
+		if (characterCreationWindow_) {
+			characterCreationWindow_->IncrementStat();
+		}
+	}
+
+	void Engine::MenuDecrementStat()
+	{
+		if (characterCreationWindow_) {
+			characterCreationWindow_->DecrementStat();
+		}
 	}
 
 	void Engine::HandleCharacterCreationConfirm(MenuAction action)
 	{
 		switch (action) {
-			case MenuAction::CharacterClass1:
-				characterCreation_.selectedClass = 0;
-				NewGame();
-				ReturnToMainGame();
+			case MenuAction::ConfirmYes:
+				if (characterCreationWindow_) {
+					// Get selected class index
+					characterCreation_.selectedClass =
+					    characterCreationWindow_
+					        ->GetSelectedClassIndex();
+
+					// Clear the windows
+					characterCreationWindow_.reset();
+					menuWindow_.reset();
+
+					// Start new game
+					NewGame();
+					ReturnToMainGame();
+				}
 				break;
 
-			case MenuAction::CharacterClass2:
-				characterCreation_.selectedClass = 1;
-				NewGame();
-				ReturnToMainGame();
-				break;
-
-			case MenuAction::CharacterClass3:
-				characterCreation_.selectedClass = 2;
-				NewGame();
-				ReturnToMainGame();
+			case MenuAction::ConfirmNo:
+				// Return to character creation
+				menuWindow_.reset();
+				windowState_ = CharacterCreation;
 				break;
 
 			case MenuAction::None:
@@ -679,22 +723,71 @@ namespace tutorial
 
 	void Engine::MenuConfirm()
 	{
+		if (windowState_ == CharacterCreation) {
+			if (characterCreationWindow_) {
+				auto tab =
+				    characterCreationWindow_->GetCurrentTab();
+				if (tab == CreationTab::Confirm) {
+					// Show confirmation dialog
+					if (characterCreationWindow_
+					        ->IsReadyToConfirm()) {
+						// Create confirmation menu
+						int width = 50;
+						int height = 15;
+						pos_t pos {
+							static_cast<int>(
+							    config_.width)
+							        / 2
+							    - width / 2,
+							static_cast<int>(
+							    config_.height)
+							        / 2
+							    - height / 2
+						};
+
+						menuWindow_ =
+						    std::make_unique<
+						        MenuWindow>(
+						        width, height, pos,
+						        "Are you sure?");
+						menuWindow_->Clear();
+						menuWindow_->AddItem(
+						    MenuAction::ConfirmYes,
+						    "Yes");
+						menuWindow_->AddItem(
+						    MenuAction::ConfirmNo,
+						    "No");
+						windowState_ =
+						    NewGameConfirmation;
+					}
+				} else {
+					// Confirm selection in current tab
+					characterCreationWindow_
+					    ->ConfirmSelection();
+				}
+			}
+			return;
+		}
+
 		if (!menuWindow_) {
 			return;
 		}
 
 		MenuAction action = menuWindow_->GetSelectedAction();
 
-		if (windowState_ == CharacterCreation) {
-			HandleCharacterCreationConfirm(action);
-		} else if (windowState_ == StartMenu) {
+		if (windowState_ == StartMenu) {
 			HandleStartMenuConfirm(action);
 		} else if (windowState_ == PauseMenu) {
 			HandlePauseMenuConfirm(action);
 		} else if (windowState_ == LevelUpMenu) {
 			HandleLevelUpConfirm(action);
 		} else if (windowState_ == NewGameConfirmation) {
-			HandleNewGameConfirmation(action);
+			// Check if we came from character creation
+			if (characterCreationWindow_) {
+				HandleCharacterCreationConfirm(action);
+			} else {
+				HandleNewGameConfirmation(action);
+			}
 		}
 	}
 
@@ -1155,6 +1248,10 @@ namespace tutorial
 				menuWindow_->Render(console_);
 			}
 		} else if (windowState_ == CharacterCreation) {
+			if (characterCreationWindow_) {
+				characterCreationWindow_->Render(console_);
+			}
+			// Also render confirmation dialog if present
 			if (menuWindow_) {
 				menuWindow_->Render(console_);
 			}

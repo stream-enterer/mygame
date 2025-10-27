@@ -1,0 +1,21 @@
+{
+	"locale": "en_US",
+	"language": "English",
+
+	"races": {
+		"human": {
+			"name": "Human",
+			"description": "Versatile and adaptable, skilled in all trades"
+		},
+		"elf": {
+			"name": "Elf",
+			"description": "Graceful and perceptive, attuned to magic"
+		},
+		"dwarf": {
+			"name": "Dwarf",
+			"description": "Sturdy and resilient, masters of craftsmanship"
+		}
+	},
+
+	"race_order": ["human", "elf", "dwarf"]
+}

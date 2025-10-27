@@ -55,6 +55,7 @@ namespace tutorial
 	class InventoryWindow;
 	class ItemSelectionWindow;
 	class MenuWindow;
+	class CharacterCreationWindow;
 
 	enum class MenuAction;
 
@@ -94,7 +95,12 @@ namespace tutorial
 		void ShowNewGameConfirmation();
 		void MenuNavigateUp();
 		void MenuNavigateDown();
+		void MenuNavigateLeft();
+		void MenuNavigateRight();
 		void MenuConfirm();
+		void MenuSelectByLetter(char letter);
+		void MenuIncrementStat();
+		void MenuDecrementStat();
 		void SetInventoryMode(InventoryMode mode)
 		{
 			inventoryMode_ = mode;
@@ -240,6 +246,8 @@ namespace tutorial
 		TCOD_Context* context_;
 		tcod::TilesetPtr tileset_;
 		std::unique_ptr<MenuWindow> menuWindow_;
+		std::unique_ptr<CharacterCreationWindow>
+		    characterCreationWindow_;
 		TCOD_Console* console_;
 		SDL_Window* window_;
 		TCOD_ViewportOptions viewportOptions_;

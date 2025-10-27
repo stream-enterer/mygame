@@ -68,6 +68,31 @@ namespace tutorial
 		engine.MenuConfirm();
 	}
 
+	void MenuNavigateLeftCommand::Execute(Engine& engine)
+	{
+		engine.MenuNavigateLeft();
+	}
+
+	void MenuNavigateRightCommand::Execute(Engine& engine)
+	{
+		engine.MenuNavigateRight();
+	}
+
+	void MenuSelectLetterCommand::Execute(Engine& engine)
+	{
+		engine.MenuSelectByLetter(letter_);
+	}
+
+	void MenuIncrementStatCommand::Execute(Engine& engine)
+	{
+		engine.MenuIncrementStat();
+	}
+
+	void MenuDecrementStatCommand::Execute(Engine& engine)
+	{
+		engine.MenuDecrementStat();
+	}
+
 	void OpenPauseMenuCommand::Execute(Engine& engine)
 	{
 		engine.ShowPauseMenu();

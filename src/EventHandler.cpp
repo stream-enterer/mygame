@@ -224,6 +224,7 @@ namespace tutorial
 						tcodKey = TCODK_SPACE;
 						break;
 					case SDLK_RETURN:
+					case SDLK_KP_ENTER:
 						tcodKey = TCODK_ENTER;
 						break;
 					case SDLK_ESCAPE:
@@ -342,24 +343,73 @@ namespace tutorial
 
 			if (sdlEvent.type == SDL_EVENT_KEY_DOWN) {
 				SDL_Keycode sdlKey = sdlEvent.key.key;
+				bool shiftPressed =
+				    (sdlEvent.key.mod & SDL_KMOD_SHIFT) != 0;
 
-				// UP key - select previous item
-				if (sdlKey == SDLK_UP) {
+				// UP key or KP8 - select previous item
+				if (sdlKey == SDLK_UP || sdlKey == SDLK_KP_8) {
 					return std::make_unique<
 					    MenuNavigateUpCommand>();
 				}
 
-				// DOWN key - select next item
-				if (sdlKey == SDLK_DOWN) {
+				// DOWN key or KP2 - select next item
+				if (sdlKey == SDLK_DOWN || sdlKey == SDLK_KP_2) {
 					return std::make_unique<
 					    MenuNavigateDownCommand>();
 				}
 
-				// ENTER or SPACE - confirm selection
+				// LEFT key or KP4 - navigate tabs left
+				if (sdlKey == SDLK_LEFT || sdlKey == SDLK_KP_4) {
+					return std::make_unique<
+					    MenuNavigateLeftCommand>();
+				}
+
+				// RIGHT key or KP6 - navigate tabs right
+				if (sdlKey == SDLK_RIGHT || sdlKey == SDLK_KP_6) {
+					return std::make_unique<
+					    MenuNavigateRightCommand>();
+				}
+
+				// Tab - cycle tabs forward, or backward if
+				// shift held
+				if (sdlKey == SDLK_TAB) {
+					if (shiftPressed) {
+						return std::make_unique<
+						    MenuNavigateLeftCommand>();
+					} else {
+						return std::make_unique<
+						    MenuNavigateRightCommand>();
+					}
+				}
+
+				// ENTER, KP_ENTER, or SPACE - confirm selection
 				if (sdlKey == SDLK_RETURN
+				    || sdlKey == SDLK_KP_ENTER
 				    || sdlKey == SDLK_SPACE) {
 					return std::make_unique<
 					    MenuConfirmCommand>();
+				}
+
+				// + or = keys (with or without shift) - increment
+				// stat
+				if (sdlKey == SDLK_EQUALS || sdlKey == SDLK_PLUS
+				    || sdlKey == SDLK_KP_PLUS) {
+					return std::make_unique<
+					    MenuIncrementStatCommand>();
+				}
+
+				// - key (minus or underscore) - decrement stat
+				if (sdlKey == SDLK_MINUS
+				    || sdlKey == SDLK_KP_MINUS) {
+					return std::make_unique<
+					    MenuDecrementStatCommand>();
+				}
+
+				// Letter keys - select by letter
+				if (sdlKey >= SDLK_A && sdlKey <= SDLK_Z) {
+					char letter = static_cast<char>(sdlKey);
+					return std::make_unique<
+					    MenuSelectLetterCommand>(letter);
 				}
 
 				// ESCAPE - delegate to subclass
