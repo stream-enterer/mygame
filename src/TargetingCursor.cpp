@@ -44,7 +44,7 @@ namespace tutorial
 	}
 
 	bool TargetingCursor::SelectTile(
-	    int* outX, int* outY, std::function<bool(int, int)> validator)
+	    pos_t* outPos, std::function<bool(pos_t)> validator)
 
 	{
 		// Store validator for use in HandleSelection
@@ -70,8 +70,7 @@ namespace tutorial
 				    && sdlEvent.button.button
 				           == SDL_BUTTON_LEFT) {
 					if (HandleSelection()) {
-						*outX = cursorPos_.x;
-						*outY = cursorPos_.y;
+						*outPos = cursorPos_;
 						return true;
 					}
 				}
@@ -96,8 +95,7 @@ namespace tutorial
 					if (key == SDLK_RETURN
 					    || key == SDLK_SPACE) {
 						if (HandleSelection()) {
-							*outX = cursorPos_.x;
-							*outY = cursorPos_.y;
+							*outPos = cursorPos_;
 							return true;
 						}
 					}
@@ -162,7 +160,7 @@ namespace tutorial
 		}
 
 		// Validator handles game logic (entity presence, LOS, etc.)
-		if (validator_ && !validator_(cursorPos_.x, cursorPos_.y)) {
+		if (validator_ && !validator_(cursorPos_)) {
 			// Validation failed - stay in targeting mode
 			// (validator has already logged the message)
 			// Re-render to show the message immediately

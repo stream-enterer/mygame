@@ -76,13 +76,13 @@ namespace tutorial
 		void DealDamage(Entity& target, unsigned int damage);
 		void GrantXpToPlayer(unsigned int xpAmount);
 		void NewGame();
-		Entity* GetClosestMonster(int x, int y, float range) const;
+		Entity* GetClosestMonster(pos_t pos, float range) const;
 		bool PickATile(
-		    int* x, int* y, float maxRange = 0.0f,
-		    std::function<bool(int, int)> validator = nullptr,
+		    pos_t* pos, float maxRange = 0.0f,
+		    std::function<bool(pos_t)> validator = nullptr,
 		    TargetingType targetingType = TargetingType::None,
 		    float radius = 0.0f);
-		Entity* GetActor(int x, int y) const;
+		Entity* GetActor(pos_t pos) const;
 		void ReturnToMainGame();
 		void SetMousePos(pos_t pos);
 		void ShowMessageHistory();
