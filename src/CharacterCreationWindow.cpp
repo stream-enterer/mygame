@@ -33,49 +33,36 @@ namespace tutorial
 	{
 		auto& st = StringTable::Instance();
 
-		// Try to load race strings
-		try {
-			st.LoadLocale("race.en_US");
-		} catch (const std::exception& e) {
+		// NOTE: race.en_US.json should be loaded by Engine after
+		// en_US.json TODO: Multi-language support - load
+		// race.<locale>.json based on current locale
+
+		// Load race order from locale
+		std::vector<std::string> raceOrder = { "human", "elf", "dwarf" };
+
+		for (const auto& raceId : raceOrder) {
+			std::string nameKey = "races." + raceId + ".name";
+			std::string descKey = "races." + raceId + ".description";
+
+			if (st.Has(nameKey) && st.Has(descKey)) {
+				raceOptions_.push_back(
+				    { raceId, st.GetString(nameKey),
+				      st.GetString(descKey) });
+			}
+		}
+
+		// Fall back if nothing loaded
+		if (raceOptions_.empty()) {
 			std::cerr
-			    << "[CharacterCreation] WARNING: Failed to load "
-			       "race.en_US.json: "
-			    << e.what() << std::endl;
-			// Fall back to hardcoded options
+			    << "[CharacterCreation] WARNING: No race options "
+			       "loaded from locale, using fallback"
+			    << std::endl;
 			raceOptions_.push_back({ "human", "Human",
 			                         "Versatile and adaptable" });
 			raceOptions_.push_back({ "elf", "Elf",
 			                         "Graceful and perceptive" });
 			raceOptions_.push_back({ "dwarf", "Dwarf",
 			                         "Sturdy and resilient" });
-			return;
-		}
-
-		// Load race order
-		if (st.Has("race_order")) {
-			// Parse race_order array from JSON
-			// For simplicity, assume hardcoded order for now
-			std::vector<std::string> raceOrder = { "human", "elf",
-				                               "dwarf" };
-
-			for (const auto& raceId : raceOrder) {
-				std::string nameKey =
-				    "races." + raceId + ".name";
-				std::string descKey =
-				    "races." + raceId + ".description";
-
-				if (st.Has(nameKey) && st.Has(descKey)) {
-					raceOptions_.push_back(
-					    { raceId, st.GetString(nameKey),
-					      st.GetString(descKey) });
-				}
-			}
-		}
-
-		// Fall back if nothing loaded
-		if (raceOptions_.empty()) {
-			raceOptions_.push_back({ "human", "Human",
-			                         "Versatile and adaptable" });
 		}
 	}
 
@@ -83,29 +70,11 @@ namespace tutorial
 	{
 		auto& st = StringTable::Instance();
 
-		// Try to load class strings
-		try {
-			st.LoadLocale("class.en_US");
-		} catch (const std::exception& e) {
-			std::cerr
-			    << "[CharacterCreation] WARNING: Failed to load "
-			       "class.en_US.json: "
-			    << e.what() << std::endl;
-			// Fall back to hardcoded options
-			classOptions_.push_back(
-			    { "warrior", "Warrior",
-			      "Masters of melee combat and heavy armor" });
-			classOptions_.push_back(
-			    { "rogue", "Rogue",
-			      "Swift assassins specializing in critical "
-			      "strikes" });
-			classOptions_.push_back(
-			    { "mage", "Mage",
-			      "Wielders of arcane magic and elemental power" });
-			return;
-		}
+		// NOTE: class.en_US.json should be loaded by Engine after
+		// en_US.json TODO: Multi-language support - load
+		// class.<locale>.json based on current locale
 
-		// Load class order
+		// Load class order from locale
 		std::vector<std::string> classOrder = { "warrior", "rogue",
 			                                "mage" };
 
@@ -123,9 +92,20 @@ namespace tutorial
 
 		// Fall back if nothing loaded
 		if (classOptions_.empty()) {
+			std::cerr
+			    << "[CharacterCreation] WARNING: No class options "
+			       "loaded from locale, using fallback"
+			    << std::endl;
 			classOptions_.push_back(
 			    { "warrior", "Warrior",
-			      "Masters of melee combat" });
+			      "Masters of melee combat and heavy armor" });
+			classOptions_.push_back(
+			    { "rogue", "Rogue",
+			      "Swift assassins specializing in critical "
+			      "strikes" });
+			classOptions_.push_back(
+			    { "mage", "Mage",
+			      "Wielders of arcane magic and elemental power" });
 		}
 	}
 
@@ -133,15 +113,9 @@ namespace tutorial
 	{
 		auto& st = StringTable::Instance();
 
-		// Try to load stats strings
-		try {
-			st.LoadLocale("stats.en_US");
-		} catch (const std::exception& e) {
-			std::cerr
-			    << "[CharacterCreation] WARNING: Failed to load "
-			       "stats.en_US.json: "
-			    << e.what() << std::endl;
-		}
+		// NOTE: stats.en_US.json should be loaded by Engine after
+		// en_US.json TODO: Multi-language support - load
+		// stats.<locale>.json based on current locale
 
 		// Initialize stats with base values
 		std::vector<std::string> statOrder = { "strength", "dexterity",
@@ -163,6 +137,10 @@ namespace tutorial
 
 		// Fall back if nothing loaded
 		if (stats_.empty()) {
+			std::cerr
+			    << "[CharacterCreation] WARNING: No stats loaded "
+			       "from locale, using fallback"
+			    << std::endl;
 			stats_.push_back(
 			    { "strength", "Strength",
 			      "Physical power", 10 });
@@ -321,9 +299,6 @@ namespace tutorial
 			bool isMarked =
 			    (static_cast<int>(i) == selectedRaceIndex_);
 
-			tcod::ColorRGB color =
-			    isSelected ? highlightColor : textColor;
-
 			// Build item text with letter and marker
 			std::string itemText;
 			if (isMarked) {
@@ -343,13 +318,30 @@ namespace tutorial
 			int itemX =
 			    width / 2 - static_cast<int>(itemText.length()) / 2;
 
+			// Draw background highlight if selected
+			if (isSelected) {
+				for (int x = itemX - 1;
+				     x < itemX
+				             + static_cast<int>(
+				                 itemText.length())
+				             + 1;
+				     ++x) {
+					tcod::ColorRGB dimHighlight { 100, 80,
+						                      40 };
+					TCOD_console_put_rgb(
+					    console, x, itemY, ' ', NULL,
+					    &dimHighlight, TCOD_BKGND_SET);
+				}
+			}
+
+			// Draw text (always white for visibility)
 			TCOD_printf_rgb(
 			    console,
 			    (TCOD_PrintParamsRGB) { .x = itemX,
 			                            .y = itemY,
 			                            .width = 0,
 			                            .height = 0,
-			                            .fg = &color,
+			                            .fg = &textColor,
 			                            .bg = NULL,
 			                            .flag = TCOD_BKGND_NONE,
 			                            .alignment = TCOD_LEFT },
@@ -388,9 +380,6 @@ namespace tutorial
 			bool isMarked =
 			    (static_cast<int>(i) == selectedClassIndex_);
 
-			tcod::ColorRGB color =
-			    isSelected ? highlightColor : textColor;
-
 			// Build item text with letter and marker
 			std::string itemText;
 			if (isMarked) {
@@ -410,13 +399,30 @@ namespace tutorial
 			int itemX =
 			    width / 2 - static_cast<int>(itemText.length()) / 2;
 
+			// Draw background highlight if selected
+			if (isSelected) {
+				for (int x = itemX - 1;
+				     x < itemX
+				             + static_cast<int>(
+				                 itemText.length())
+				             + 1;
+				     ++x) {
+					tcod::ColorRGB dimHighlight { 100, 80,
+						                      40 };
+					TCOD_console_put_rgb(
+					    console, x, itemY, ' ', NULL,
+					    &dimHighlight, TCOD_BKGND_SET);
+				}
+			}
+
+			// Draw text (always white for visibility)
 			TCOD_printf_rgb(
 			    console,
 			    (TCOD_PrintParamsRGB) { .x = itemX,
 			                            .y = itemY,
 			                            .width = 0,
 			                            .height = 0,
-			                            .fg = &color,
+			                            .fg = &textColor,
 			                            .bg = NULL,
 			                            .flag = TCOD_BKGND_NONE,
 			                            .alignment = TCOD_LEFT },
@@ -469,9 +475,6 @@ namespace tutorial
 		for (size_t i = 0; i < stats_.size(); ++i) {
 			bool isSelected = (static_cast<int>(i) == statsMenuIndex_);
 
-			tcod::ColorRGB color =
-			    isSelected ? highlightColor : textColor;
-
 			std::string itemText =
 			    stats_[i].name + ": "
 			    + std::to_string(stats_[i].value);
@@ -480,13 +483,30 @@ namespace tutorial
 			int itemX =
 			    width / 2 - static_cast<int>(itemText.length()) / 2;
 
+			// Draw background highlight if selected
+			if (isSelected) {
+				for (int x = itemX - 1;
+				     x < itemX
+				             + static_cast<int>(
+				                 itemText.length())
+				             + 1;
+				     ++x) {
+					tcod::ColorRGB dimHighlight { 100, 80,
+						                      40 };
+					TCOD_console_put_rgb(
+					    console, x, itemY, ' ', NULL,
+					    &dimHighlight, TCOD_BKGND_SET);
+				}
+			}
+
+			// Draw text (always white for visibility)
 			TCOD_printf_rgb(
 			    console,
 			    (TCOD_PrintParamsRGB) { .x = itemX,
 			                            .y = itemY,
 			                            .width = 0,
 			                            .height = 0,
-			                            .fg = &color,
+			                            .fg = &textColor,
 			                            .bg = NULL,
 			                            .flag = TCOD_BKGND_NONE,
 			                            .alignment = TCOD_LEFT },
@@ -731,6 +751,7 @@ namespace tutorial
 				           < static_cast<int>(
 				               raceOptions_.size())) {
 					raceMenuIndex_ = index;
+					selectedRaceIndex_ = index; // Mark it
 					return true;
 				}
 				break;
@@ -741,6 +762,7 @@ namespace tutorial
 				           < static_cast<int>(
 				               classOptions_.size())) {
 					classMenuIndex_ = index;
+					selectedClassIndex_ = index; // Mark it
 					return true;
 				}
 				break;
@@ -759,19 +781,16 @@ namespace tutorial
 		switch (currentTab_) {
 			case CreationTab::Race:
 				selectedRaceIndex_ = raceMenuIndex_;
-				// Auto-advance to next tab
-				SelectNextTab();
+				// Don't auto-advance - user navigates with Tab
 				break;
 
 			case CreationTab::Class:
 				selectedClassIndex_ = classMenuIndex_;
-				// Auto-advance to next tab
-				SelectNextTab();
+				// Don't auto-advance - user navigates with Tab
 				break;
 
 			case CreationTab::Stats:
-				// Stats don't get "confirmed" - just advance
-				SelectNextTab();
+				// Stats don't get "confirmed" - no action needed
 				break;
 
 			case CreationTab::Confirm:
