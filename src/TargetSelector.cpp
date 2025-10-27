@@ -54,8 +54,7 @@ namespace tutorial
 	bool ClosestEnemySelector::SelectTargets(
 	    Entity& user, Engine& engine, std::vector<Entity*>& targets) const
 	{
-		Entity* closest = engine.GetClosestMonster(
-		    user.GetPos().x, user.GetPos().y, range_);
+		Entity* closest = engine.GetClosestMonster(user.GetPos(), range_);
 
 		if (closest) {
 			targets.push_back(closest);
@@ -85,8 +84,8 @@ namespace tutorial
 
 		// Validator: checks if there's a target at the coordinates AND
 		// line-of-sight
-		auto validator = [&engine, &user, this](int x, int y) -> bool {
-			Entity* target = engine.GetActor(x, y);
+		auto validator = [&engine, &user, this](pos_t pos) -> bool {
+			Entity* target = engine.GetActor(pos);
 			if (!target) {
 				// No target - log message and return false to
 				// stay in targeting
@@ -100,8 +99,7 @@ namespace tutorial
 			}
 
 			// Check line-of-sight
-			if (!HasLineOfSight(engine, user.GetPos(),
-			                    pos_t { x, y })) {
+			if (!HasLineOfSight(engine, user.GetPos(), pos)) {
 				auto losMsg =
 				    StringTable::Instance().GetMessage(
 				        "items.targeting.no_line_of_sight");
@@ -113,8 +111,8 @@ namespace tutorial
 			return true;
 		};
 
-		int x, y;
-		if (!engine.PickATile(&x, &y, range_, validator,
+		pos_t pos;
+		if (!engine.PickATile(&pos, range_, validator,
 		                      TargetingType::Beam)) {
 			// Player cancelled - reopen inventory
 			engine.ShowInventory();
@@ -123,7 +121,7 @@ namespace tutorial
 
 		// At this point, we know there's a valid target (validator
 		// passed)
-		Entity* target = engine.GetActor(x, y);
+		Entity* target = engine.GetActor(pos);
 		targets.push_back(target);
 		return true;
 	}
@@ -145,8 +143,8 @@ namespace tutorial
 		// Close inventory to allow targeting
 		engine.ReturnToMainGame();
 
-		int x, y;
-		if (!engine.PickATile(&x, &y, pickRange_, nullptr,
+		pos_t pos;
+		if (!engine.PickATile(&pos, pickRange_, nullptr,
 		                      TargetingType::Area, effectRadius_)) {
 			// Player cancelled - reopen inventory
 			engine.ShowInventory();
@@ -159,7 +157,7 @@ namespace tutorial
 			if (entity->GetDestructible()
 			    && !entity->GetDestructible()->IsDead()
 			    && !entity->IsCorpse() && !entity->GetItem()
-			    && entity->GetDistance(x, y) <= effectRadius_
+			    && entity->GetDistance(pos.x, pos.y) <= effectRadius_
 			    && HasLineOfSight(engine, user.GetPos(),
 			                      entity->GetPos())) {
 				targets.push_back(entity.get());
@@ -192,8 +190,8 @@ namespace tutorial
 		// Close inventory to allow targeting
 		engine.ReturnToMainGame();
 
-		int x, y;
-		if (!engine.PickATile(&x, &y, range_, nullptr,
+		pos_t pos;
+		if (!engine.PickATile(&pos, range_, nullptr,
 		                      TargetingType::Beam)) {
 			// Player cancelled - reopen inventory
 			engine.ShowInventory();
@@ -203,7 +201,7 @@ namespace tutorial
 		// Trace beam from user to selected tile using Bresenham
 		const Map& map = engine.GetMap();
 		pos_t userPos = user.GetPos();
-		tcod::BresenhamLine line({ userPos.x, userPos.y }, { x, y });
+		tcod::BresenhamLine line({ userPos.x, userPos.y }, { pos.x, pos.y });
 
 		// Collect all tiles the beam passes through
 		std::vector<pos_t> beamTiles;
@@ -236,8 +234,7 @@ namespace tutorial
 				if (entity->GetDestructible()
 				    && !entity->GetDestructible()->IsDead()
 				    && !entity->IsCorpse() && !entity->GetItem()
-				    && entity->GetPos().x == tilePos.x
-				    && entity->GetPos().y == tilePos.y) {
+				    && entity->GetPos() == tilePos) {
 					targets.push_back(entity.get());
 					foundAny = true;
 				}
@@ -270,8 +267,8 @@ namespace tutorial
 		// Close inventory to allow targeting
 		engine.ReturnToMainGame();
 
-		int x, y;
-		if (!engine.PickATile(&x, &y, range_, nullptr,
+		pos_t pos;
+		if (!engine.PickATile(&pos, range_, nullptr,
 		                      TargetingType::Beam)) {
 			// Player cancelled - reopen inventory
 			engine.ShowInventory();
@@ -281,7 +278,7 @@ namespace tutorial
 		// Trace beam from user to selected tile using Bresenham
 		const Map& map = engine.GetMap();
 		pos_t userPos = user.GetPos();
-		tcod::BresenhamLine line({ userPos.x, userPos.y }, { x, y });
+		tcod::BresenhamLine line({ userPos.x, userPos.y }, { pos.x, pos.y });
 
 		// Find FIRST valid target along the beam path
 		for (auto it = line.begin(); it != line.end(); ++it) {
@@ -308,8 +305,7 @@ namespace tutorial
 				if (entity->GetDestructible()
 				    && !entity->GetDestructible()->IsDead()
 				    && !entity->IsCorpse() && !entity->GetItem()
-				    && entity->GetPos().x == tilePos.x
-				    && entity->GetPos().y == tilePos.y) {
+				    && entity->GetPos() == tilePos) {
 					// Found first target - add it and stop
 					targets.push_back(entity.get());
 					return true;

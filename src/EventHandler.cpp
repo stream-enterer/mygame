@@ -325,16 +325,15 @@ namespace tutorial
 		SetKeyMap(GameOverKeyMap);
 	}
 
-	PauseMenuEventHandler::PauseMenuEventHandler(Engine& engine)
+	// MenuEventHandlerBase - Common implementation for all menu handlers
+	MenuEventHandlerBase::MenuEventHandlerBase(Engine& engine)
 	    : BaseEventHandler(engine)
 	{
-		// No keymap needed - custom Dispatch handles all input
 	}
 
-	std::unique_ptr<Command> PauseMenuEventHandler::Dispatch() const
+	std::unique_ptr<Command> MenuEventHandlerBase::Dispatch() const
 	{
 		SDL_Event sdlEvent;
-		std::unique_ptr<Command> command { nullptr };
 
 		while (SDL_PollEvent(&sdlEvent)) {
 			if (sdlEvent.type == SDL_EVENT_QUIT) {
@@ -363,163 +362,67 @@ namespace tutorial
 					    MenuConfirmCommand>();
 				}
 
-				// ESCAPE - close menu (return to game if in
-				// pause menu)
+				// ESCAPE - delegate to subclass
 				if (sdlKey == SDLK_ESCAPE) {
-					return std::make_unique<
-					    CloseUICommand>();
-				}
-			}
-		}
-
-		return command;
-	}
-
-	StartMenuEventHandler::StartMenuEventHandler(Engine& engine)
-	    : BaseEventHandler(engine)
-	{
-		// No keymap needed - custom Dispatch handles all input
-	}
-
-	std::unique_ptr<Command> StartMenuEventHandler::Dispatch() const
-	{
-		SDL_Event sdlEvent;
-		std::unique_ptr<Command> command { nullptr };
-
-		while (SDL_PollEvent(&sdlEvent)) {
-			if (sdlEvent.type == SDL_EVENT_QUIT) {
-				return std::make_unique<QuitCommand>();
-			}
-
-			if (sdlEvent.type == SDL_EVENT_KEY_DOWN) {
-				SDL_Keycode sdlKey = sdlEvent.key.key;
-
-				// UP key - select previous item
-				if (sdlKey == SDLK_UP) {
-					return std::make_unique<
-					    MenuNavigateUpCommand>();
-				}
-
-				// DOWN key - select next item
-				if (sdlKey == SDLK_DOWN) {
-					return std::make_unique<
-					    MenuNavigateDownCommand>();
-				}
-
-				// ENTER or SPACE - confirm selection
-				if (sdlKey == SDLK_RETURN
-				    || sdlKey == SDLK_SPACE) {
-					return std::make_unique<
-					    MenuConfirmCommand>();
-				}
-
-				// ESCAPE - do nothing on start menu
-				// (Player must explicitly select "Exit")
-				if (sdlKey == SDLK_ESCAPE) {
-					// Do nothing - don't quit
+					auto escapeCmd = HandleEscape();
+					if (escapeCmd) {
+						return escapeCmd;
+					}
+					// If HandleEscape returns nullptr,
+					// ignore ESC
 					continue;
 				}
 			}
 		}
 
-		return command;
+		return nullptr;
 	}
 
+	// PauseMenuEventHandler - ESC closes menu and returns to game
+	PauseMenuEventHandler::PauseMenuEventHandler(Engine& engine)
+	    : MenuEventHandlerBase(engine)
+	{
+	}
+
+	std::unique_ptr<Command> PauseMenuEventHandler::HandleEscape() const
+	{
+		return std::make_unique<CloseUICommand>();
+	}
+
+	// StartMenuEventHandler - ESC does nothing (must explicitly select
+	// Exit)
+	StartMenuEventHandler::StartMenuEventHandler(Engine& engine)
+	    : MenuEventHandlerBase(engine)
+	{
+	}
+
+	std::unique_ptr<Command> StartMenuEventHandler::HandleEscape() const
+	{
+		return nullptr; // Ignore ESC
+	}
+
+	// CharacterCreationEventHandler - ESC returns to start menu
 	CharacterCreationEventHandler::CharacterCreationEventHandler(
 	    Engine& engine)
-	    : BaseEventHandler(engine)
+	    : MenuEventHandlerBase(engine)
 	{
-		// No keymap needed - custom Dispatch handles all input
 	}
 
-	std::unique_ptr<Command> CharacterCreationEventHandler::Dispatch() const
+	std::unique_ptr<Command>
+	CharacterCreationEventHandler::HandleEscape() const
 	{
-		SDL_Event sdlEvent;
-		std::unique_ptr<Command> command { nullptr };
-
-		while (SDL_PollEvent(&sdlEvent)) {
-			if (sdlEvent.type == SDL_EVENT_QUIT) {
-				return std::make_unique<QuitCommand>();
-			}
-
-			if (sdlEvent.type == SDL_EVENT_KEY_DOWN) {
-				SDL_Keycode sdlKey = sdlEvent.key.key;
-
-				// UP key - select previous option
-				if (sdlKey == SDLK_UP) {
-					return std::make_unique<
-					    MenuNavigateUpCommand>();
-				}
-
-				// DOWN key - select next option
-				if (sdlKey == SDLK_DOWN) {
-					return std::make_unique<
-					    MenuNavigateDownCommand>();
-				}
-
-				// ENTER or SPACE - confirm character creation
-				if (sdlKey == SDLK_RETURN
-				    || sdlKey == SDLK_SPACE) {
-					return std::make_unique<
-					    MenuConfirmCommand>();
-				}
-
-				// ESCAPE - back to start menu (cancel character
-				// creation)
-				if (sdlKey == SDLK_ESCAPE) {
-					return std::make_unique<
-					    StartMenuCommand>();
-				}
-			}
-		}
-
-		return command;
+		return std::make_unique<StartMenuCommand>();
 	}
 
+	// LevelUpMenuEventHandler - ESC disabled (must choose stat upgrade)
 	LevelUpMenuEventHandler::LevelUpMenuEventHandler(Engine& engine)
-	    : BaseEventHandler(engine)
+	    : MenuEventHandlerBase(engine)
 	{
-		// No keymap needed - custom Dispatch handles all input
 	}
 
-	std::unique_ptr<Command> LevelUpMenuEventHandler::Dispatch() const
+	std::unique_ptr<Command> LevelUpMenuEventHandler::HandleEscape() const
 	{
-		SDL_Event sdlEvent;
-		std::unique_ptr<Command> command { nullptr };
-
-		while (SDL_PollEvent(&sdlEvent)) {
-			if (sdlEvent.type == SDL_EVENT_QUIT) {
-				return std::make_unique<QuitCommand>();
-			}
-
-			if (sdlEvent.type == SDL_EVENT_KEY_DOWN) {
-				SDL_Keycode sdlKey = sdlEvent.key.key;
-
-				// UP key - select previous item
-				if (sdlKey == SDLK_UP) {
-					return std::make_unique<
-					    MenuNavigateUpCommand>();
-				}
-
-				// DOWN key - select next item
-				if (sdlKey == SDLK_DOWN) {
-					return std::make_unique<
-					    MenuNavigateDownCommand>();
-				}
-
-				// ENTER or SPACE - confirm selection
-				if (sdlKey == SDLK_RETURN
-				    || sdlKey == SDLK_SPACE) {
-					return std::make_unique<
-					    MenuConfirmCommand>();
-				}
-
-				// NOTE: No ESCAPE key - player MUST choose a
-				// stat upgrade
-			}
-		}
-
-		return command;
+		return nullptr; // Ignore ESC - player must choose
 	}
 
 	tutorial::InventoryEventHandler::InventoryEventHandler(Engine& engine)

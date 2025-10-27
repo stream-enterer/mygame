@@ -834,7 +834,7 @@ namespace tutorial
 		return map_->IsWall(pos);
 	}
 
-	Entity* Engine::GetClosestMonster(int x, int y, float range) const
+	Entity* Engine::GetClosestMonster(pos_t pos, float range) const
 	{
 		Entity* closest = nullptr;
 		float bestDistance = 1E6f;
@@ -845,7 +845,7 @@ namespace tutorial
 			    && !entity->GetDestructible()->IsDead())
 
 			{
-				float distance = entity->GetDistance(x, y);
+				float distance = entity->GetDistance(pos.x, pos.y);
 				if (distance < bestDistance
 				    && (distance <= range || range == 0.0f)) {
 					bestDistance = distance;
@@ -1056,8 +1056,8 @@ namespace tutorial
 		eventHandler_ = std::make_unique<MainGameEventHandler>(*this);
 	}
 
-	bool Engine::PickATile(int* x, int* y, float maxRange,
-	                       std::function<bool(int, int)> validator,
+	bool Engine::PickATile(pos_t* pos, float maxRange,
+	                       std::function<bool(pos_t)> validator,
 	                       TargetingType targetingType, float radius)
 	{
 		// Remember previous window state to restore later
@@ -1073,7 +1073,7 @@ namespace tutorial
 		TargetingCursor cursor(*this, maxRange, targetingType, radius);
 
 		// Let cursor handle all input and selection with validator
-		bool result = cursor.SelectTile(x, y, validator);
+		bool result = cursor.SelectTile(pos, validator);
 
 		// Restore window state
 		windowState_ = previousWindowState;
@@ -1082,10 +1082,10 @@ namespace tutorial
 		return result;
 	}
 
-	Entity* Engine::GetActor(int x, int y) const
+	Entity* Engine::GetActor(pos_t pos) const
 	{
 		for (const auto& entity : entities_) {
-			if (entity->GetPos().x == x && entity->GetPos().y == y
+			if (entity->GetPos() == pos
 			    && entity->GetDestructible()
 			    && !entity->GetDestructible()->IsDead()) {
 				return entity.get();

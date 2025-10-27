@@ -34,8 +34,8 @@ namespace tutorial
 		// Main interface - returns true if tile selected, false if
 		// cancelled
 		bool SelectTile(
-		    int* outX, int* outY,
-		    std::function<bool(int, int)> validator = nullptr);
+		    pos_t* outPos,
+		    std::function<bool(pos_t)> validator = nullptr);
 
 	private:
 		// Input handling
@@ -82,7 +82,7 @@ namespace tutorial
 		std::vector<tcod::ColorRGB> originalColors_;
 		bool isInitialized_;
 
-		std::function<bool(int, int)> validator_;
+		std::function<bool(pos_t)> validator_;
 	};
 
 } // namespace tutorial
