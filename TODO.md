@@ -38,18 +38,11 @@ Bug: You can level up while dead if you're getting attacked. THe level up screen
 Bug: Pressing enter after death starts a new game without bringing up character creation (change behavior or remove this all together)
 
 - Good! I can see that name_ is a protected member, meaning derived classes could potentially modify it, but there's no public SetName() method. For now, let's keep the factory-based approach and note that we're sacrificing custom corpse names for architectural consistency. This is actually acceptable - all corpses will just be called "corpse" which is fine.
-- Medium Priority #6: pos_t consistency (would require extensive API changes)
 - Low Priority #9: Inventory component (premature optimization)
 - Low Priority #10: Config file for visual constants (rarely changed values)
 
-- Consider extracting UI-related code from Engine into a dedicated UIManager class
-- Level transition logic could be moved to a LevelManager class
-
-
-EventHandler.cpp - Menu Dispatch() Duplication (Phase 2.2)
-
-    4 similar menu handlers with ~120 lines of duplication
-    Would require creating a MenuEventHandlerBase class
-    Left as future enhancement (not blocking, working code)
-
 - Enhancement: Move strings for items and dungeon levels from locale file to their individual jsons
+
+
+- Bug: Confirm menu needs to give an error message if you haven't selected a race or class when you press enter
+

@@ -8,20 +8,26 @@
 
 namespace tutorial
 {
-	CharacterCreationWindow::CharacterCreationWindow(
-	    std::size_t width, std::size_t height, pos_t pos)
-	    : UiWindowBase(width, height, pos), currentTab_(CreationTab::Race),
-	      raceMenuIndex_(0), selectedRaceIndex_(-1), classMenuIndex_(0),
-	      selectedClassIndex_(-1), statsMenuIndex_(0), availablePoints_(10)
+	CharacterCreationWindow::CharacterCreationWindow(std::size_t width,
+	                                                 std::size_t height,
+	                                                 pos_t pos)
+	    : UiWindowBase(width, height, pos),
+	      currentTab_(CreationTab::Race),
+	      raceMenuIndex_(0),
+	      selectedRaceIndex_(-1),
+	      classMenuIndex_(0),
+	      selectedClassIndex_(-1),
+	      statsMenuIndex_(0),
+	      availablePoints_(10)
 	{
 		// Calculate central menu area (same position as before)
 		int centerWidth = 50;
 		int centerHeight = 25;
 		menuWidth_ = centerWidth;
 		menuHeight_ = centerHeight;
-		menuPos_ = pos_t { static_cast<int>(width) / 2 - centerWidth / 2,
-			           static_cast<int>(height) / 2
-			               - centerHeight / 2 };
+		menuPos_ =
+		    pos_t { static_cast<int>(width) / 2 - centerWidth / 2,
+			    static_cast<int>(height) / 2 - centerHeight / 2 };
 		menuStartY_ = menuPos_.y;
 
 		LoadRaceOptions();
@@ -38,11 +44,13 @@ namespace tutorial
 		// race.<locale>.json based on current locale
 
 		// Load race order from locale
-		std::vector<std::string> raceOrder = { "human", "elf", "dwarf" };
+		std::vector<std::string> raceOrder = { "human", "elf",
+			                               "dwarf" };
 
 		for (const auto& raceId : raceOrder) {
 			std::string nameKey = "races." + raceId + ".name";
-			std::string descKey = "races." + raceId + ".description";
+			std::string descKey =
+			    "races." + raceId + ".description";
 
 			if (st.Has(nameKey) && st.Has(descKey)) {
 				raceOptions_.push_back(
@@ -57,12 +65,12 @@ namespace tutorial
 			    << "[CharacterCreation] WARNING: No race options "
 			       "loaded from locale, using fallback"
 			    << std::endl;
-			raceOptions_.push_back({ "human", "Human",
-			                         "Versatile and adaptable" });
-			raceOptions_.push_back({ "elf", "Elf",
-			                         "Graceful and perceptive" });
-			raceOptions_.push_back({ "dwarf", "Dwarf",
-			                         "Sturdy and resilient" });
+			raceOptions_.push_back(
+			    { "human", "Human", "Versatile and adaptable" });
+			raceOptions_.push_back(
+			    { "elf", "Elf", "Graceful and perceptive" });
+			raceOptions_.push_back(
+			    { "dwarf", "Dwarf", "Sturdy and resilient" });
 		}
 	}
 
@@ -123,14 +131,13 @@ namespace tutorial
 
 		for (const auto& statId : statOrder) {
 			std::string nameKey = "stats." + statId + ".name";
-			std::string descKey = "stats." + statId + ".description";
+			std::string descKey =
+			    "stats." + statId + ".description";
 
-			std::string name = st.Has(nameKey)
-			                       ? st.GetString(nameKey)
-			                       : statId;
-			std::string desc = st.Has(descKey)
-			                       ? st.GetString(descKey)
-			                       : "";
+			std::string name =
+			    st.Has(nameKey) ? st.GetString(nameKey) : statId;
+			std::string desc =
+			    st.Has(descKey) ? st.GetString(descKey) : "";
 
 			stats_.push_back({ statId, name, desc, 10 }); // Base 10
 		}
@@ -142,13 +149,11 @@ namespace tutorial
 			       "from locale, using fallback"
 			    << std::endl;
 			stats_.push_back(
-			    { "strength", "Strength",
-			      "Physical power", 10 });
+			    { "strength", "Strength", "Physical power", 10 });
 			stats_.push_back({ "dexterity", "Dexterity",
 			                   "Agility and reflexes", 10 });
-			stats_.push_back(
-			    { "intelligence", "Intelligence",
-			      "Magical aptitude", 10 });
+			stats_.push_back({ "intelligence", "Intelligence",
+			                   "Magical aptitude", 10 });
 		}
 	}
 
@@ -209,7 +214,7 @@ namespace tutorial
 	}
 
 	void CharacterCreationWindow::RenderTabs(TCOD_Console* console,
-	                                         int width) const
+	                                         int /*width*/) const
 	{
 		auto& cfg = ConfigManager::Instance();
 		auto textColor = cfg.GetUITextColor();
@@ -226,9 +231,8 @@ namespace tutorial
 
 		for (size_t i = 0; i < tabNames.size(); ++i) {
 			const std::string& name = tabNames[i];
-			bool isSelected =
-			    (static_cast<int>(i)
-			     == static_cast<int>(currentTab_));
+			bool isSelected = (static_cast<int>(i)
+			                   == static_cast<int>(currentTab_));
 
 			tcod::ColorRGB color =
 			    isSelected ? highlightColor : textColor;
@@ -239,23 +243,23 @@ namespace tutorial
 			            - static_cast<int>(name.length()) / 2;
 
 			// Draw tab text with color highlighting
-			TCOD_printf_rgb(console,
-			                (TCOD_PrintParamsRGB) {
-			                    .x = textX,
-			                    .y = tabY,
-			                    .width = 0,
-			                    .height = 0,
-			                    .fg = &color,
-			                    .bg = NULL,
-			                    .flag = TCOD_BKGND_NONE,
-			                    .alignment = TCOD_LEFT },
-			                "%s", name.c_str());
+			TCOD_printf_rgb(
+			    console,
+			    (TCOD_PrintParamsRGB) { .x = textX,
+			                            .y = tabY,
+			                            .width = 0,
+			                            .height = 0,
+			                            .fg = &color,
+			                            .bg = NULL,
+			                            .flag = TCOD_BKGND_NONE,
+			                            .alignment = TCOD_LEFT },
+			    "%s", name.c_str());
 		}
 	}
 
 	void CharacterCreationWindow::RenderRaceMenu(TCOD_Console* console,
-	                                              int width,
-	                                              int height) const
+	                                             int width,
+	                                             int /*height*/) const
 	{
 		auto& cfg = ConfigManager::Instance();
 		auto textColor = cfg.GetUITextColor();
@@ -266,21 +270,23 @@ namespace tutorial
 		int titleX = width / 2 - static_cast<int>(title.length()) / 2;
 		int titleY = menuStartY_ + 2;
 
-		TCOD_printf_rgb(console,
-		                (TCOD_PrintParamsRGB) { .x = titleX,
-		                                        .y = titleY,
-		                                        .width = 0,
-		                                        .height = 0,
-		                                        .fg = &textColor,
-		                                        .bg = NULL,
-		                                        .flag = TCOD_BKGND_NONE,
-		                                        .alignment = TCOD_LEFT },
-		                "%s", title.c_str());
+		TCOD_printf_rgb(
+		    console,
+		    (TCOD_PrintParamsRGB) { .x = titleX,
+		                            .y = titleY,
+		                            .width = 0,
+		                            .height = 0,
+		                            .fg = &textColor,
+		                            .bg = NULL,
+		                            .flag = TCOD_BKGND_NONE,
+		                            .alignment = TCOD_LEFT },
+		    "%s", title.c_str());
 
 		// Draw race options
 		int startY = menuStartY_ + 5;
 		for (size_t i = 0; i < raceOptions_.size(); ++i) {
-			bool isSelected = (static_cast<int>(i) == raceMenuIndex_);
+			bool isSelected =
+			    (static_cast<int>(i) == raceMenuIndex_);
 			bool isMarked =
 			    (static_cast<int>(i) == selectedRaceIndex_);
 
@@ -321,8 +327,8 @@ namespace tutorial
 	}
 
 	void CharacterCreationWindow::RenderClassMenu(TCOD_Console* console,
-	                                               int width,
-	                                               int height) const
+	                                              int width,
+	                                              int /*height*/) const
 	{
 		auto& cfg = ConfigManager::Instance();
 		auto textColor = cfg.GetUITextColor();
@@ -333,21 +339,23 @@ namespace tutorial
 		int titleX = width / 2 - static_cast<int>(title.length()) / 2;
 		int titleY = menuStartY_ + 2;
 
-		TCOD_printf_rgb(console,
-		                (TCOD_PrintParamsRGB) { .x = titleX,
-		                                        .y = titleY,
-		                                        .width = 0,
-		                                        .height = 0,
-		                                        .fg = &textColor,
-		                                        .bg = NULL,
-		                                        .flag = TCOD_BKGND_NONE,
-		                                        .alignment = TCOD_LEFT },
-		                "%s", title.c_str());
+		TCOD_printf_rgb(
+		    console,
+		    (TCOD_PrintParamsRGB) { .x = titleX,
+		                            .y = titleY,
+		                            .width = 0,
+		                            .height = 0,
+		                            .fg = &textColor,
+		                            .bg = NULL,
+		                            .flag = TCOD_BKGND_NONE,
+		                            .alignment = TCOD_LEFT },
+		    "%s", title.c_str());
 
 		// Draw class options
 		int startY = menuStartY_ + 5;
 		for (size_t i = 0; i < classOptions_.size(); ++i) {
-			bool isSelected = (static_cast<int>(i) == classMenuIndex_);
+			bool isSelected =
+			    (static_cast<int>(i) == classMenuIndex_);
 			bool isMarked =
 			    (static_cast<int>(i) == selectedClassIndex_);
 
@@ -388,8 +396,8 @@ namespace tutorial
 	}
 
 	void CharacterCreationWindow::RenderStatsMenu(TCOD_Console* console,
-	                                               int width,
-	                                               int height) const
+	                                              int width,
+	                                              int /*height*/) const
 	{
 		auto& cfg = ConfigManager::Instance();
 		auto textColor = cfg.GetUITextColor();
@@ -400,37 +408,40 @@ namespace tutorial
 		int titleX = width / 2 - static_cast<int>(title.length()) / 2;
 		int titleY = menuStartY_ + 2;
 
-		TCOD_printf_rgb(console,
-		                (TCOD_PrintParamsRGB) { .x = titleX,
-		                                        .y = titleY,
-		                                        .width = 0,
-		                                        .height = 0,
-		                                        .fg = &textColor,
-		                                        .bg = NULL,
-		                                        .flag = TCOD_BKGND_NONE,
-		                                        .alignment = TCOD_LEFT },
-		                "%s", title.c_str());
+		TCOD_printf_rgb(
+		    console,
+		    (TCOD_PrintParamsRGB) { .x = titleX,
+		                            .y = titleY,
+		                            .width = 0,
+		                            .height = 0,
+		                            .fg = &textColor,
+		                            .bg = NULL,
+		                            .flag = TCOD_BKGND_NONE,
+		                            .alignment = TCOD_LEFT },
+		    "%s", title.c_str());
 
 		// Show available points
 		std::string pointsText =
 		    "Available Points: " + std::to_string(availablePoints_);
 		int pointsX =
 		    width / 2 - static_cast<int>(pointsText.length()) / 2;
-		TCOD_printf_rgb(console,
-		                (TCOD_PrintParamsRGB) { .x = pointsX,
-		                                        .y = titleY + 1,
-		                                        .width = 0,
-		                                        .height = 0,
-		                                        .fg = &textColor,
-		                                        .bg = NULL,
-		                                        .flag = TCOD_BKGND_NONE,
-		                                        .alignment = TCOD_LEFT },
-		                "%s", pointsText.c_str());
+		TCOD_printf_rgb(
+		    console,
+		    (TCOD_PrintParamsRGB) { .x = pointsX,
+		                            .y = titleY + 1,
+		                            .width = 0,
+		                            .height = 0,
+		                            .fg = &textColor,
+		                            .bg = NULL,
+		                            .flag = TCOD_BKGND_NONE,
+		                            .alignment = TCOD_LEFT },
+		    "%s", pointsText.c_str());
 
 		// Draw stats
 		int startY = menuStartY_ + 6;
 		for (size_t i = 0; i < stats_.size(); ++i) {
-			bool isSelected = (static_cast<int>(i) == statsMenuIndex_);
+			bool isSelected =
+			    (static_cast<int>(i) == statsMenuIndex_);
 
 			tcod::ColorRGB color =
 			    isSelected ? highlightColor : textColor;
@@ -462,23 +473,21 @@ namespace tutorial
 		    width / 2 - static_cast<int>(instructions.length()) / 2;
 		TCOD_printf_rgb(
 		    console,
-		    (TCOD_PrintParamsRGB) { .x = instrX,
-		                            .y = startY
-		                                + static_cast<int>(
-		                                      stats_.size() * 2)
-		                                + 2,
-		                            .width = 0,
-		                            .height = 0,
-		                            .fg = &textColor,
-		                            .bg = NULL,
-		                            .flag = TCOD_BKGND_NONE,
-		                            .alignment = TCOD_LEFT },
+		    (TCOD_PrintParamsRGB) {
+		        .x = instrX,
+		        .y = startY + static_cast<int>(stats_.size() * 2) + 2,
+		        .width = 0,
+		        .height = 0,
+		        .fg = &textColor,
+		        .bg = NULL,
+		        .flag = TCOD_BKGND_NONE,
+		        .alignment = TCOD_LEFT },
 		    "%s", instructions.c_str());
 	}
 
 	void CharacterCreationWindow::RenderConfirmMenu(TCOD_Console* console,
-	                                                 int width,
-	                                                 int height) const
+	                                                int width,
+	                                                int /*height*/) const
 	{
 		auto& cfg = ConfigManager::Instance();
 		auto textColor = cfg.GetUITextColor();
@@ -488,16 +497,17 @@ namespace tutorial
 		int titleX = width / 2 - static_cast<int>(title.length()) / 2;
 		int titleY = menuStartY_ + 2;
 
-		TCOD_printf_rgb(console,
-		                (TCOD_PrintParamsRGB) { .x = titleX,
-		                                        .y = titleY,
-		                                        .width = 0,
-		                                        .height = 0,
-		                                        .fg = &textColor,
-		                                        .bg = NULL,
-		                                        .flag = TCOD_BKGND_NONE,
-		                                        .alignment = TCOD_LEFT },
-		                "%s", title.c_str());
+		TCOD_printf_rgb(
+		    console,
+		    (TCOD_PrintParamsRGB) { .x = titleX,
+		                            .y = titleY,
+		                            .width = 0,
+		                            .height = 0,
+		                            .fg = &textColor,
+		                            .bg = NULL,
+		                            .flag = TCOD_BKGND_NONE,
+		                            .alignment = TCOD_LEFT },
+		    "%s", title.c_str());
 
 		// Show selected options
 		int startY = menuStartY_ + 5;
@@ -531,8 +541,8 @@ namespace tutorial
 		           < static_cast<int>(classOptions_.size())) {
 			std::string classText =
 			    "Class: " + classOptions_[selectedClassIndex_].name;
-			int classX =
-			    width / 2 - static_cast<int>(classText.length()) / 2;
+			int classX = width / 2
+			             - static_cast<int>(classText.length()) / 2;
 			TCOD_printf_rgb(
 			    console,
 			    (TCOD_PrintParamsRGB) { .x = classX,
@@ -569,19 +579,21 @@ namespace tutorial
 
 		// Instructions
 		currentY += 2;
-		std::string instructions = "Press Enter to begin your adventure!";
+		std::string instructions =
+		    "Press Enter to begin your adventure!";
 		int instrX =
 		    width / 2 - static_cast<int>(instructions.length()) / 2;
-		TCOD_printf_rgb(console,
-		                (TCOD_PrintParamsRGB) { .x = instrX,
-		                                        .y = currentY,
-		                                        .width = 0,
-		                                        .height = 0,
-		                                        .fg = &textColor,
-		                                        .bg = NULL,
-		                                        .flag = TCOD_BKGND_NONE,
-		                                        .alignment = TCOD_LEFT },
-		                "%s", instructions.c_str());
+		TCOD_printf_rgb(
+		    console,
+		    (TCOD_PrintParamsRGB) { .x = instrX,
+		                            .y = currentY,
+		                            .width = 0,
+		                            .height = 0,
+		                            .fg = &textColor,
+		                            .bg = NULL,
+		                            .flag = TCOD_BKGND_NONE,
+		                            .alignment = TCOD_LEFT },
+		    "%s", instructions.c_str());
 	}
 
 	void CharacterCreationWindow::SelectNextTab()
@@ -690,9 +702,8 @@ namespace tutorial
 		switch (currentTab_) {
 			case CreationTab::Race:
 				if (index >= 0
-				    && index
-				           < static_cast<int>(
-				               raceOptions_.size())) {
+				    && index < static_cast<int>(
+				           raceOptions_.size())) {
 					raceMenuIndex_ = index;
 					selectedRaceIndex_ = index; // Mark it
 					return true;
@@ -701,9 +712,8 @@ namespace tutorial
 
 			case CreationTab::Class:
 				if (index >= 0
-				    && index
-				           < static_cast<int>(
-				               classOptions_.size())) {
+				    && index < static_cast<int>(
+				           classOptions_.size())) {
 					classMenuIndex_ = index;
 					selectedClassIndex_ = index; // Mark it
 					return true;
