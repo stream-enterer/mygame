@@ -40,7 +40,8 @@ namespace tutorial
 	{
 	public:
 		MenuWindow(std::size_t width, std::size_t height, pos_t pos,
-		           const std::string& title);
+		           const std::string& title,
+		           bool fullScreenBorder = false);
 
 		void Render(TCOD_Console* parent) const override;
 
@@ -63,14 +64,41 @@ namespace tutorial
 		// Navigation
 		void SelectPrevious();
 		void SelectNext();
+		bool SelectByLetter(char letter);
 
 		// Get the action for currently selected item
 		MenuAction GetSelectedAction() const;
+
+		// Marking
+		void MarkCurrentSelection();
+		int GetMarkedIndex() const
+		{
+			return markedIndex_;
+		}
+
+		// Rendering options
+		void SetShowLetters(bool show)
+		{
+			showLetters_ = show;
+		}
+		void SetShowMarker(bool show)
+		{
+			showMarker_ = show;
+		}
+		void SetGameLogoStub(const std::string& logo)
+		{
+			gameLogoStub_ = logo;
+		}
 
 	private:
 		std::string title_;
 		std::vector<MenuItem> items_;
 		int selectedIndex_;
+		int markedIndex_;
+		bool fullScreenBorder_;
+		bool showLetters_;
+		bool showMarker_;
+		std::string gameLogoStub_;
 	};
 
 } // namespace tutorial

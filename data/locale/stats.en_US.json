@@ -1,0 +1,29 @@
+{
+	"locale": "en_US",
+	"language": "English",
+
+	"stats": {
+		"strength": {
+			"name": "Strength",
+			"description": "Increases physical damage and carrying capacity",
+			"short": "STR"
+		},
+		"dexterity": {
+			"name": "Dexterity",
+			"description": "Improves defense and accuracy",
+			"short": "DEX"
+		},
+		"intelligence": {
+			"name": "Intelligence",
+			"description": "Enhances magical power and mana pool",
+			"short": "INT"
+		}
+	},
+
+	"stat_order": ["strength", "dexterity", "intelligence"],
+
+	"point_pool": {
+		"available": "Available Points: {points}",
+		"instructions": "Use +/- keys to allocate stat points"
+	}
+}

@@ -1,0 +1,21 @@
+{
+	"locale": "en_US",
+	"language": "English",
+
+	"classes": {
+		"warrior": {
+			"name": "Warrior",
+			"description": "Masters of melee combat and heavy armor"
+		},
+		"rogue": {
+			"name": "Rogue",
+			"description": "Swift assassins specializing in critical strikes"
+		},
+		"mage": {
+			"name": "Mage",
+			"description": "Wielders of arcane magic and elemental power"
+		}
+	},
+
+	"class_order": ["warrior", "rogue", "mage"]
+}

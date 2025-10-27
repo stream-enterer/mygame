@@ -123,6 +123,62 @@ namespace tutorial
 		}
 	};
 
+	class MenuNavigateLeftCommand final : public Command
+	{
+	public:
+		void Execute(Engine& engine) override;
+		bool ConsumesTurn() override
+		{
+			return false;
+		}
+	};
+
+	class MenuNavigateRightCommand final : public Command
+	{
+	public:
+		void Execute(Engine& engine) override;
+		bool ConsumesTurn() override
+		{
+			return false;
+		}
+	};
+
+	class MenuSelectLetterCommand final : public Command
+	{
+	public:
+		MenuSelectLetterCommand(char letter) : letter_(letter)
+		{
+		}
+		void Execute(Engine& engine) override;
+		bool ConsumesTurn() override
+		{
+			return false;
+		}
+
+	private:
+		char letter_;
+	};
+
+	class MenuIncrementStatCommand final : public Command
+	{
+	public:
+		void Execute(Engine& engine) override;
+		bool ConsumesTurn() override
+		{
+			return false;
+		}
+	};
+
+	class MenuDecrementStatCommand final : public Command
+	{
+	public:
+		void Execute(Engine& engine) override;
+		bool ConsumesTurn() override
+		{
+			return false;
+		}
+	};
+
 	class OpenPauseMenuCommand final : public Command
 	{
 	public:
