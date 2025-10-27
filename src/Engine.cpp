@@ -470,6 +470,9 @@ namespace tutorial
 
 	void Engine::ShowCharacterCreation()
 	{
+		// Clear any previous menu window (e.g., confirmation dialog)
+		menuWindow_.reset();
+
 		// Create full-screen character creation window
 		int width = static_cast<int>(config_.width);
 		int height = static_cast<int>(config_.height);
