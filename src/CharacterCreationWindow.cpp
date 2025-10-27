@@ -238,22 +238,7 @@ namespace tutorial
 			int textX = tabX + tabWidth / 2
 			            - static_cast<int>(name.length()) / 2;
 
-			// Render highlight background if selected
-			if (isSelected) {
-				// Draw highlight covering text + 1 space on each
-				// side
-				int hlStart = textX - 1;
-				int hlEnd = textX
-				            + static_cast<int>(name.length()) + 1;
-				for (int x = hlStart; x < hlEnd; ++x) {
-					TCOD_console_put_rgb(console, x, tabY,
-					                     ' ', NULL,
-					                     &highlightColor,
-					                     TCOD_BKGND_SET);
-				}
-			}
-
-			// Draw tab text
+			// Draw tab text with color highlighting
 			TCOD_printf_rgb(console,
 			                (TCOD_PrintParamsRGB) {
 			                    .x = textX,
@@ -299,6 +284,9 @@ namespace tutorial
 			bool isMarked =
 			    (static_cast<int>(i) == selectedRaceIndex_);
 
+			tcod::ColorRGB color =
+			    isSelected ? highlightColor : textColor;
+
 			// Build item text with letter and marker
 			std::string itemText;
 			if (isMarked) {
@@ -318,30 +306,13 @@ namespace tutorial
 			int itemX =
 			    width / 2 - static_cast<int>(itemText.length()) / 2;
 
-			// Draw background highlight if selected
-			if (isSelected) {
-				for (int x = itemX - 1;
-				     x < itemX
-				             + static_cast<int>(
-				                 itemText.length())
-				             + 1;
-				     ++x) {
-					tcod::ColorRGB dimHighlight { 100, 80,
-						                      40 };
-					TCOD_console_put_rgb(
-					    console, x, itemY, ' ', NULL,
-					    &dimHighlight, TCOD_BKGND_SET);
-				}
-			}
-
-			// Draw text (always white for visibility)
 			TCOD_printf_rgb(
 			    console,
 			    (TCOD_PrintParamsRGB) { .x = itemX,
 			                            .y = itemY,
 			                            .width = 0,
 			                            .height = 0,
-			                            .fg = &textColor,
+			                            .fg = &color,
 			                            .bg = NULL,
 			                            .flag = TCOD_BKGND_NONE,
 			                            .alignment = TCOD_LEFT },
@@ -380,6 +351,9 @@ namespace tutorial
 			bool isMarked =
 			    (static_cast<int>(i) == selectedClassIndex_);
 
+			tcod::ColorRGB color =
+			    isSelected ? highlightColor : textColor;
+
 			// Build item text with letter and marker
 			std::string itemText;
 			if (isMarked) {
@@ -399,30 +373,13 @@ namespace tutorial
 			int itemX =
 			    width / 2 - static_cast<int>(itemText.length()) / 2;
 
-			// Draw background highlight if selected
-			if (isSelected) {
-				for (int x = itemX - 1;
-				     x < itemX
-				             + static_cast<int>(
-				                 itemText.length())
-				             + 1;
-				     ++x) {
-					tcod::ColorRGB dimHighlight { 100, 80,
-						                      40 };
-					TCOD_console_put_rgb(
-					    console, x, itemY, ' ', NULL,
-					    &dimHighlight, TCOD_BKGND_SET);
-				}
-			}
-
-			// Draw text (always white for visibility)
 			TCOD_printf_rgb(
 			    console,
 			    (TCOD_PrintParamsRGB) { .x = itemX,
 			                            .y = itemY,
 			                            .width = 0,
 			                            .height = 0,
-			                            .fg = &textColor,
+			                            .fg = &color,
 			                            .bg = NULL,
 			                            .flag = TCOD_BKGND_NONE,
 			                            .alignment = TCOD_LEFT },
@@ -475,6 +432,9 @@ namespace tutorial
 		for (size_t i = 0; i < stats_.size(); ++i) {
 			bool isSelected = (static_cast<int>(i) == statsMenuIndex_);
 
+			tcod::ColorRGB color =
+			    isSelected ? highlightColor : textColor;
+
 			std::string itemText =
 			    stats_[i].name + ": "
 			    + std::to_string(stats_[i].value);
@@ -483,30 +443,13 @@ namespace tutorial
 			int itemX =
 			    width / 2 - static_cast<int>(itemText.length()) / 2;
 
-			// Draw background highlight if selected
-			if (isSelected) {
-				for (int x = itemX - 1;
-				     x < itemX
-				             + static_cast<int>(
-				                 itemText.length())
-				             + 1;
-				     ++x) {
-					tcod::ColorRGB dimHighlight { 100, 80,
-						                      40 };
-					TCOD_console_put_rgb(
-					    console, x, itemY, ' ', NULL,
-					    &dimHighlight, TCOD_BKGND_SET);
-				}
-			}
-
-			// Draw text (always white for visibility)
 			TCOD_printf_rgb(
 			    console,
 			    (TCOD_PrintParamsRGB) { .x = itemX,
 			                            .y = itemY,
 			                            .width = 0,
 			                            .height = 0,
-			                            .fg = &textColor,
+			                            .fg = &color,
 			                            .bg = NULL,
 			                            .flag = TCOD_BKGND_NONE,
 			                            .alignment = TCOD_LEFT },
@@ -780,17 +723,28 @@ namespace tutorial
 	{
 		switch (currentTab_) {
 			case CreationTab::Race:
-				selectedRaceIndex_ = raceMenuIndex_;
-				// Don't auto-advance - user navigates with Tab
+				// If already marked, advance to next tab
+				if (selectedRaceIndex_ == raceMenuIndex_) {
+					SelectNextTab();
+				} else {
+					// Mark the selection
+					selectedRaceIndex_ = raceMenuIndex_;
+				}
 				break;
 
 			case CreationTab::Class:
-				selectedClassIndex_ = classMenuIndex_;
-				// Don't auto-advance - user navigates with Tab
+				// If already marked, advance to next tab
+				if (selectedClassIndex_ == classMenuIndex_) {
+					SelectNextTab();
+				} else {
+					// Mark the selection
+					selectedClassIndex_ = classMenuIndex_;
+				}
 				break;
 
 			case CreationTab::Stats:
-				// Stats don't get "confirmed" - no action needed
+				// Stats don't get "confirmed" - just advance
+				SelectNextTab();
 				break;
 
 			case CreationTab::Confirm:

@@ -24,7 +24,12 @@ namespace tutorial
 		}
 
 		try {
-			file >> locale_;
+			nlohmann::json newData;
+			file >> newData;
+
+			// Merge new data into existing locale data
+			locale_.merge_patch(newData);
+
 			currentLocale_ = locale;
 			std::cout << "[StringTable] Loaded locale: " << locale
 			          << std::endl;
