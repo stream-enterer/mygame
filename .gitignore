@@ -33,5 +33,3 @@ Makefile
 vcpkg-manifest-install.log
 vcpkg_installed/
 
-# TODO
-TODO.md
