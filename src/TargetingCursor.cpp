@@ -11,6 +11,50 @@
 
 namespace tutorial
 {
+	namespace
+	{
+		// Helper: Map SDL keycode to movement delta
+		// Returns {0, 0} if key is not a movement key
+		// Supports arrow keys, numpad cardinal directions, and numpad
+		// diagonals
+		pos_t GetMovementDelta(SDL_Keycode key)
+		{
+			switch (key) {
+				// Arrow keys
+				case SDLK_UP:
+					return { 0, -1 };
+				case SDLK_DOWN:
+					return { 0, 1 };
+				case SDLK_LEFT:
+					return { -1, 0 };
+				case SDLK_RIGHT:
+					return { 1, 0 };
+
+				// Numpad cardinal directions
+				case SDLK_KP_8:
+					return { 0, -1 }; // Up
+				case SDLK_KP_2:
+					return { 0, 1 }; // Down
+				case SDLK_KP_4:
+					return { -1, 0 }; // Left
+				case SDLK_KP_6:
+					return { 1, 0 }; // Right
+
+				// Numpad diagonals
+				case SDLK_KP_7:
+					return { -1, -1 }; // Up-Left
+				case SDLK_KP_9:
+					return { 1, -1 }; // Up-Right
+				case SDLK_KP_1:
+					return { -1, 1 }; // Down-Left
+				case SDLK_KP_3:
+					return { 1, 1 }; // Down-Right
+
+				default:
+					return { 0, 0 };
+			}
+		}
+	} // namespace
 	TargetingCursor::TargetingCursor(Engine& engine, float maxRange,
 	                                 TargetingType type, float radius)
 	    : engine_(engine),
@@ -100,17 +144,9 @@ namespace tutorial
 						}
 					}
 
-					// Arrow keys move cursor
-					pos_t delta { 0, 0 };
-					if (key == SDLK_UP)
-						delta = pos_t { 0, -1 };
-					else if (key == SDLK_DOWN)
-						delta = pos_t { 0, 1 };
-					else if (key == SDLK_LEFT)
-						delta = pos_t { -1, 0 };
-					else if (key == SDLK_RIGHT)
-						delta = pos_t { 1, 0 };
-
+					// Check for movement keys (arrows, numpad,
+					// diagonals)
+					pos_t delta = GetMovementDelta(key);
 					if (delta.x != 0 || delta.y != 0) {
 						HandleKeyboardMovement(delta);
 					}
