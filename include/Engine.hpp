@@ -41,7 +41,8 @@ namespace tutorial
 		ItemSelection,
 		PauseMenu,
 		LevelUpMenu,
-		CharacterCreation
+		CharacterCreation,
+		NewGameConfirmation
 	};
 
 	class Entity;
@@ -90,6 +91,7 @@ namespace tutorial
 		void ShowPauseMenu();
 		void ShowStartMenu();
 		void ShowCharacterCreation();
+		void ShowNewGameConfirmation();
 		void MenuNavigateUp();
 		void MenuNavigateDown();
 		void MenuConfirm();
@@ -169,6 +171,7 @@ namespace tutorial
 		void HandleStartMenuConfirm(MenuAction action);
 		void HandlePauseMenuConfirm(MenuAction action);
 		void HandleLevelUpConfirm(MenuAction action);
+		void HandleNewGameConfirmation(MenuAction action);
 
 		// Level transition helpers
 		struct PlayerState {
@@ -178,8 +181,9 @@ namespace tutorial
 			std::vector<std::unique_ptr<Entity>> inventory;
 
 			// Provide explicit constructor with default values
-			PlayerState(const std::string& n, const AttackerComponent& atk,
-			           const DestructibleComponent& dest)
+			PlayerState(const std::string& n,
+			            const AttackerComponent& atk,
+			            const DestructibleComponent& dest)
 			    : name(n), attacker(atk), destructible(dest)
 			{
 			}
@@ -195,9 +199,11 @@ namespace tutorial
 		void LoadLevelConfiguration(int dungeonLevel);
 		void ClearCurrentLevel();
 		void PopulateLevelWithEntities();
-		void RestorePlayerWithState(PlayerState&& state, pos_t position);
+		void RestorePlayerWithState(PlayerState&& state,
+		                            pos_t position);
 		void RecreatePlayerUI();
-		pos_t CalculateWindowPosition(int width, int height, bool center) const;
+		pos_t CalculateWindowPosition(int width, int height,
+		                              bool center) const;
 
 		static constexpr int kAutosaveInterval = 100;
 

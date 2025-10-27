@@ -492,6 +492,31 @@ namespace tutorial
 		windowState_ = CharacterCreation;
 	}
 
+	void Engine::ShowNewGameConfirmation()
+	{
+		// Create confirmation dialog centered on screen
+		int width = 50;
+		int height = 15;
+		pos_t pos { static_cast<int>(config_.width) / 2 - width / 2,
+			    static_cast<int>(config_.height) / 2 - height / 2 };
+
+		menuWindow_ = std::make_unique<MenuWindow>(
+		    width, height, pos, "Abandon Current Save?");
+
+		// Build confirmation options
+		menuWindow_->Clear();
+		menuWindow_->AddItem(MenuAction::ConfirmNo,
+		                     "No - Return to Menu");
+		menuWindow_->AddItem(MenuAction::ConfirmYes,
+		                     "Yes - Start New Game");
+
+		// Reuse CharacterCreationEventHandler since it has same input
+		// handling (UP/DOWN/ENTER/SPACE/ESC)
+		eventHandler_ =
+		    std::make_unique<CharacterCreationEventHandler>(*this);
+		windowState_ = NewGameConfirmation;
+	}
+
 	void Engine::MenuNavigateUp()
 	{
 		if (menuWindow_) {
@@ -537,7 +562,13 @@ namespace tutorial
 	{
 		switch (action) {
 			case MenuAction::NewGame:
-				ShowCharacterCreation();
+				// Check if save file exists - if so, show
+				// confirmation
+				if (SaveManager::Instance().HasSave()) {
+					ShowNewGameConfirmation();
+				} else {
+					ShowCharacterCreation();
+				}
 				break;
 
 			case MenuAction::Continue:
@@ -567,8 +598,8 @@ namespace tutorial
 				break;
 
 			case MenuAction::SaveAndQuit:
-				SaveManager::Instance().SaveGame(*this,
-				                                  SaveType::Manual);
+				SaveManager::Instance().SaveGame(
+				    *this, SaveType::Manual);
 				ShowStartMenu();
 				break;
 
@@ -597,8 +628,9 @@ namespace tutorial
 			case MenuAction::LevelUpStrength:
 				if (attacker) {
 					attacker->IncreaseStrength(1);
-					LogMessage("Your strength increases by 1!",
-					           { 255, 100, 0 }, false);
+					LogMessage(
+					    "Your strength increases by 1!",
+					    { 255, 100, 0 }, false);
 				}
 				break;
 
@@ -624,6 +656,27 @@ namespace tutorial
 		ReturnToMainGame();
 	}
 
+	void Engine::HandleNewGameConfirmation(MenuAction action)
+	{
+		switch (action) {
+			case MenuAction::ConfirmYes:
+				// User confirmed - delete save and start new
+				// game
+				SaveManager::Instance().DeleteSave();
+				ShowCharacterCreation();
+				break;
+
+			case MenuAction::ConfirmNo:
+				// User canceled - return to start menu
+				ShowStartMenu();
+				break;
+
+			case MenuAction::None:
+			default:
+				break;
+		}
+	}
+
 	void Engine::MenuConfirm()
 	{
 		if (!menuWindow_) {
@@ -640,6 +693,8 @@ namespace tutorial
 			HandlePauseMenuConfirm(action);
 		} else if (windowState_ == LevelUpMenu) {
 			HandleLevelUpConfirm(action);
+		} else if (windowState_ == NewGameConfirmation) {
+			HandleNewGameConfirmation(action);
 		}
 	}
 
@@ -654,17 +709,18 @@ namespace tutorial
 
 		destructible->AddXp(xpAmount);
 
-		LogMessage("You gain " + std::to_string(xpAmount)
-		               + " experience!",
-		           { 0, 255, 0 }, false);
+		LogMessage(
+		    "You gain " + std::to_string(xpAmount) + " experience!",
+		    { 0, 255, 0 }, false);
 
 		if (destructible->CheckLevelUp(oldXp, destructible->GetXp())) {
 			unsigned int newLevel =
 			    destructible->CalculateLevel(destructible->GetXp());
-			LogMessage("Your battle skills grow stronger! You "
-			           "reached level "
-			               + std::to_string(newLevel) + "!",
-			           { 255, 255, 0 }, false);
+			LogMessage(
+			    "Your battle skills grow stronger! You "
+			    "reached level "
+			        + std::to_string(newLevel) + "!",
+			    { 255, 255, 0 }, false);
 			ShowLevelUpMenu();
 		}
 	}
@@ -814,10 +870,9 @@ namespace tutorial
 	Engine::PlayerState Engine::SavePlayerState()
 	{
 		std::string name = player_ ? player_->GetName() : "player";
-		AttackerComponent attacker =
-		    (player_ && player_->GetAttacker())
-		        ? *player_->GetAttacker()
-		        : AttackerComponent { 5 };
+		AttackerComponent attacker = (player_ && player_->GetAttacker())
+		                                 ? *player_->GetAttacker()
+		                                 : AttackerComponent { 5 };
 		DestructibleComponent destructible =
 		    (player_ && player_->GetDestructible())
 		        ? *player_->GetDestructible()
@@ -921,14 +976,12 @@ namespace tutorial
 		}
 	}
 
-	void Engine::RestorePlayerWithState(PlayerState&& state,
-	                                    pos_t position)
+	void Engine::RestorePlayerWithState(PlayerState&& state, pos_t position)
 	{
 		auto playerEntity = std::make_unique<Player>(
 		    position, state.name, true, state.attacker,
 		    state.destructible,
-		    IconRenderable { { 255, 255, 255 }, '@' },
-		    Faction::PLAYER);
+		    IconRenderable { { 255, 255, 255 }, '@' }, Faction::PLAYER);
 
 		for (auto& item : state.inventory) {
 			playerEntity->AddToInventory(std::move(item));
@@ -948,16 +1001,15 @@ namespace tutorial
 
 		int invWidth = cfg.GetInventoryWindowWidth();
 		int invHeight = cfg.GetInventoryWindowHeight();
-		pos_t invPos =
-		    CalculateWindowPosition(invWidth, invHeight,
-		                            cfg.GetInventoryCenterOnScreen());
+		pos_t invPos = CalculateWindowPosition(
+		    invWidth, invHeight, cfg.GetInventoryCenterOnScreen());
 
 		inventoryWindow_ = std::make_unique<InventoryWindow>(
 		    invWidth, invHeight, invPos, *player_);
 	}
 
 	pos_t Engine::CalculateWindowPosition(int width, int height,
-	                                       bool center) const
+	                                      bool center) const
 	{
 		if (center) {
 			return pos_t { static_cast<int>(config_.width) / 2
@@ -988,7 +1040,8 @@ namespace tutorial
 		auto rooms = map_->GetRooms();
 		if (!rooms.empty()) {
 			pos_t playerPos = rooms[0].GetCenter();
-			RestorePlayerWithState(std::move(savedState), playerPos);
+			RestorePlayerWithState(std::move(savedState),
+			                       playerPos);
 			RecreatePlayerUI();
 		}
 
@@ -1079,7 +1132,8 @@ namespace tutorial
 		for (const auto& entity : entities_) {
 			const auto pos = entity->GetPos();
 			if (map_->IsInFov(pos)) {
-				const auto& renderable = entity->GetRenderable();
+				const auto& renderable =
+				    entity->GetRenderable();
 				renderable->Render(console, pos);
 			}
 		}
@@ -1101,6 +1155,10 @@ namespace tutorial
 				menuWindow_->Render(console_);
 			}
 		} else if (windowState_ == CharacterCreation) {
+			if (menuWindow_) {
+				menuWindow_->Render(console_);
+			}
+		} else if (windowState_ == NewGameConfirmation) {
 			if (menuWindow_) {
 				menuWindow_->Render(console_);
 			}

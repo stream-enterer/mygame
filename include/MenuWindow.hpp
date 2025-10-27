@@ -24,7 +24,9 @@ namespace tutorial
 		LevelUpIntelligence, // +1 INT and max mana
 		CharacterClass1,     // Warrior class
 		CharacterClass2,     // Rogue class
-		CharacterClass3      // Mage class
+		CharacterClass3,     // Mage class
+		ConfirmYes,
+		ConfirmNo
 	};
 
 	// Individual menu item with label and action
