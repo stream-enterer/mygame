@@ -525,7 +525,8 @@ namespace tutorial
 			}
 
 			// Step 7: Restore UI state
-			engine.windowState_ = Window::MainGame;
+			engine.menuStack_.Clear();
+			engine.inMainGame_ = true;
 			engine.eventHandler_ =
 			    std::make_unique<MainGameEventHandler>(engine);
 			engine.gameOver_ = false;

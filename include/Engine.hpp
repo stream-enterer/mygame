@@ -81,15 +81,6 @@ namespace tutorial
 		// Menu action handler - called by menu system
 		void HandleMenuAction(MenuAction action);
 
-		// Menu navigation - called by character creation window
-		void MenuNavigateUp();
-		void MenuNavigateDown();
-		void MenuNavigateLeft();
-		void MenuNavigateRight();
-		void MenuConfirm();
-		void MenuSelectByLetter(char letter);
-		void MenuIncrementStat();
-		void MenuDecrementStat();
 		void Quit();
 		std::unique_ptr<Entity> RemoveEntity(Entity* entity);
 		Entity* SpawnEntity(std::unique_ptr<Entity> entity, pos_t pos);
@@ -137,6 +128,7 @@ namespace tutorial
 		void NextLevel();
 
 		void RenderGameUI(TCOD_Console* targetConsole) const;
+		void RenderGameBackground(TCOD_Console* console);
 
 	private:
 		friend class TurnManager;
@@ -152,9 +144,6 @@ namespace tutorial
 		void GenerateMap(int width, int height);
 		void ProcessDeferredRemovals();
 		void EnsureInitialized();
-
-		// Rendering helpers
-		void RenderGameBackground(TCOD_Console* console);
 
 		// Level transition helpers
 		struct PlayerState {
@@ -222,8 +211,6 @@ namespace tutorial
 		// New SDL3/libtcod context members
 		TCOD_Context* context_;
 		tcod::TilesetPtr tileset_;
-		std::unique_ptr<CharacterCreationWindow>
-		    characterCreationWindow_;
 		TCOD_Console* console_;
 		SDL_Window* window_;
 		TCOD_ViewportOptions viewportOptions_;

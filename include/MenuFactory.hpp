@@ -30,6 +30,10 @@ namespace tutorial
 		static std::unique_ptr<MenuBase>
 		CreateNewGameConfirmation(Engine& engine);
 
+		// Create a character creation menu
+		static std::unique_ptr<MenuBase>
+		CreateCharacterCreation(Engine& engine);
+
 	private:
 		// Helper to calculate centered position
 		static pos_t CalculateCenteredPosition(int width, int height,

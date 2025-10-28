@@ -80,16 +80,6 @@ namespace tutorial
 		GameOverEventHandler(Engine& engine);
 	};
 
-	// Character creation event handler - handles input for character creation screen
-	// This is kept separate from the menu stack system due to character creation's
-	// unique tabbed interface
-	class CharacterCreationEventHandler final : public BaseEventHandler
-	{
-	public:
-		CharacterCreationEventHandler(Engine& engine);
-		std::unique_ptr<Command> Dispatch() const override;
-	};
-
 	class InventoryEventHandler final : public BaseEventHandler
 	{
 	public:

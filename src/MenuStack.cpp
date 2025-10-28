@@ -74,15 +74,14 @@ namespace tutorial
 			case BackgroundMode::DimmedGameWorld:
 				// Render game, then dim it
 				engine.RenderGameBackground(console);
-				// Dim the background by drawing a semi-transparent overlay
-				for (int y = 0; y < engine.GetConfig().height; ++y) {
-					for (int x = 0; x < engine.GetConfig().width;
-					     ++x) {
-						TCOD_ColorRGBA fg, bg;
-						int ch = 0;
-						TCOD_console_get_char_ex(console, x, y,
-						                         &ch, &fg,
-						                         &bg);
+				// Dim the background by overlaying semi-transparent tiles
+				for (int y = 0; y < static_cast<int>(engine.GetConfig().height); ++y) {
+					for (int x = 0; x < static_cast<int>(engine.GetConfig().width); ++x) {
+						// Get current colors
+						TCOD_ColorRGB fg = TCOD_console_get_char_foreground(console, x, y);
+						TCOD_ColorRGB bg = TCOD_console_get_char_background(console, x, y);
+						int ch = TCOD_console_get_char(console, x, y);
+
 						// Darken foreground and background by 50%
 						fg.r /= 2;
 						fg.g /= 2;
@@ -90,8 +89,9 @@ namespace tutorial
 						bg.r /= 2;
 						bg.g /= 2;
 						bg.b /= 2;
-						TCOD_console_put_rgb(console, x, y, ch,
-						                     fg, bg);
+
+						// Put back the darkened tile
+						TCOD_console_put_rgb(console, x, y, ch, &fg, &bg, TCOD_BKGND_SET);
 					}
 				}
 				break;

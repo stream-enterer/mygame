@@ -1,6 +1,5 @@
 #include "Engine.hpp"
 
-#include "CharacterCreationWindow.hpp"
 #include "Colors.hpp"
 #include "DynamicSpawnSystem.hpp"
 #include "Entity.hpp"
@@ -389,19 +388,9 @@ namespace tutorial
 	void Engine::ShowCharacterCreation()
 	{
 		menuStack_.Clear();
-
-		// Create full-screen character creation window
-		int width = static_cast<int>(config_.width);
-		int height = static_cast<int>(config_.height);
-		pos_t pos { 0, 0 };
-
-		characterCreationWindow_ =
-		    std::make_unique<CharacterCreationWindow>(width, height,
-		                                              pos);
-
+		menuStack_.Push(MenuFactory::CreateCharacterCreation(*this));
 		inMainGame_ = false;
-		eventHandler_ =
-		    std::make_unique<CharacterCreationEventHandler>(*this);
+		eventHandler_ = std::make_unique<MainGameEventHandler>(*this);
 	}
 
 	void Engine::ShowNewGameConfirmation()
@@ -412,89 +401,12 @@ namespace tutorial
 		eventHandler_ = std::make_unique<MainGameEventHandler>(*this);
 	}
 
-	void Engine::MenuNavigateUp()
-	{
-		if (characterCreationWindow_) {
-			characterCreationWindow_->SelectPrevious();
-		}
-	}
 
-	void Engine::MenuNavigateDown()
-	{
-		if (characterCreationWindow_) {
-			characterCreationWindow_->SelectNext();
-		}
-	}
-
-	void Engine::MenuNavigateLeft()
-	{
-		if (characterCreationWindow_) {
-			characterCreationWindow_->SelectPreviousTab();
-		}
-	}
-
-	void Engine::MenuNavigateRight()
-	{
-		if (characterCreationWindow_) {
-			characterCreationWindow_->SelectNextTab();
-		}
-	}
-
-	void Engine::MenuSelectByLetter(char letter)
-	{
-		if (characterCreationWindow_) {
-			characterCreationWindow_->SelectByLetter(letter);
-		}
-	}
-
-	void Engine::MenuIncrementStat()
-	{
-		if (characterCreationWindow_) {
-			characterCreationWindow_->IncrementStat();
-		}
-	}
-
-	void Engine::MenuDecrementStat()
-	{
-		if (characterCreationWindow_) {
-			characterCreationWindow_->DecrementStat();
-		}
-	}
-
-
-	void Engine::MenuConfirm()
-	{
-		// Handle character creation confirmation
-		if (characterCreationWindow_) {
-			auto tab = characterCreationWindow_->GetCurrentTab();
-			if (tab == CreationTab::Confirm) {
-				// Show confirmation dialog when ready
-				if (characterCreationWindow_->IsReadyToConfirm()) {
-					// Get selected class and start new game
-					characterCreation_.selectedClass =
-					    characterCreationWindow_
-					        ->GetSelectedClassIndex();
-					characterCreationWindow_.reset();
-					NewGame();
-					ReturnToMainGame();
-				}
-			} else {
-				// Confirm selection in current tab
-				characterCreationWindow_->ConfirmSelection();
-			}
-			return;
-		}
-
-		// Handle menu stack confirmations (StartMenu, PauseMenu, LevelUpMenu, NewGameConfirmation)
-		// These are now handled by ListMenu input handling via MenuFactory
-		// This method is only kept for CharacterCreation compatibility
-	}
-
-	void Engine::HandleMenuAction(MenuAction action)
+	void Engine::HandleMenuAction(tutorial::MenuAction action)
 	{
 		switch (action) {
 			// Start Menu actions
-			case MenuAction::NewGame:
+			case tutorial::MenuAction::NewGame:
 				if (SaveManager::Instance().HasSave()) {
 					ShowNewGameConfirmation();
 				} else {
@@ -502,7 +414,7 @@ namespace tutorial
 				}
 				break;
 
-			case MenuAction::Continue:
+			case tutorial::MenuAction::Continue:
 				if (SaveManager::Instance().LoadGame(*this)) {
 					ReturnToMainGame();
 				} else {
@@ -511,19 +423,19 @@ namespace tutorial
 				}
 				break;
 
-			case MenuAction::Quit:
+			case tutorial::MenuAction::Quit:
 				Quit();
 				break;
 
 			// Pause Menu actions
-			case MenuAction::SaveAndQuit:
+			case tutorial::MenuAction::SaveAndQuit:
 				SaveManager::Instance().SaveGame(*this,
 				                                 SaveType::Manual);
 				ShowStartMenu();
 				break;
 
 			// Level Up Menu actions
-			case MenuAction::LevelUpStrength:
+			case tutorial::MenuAction::LevelUpStrength:
 				if (player_ && player_->GetDestructible()) {
 					auto* destructible =
 					    player_->GetDestructible();
@@ -541,7 +453,7 @@ namespace tutorial
 				ReturnToMainGame();
 				break;
 
-			case MenuAction::LevelUpDexterity:
+			case tutorial::MenuAction::LevelUpDexterity:
 				if (player_ && player_->GetDestructible()) {
 					auto* destructible =
 					    player_->GetDestructible();
@@ -556,7 +468,7 @@ namespace tutorial
 				ReturnToMainGame();
 				break;
 
-			case MenuAction::LevelUpIntelligence:
+			case tutorial::MenuAction::LevelUpIntelligence:
 				if (player_ && player_->GetDestructible()) {
 					auto* destructible =
 					    player_->GetDestructible();
@@ -575,16 +487,35 @@ namespace tutorial
 				break;
 
 			// New Game Confirmation actions
-			case MenuAction::ConfirmYes:
+			case tutorial::MenuAction::ConfirmYes:
 				SaveManager::Instance().DeleteSave();
 				ShowCharacterCreation();
 				break;
 
-			case MenuAction::ConfirmNo:
+			case tutorial::MenuAction::ConfirmNo:
 				ShowStartMenu();
 				break;
 
-			case MenuAction::None:
+			// Character Creation - class selection
+			case tutorial::MenuAction::CharacterClass1:
+				characterCreation_.selectedClass = 0; // Warrior
+				NewGame();
+				ReturnToMainGame();
+				break;
+
+			case tutorial::MenuAction::CharacterClass2:
+				characterCreation_.selectedClass = 1; // Rogue
+				NewGame();
+				ReturnToMainGame();
+				break;
+
+			case tutorial::MenuAction::CharacterClass3:
+				characterCreation_.selectedClass = 2; // Mage
+				NewGame();
+				ReturnToMainGame();
+				break;
+
+			case tutorial::MenuAction::None:
 			default:
 				break;
 		}
@@ -1033,13 +964,9 @@ namespace tutorial
 	{
 		TCOD_console_clear(console_);
 
-		// Menu stack handles all menu rendering (StartMenu, PauseMenu, LevelUpMenu, NewGameConfirmation)
+		// Menu stack handles all menu rendering (StartMenu, PauseMenu, LevelUpMenu, NewGameConfirmation, CharacterCreation)
 		if (!menuStack_.IsEmpty()) {
 			menuStack_.Render(console_, *this);
-		}
-		// Character creation (special case - not in menu stack)
-		else if (characterCreationWindow_) {
-			characterCreationWindow_->Render(console_);
 		}
 		// Main game
 		else if (inMainGame_) {

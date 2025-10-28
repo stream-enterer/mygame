@@ -1,5 +1,6 @@
 #include "MenuFactory.hpp"
 
+#include "CharacterCreationMenu.hpp"
 #include "Engine.hpp"
 #include "ListMenu.hpp"
 #include "SaveManager.hpp"
@@ -81,6 +82,17 @@ namespace tutorial
 		menu->AddItem(MenuAction::ConfirmYes, "Yes - Start New Game");
 
 		return menu;
+	}
+
+	std::unique_ptr<MenuBase>
+	MenuFactory::CreateCharacterCreation(Engine& engine)
+	{
+		int width = static_cast<int>(engine.GetConfig().width);
+		int height = static_cast<int>(engine.GetConfig().height);
+		pos_t pos { 0, 0 };
+
+		return std::make_unique<CharacterCreationMenu>(
+		    engine, "Choose Your Class", pos, width, height);
 	}
 
 	pos_t MenuFactory::CalculateCenteredPosition(int width, int height,
