@@ -383,24 +383,7 @@ namespace tutorial
 		}
 
 		menu->AddItem("New Game", [](Engine& e) {
-			// If save exists, need confirmation
-			if (SaveManager::Instance().HasSave()) {
-				auto confirmMenu = std::make_unique<Menu>();
-				confirmMenu->AddItem(
-				    "Yes - Start New Game", [](Engine& e) {
-					    SaveManager::Instance()
-					        .DeleteSave();
-					    e.PopMenu(); // Close confirmation
-					    e.ShowClassSelection();
-				    });
-				confirmMenu->AddItem(
-				    "No - Return to Menu", [](Engine& e) {
-					    e.PopMenu(); // Close confirmation
-				    });
-				e.PushMenu(std::move(confirmMenu));
-			} else {
-				e.ShowClassSelection();
-			}
+			e.ShowClassSelection();
 		});
 
 		menu->AddItem("Quit", [](Engine& e) { e.Quit(); });
@@ -410,26 +393,85 @@ namespace tutorial
 
 	void Engine::ShowClassSelection()
 	{
-		PopMenu(); // Close previous menu (start menu or confirmation)
-
 		auto menu = std::make_unique<Menu>();
 
 		menu->AddItem("Warrior - Tough melee fighter", [](Engine& e) {
-			e.PopMenu();
-			e.NewGame();
-			e.ReturnToMainGame();
+			// Check if save exists before starting
+			if (SaveManager::Instance().HasSave()) {
+				auto confirmMenu = std::make_unique<Menu>();
+				confirmMenu->AddItem(
+				    "Yes - Overwrite save with Warrior",
+				    [](Engine& e) {
+					    SaveManager::Instance()
+					        .DeleteSave();
+					    e.PopMenu(); // Close confirmation
+					    e.PopMenu(); // Close class selection
+					    e.NewGame();
+					    e.ReturnToMainGame();
+				    });
+				confirmMenu->AddItem(
+				    "No - Return to class selection",
+				    [](Engine& e) {
+					    e.PopMenu(); // Close confirmation
+				    });
+				e.PushMenu(std::move(confirmMenu));
+			} else {
+				e.PopMenu(); // Close class selection
+				e.NewGame();
+				e.ReturnToMainGame();
+			}
 		});
 
 		menu->AddItem("Rogue - Swift and deadly", [](Engine& e) {
-			e.PopMenu();
-			e.NewGame();
-			e.ReturnToMainGame();
+			if (SaveManager::Instance().HasSave()) {
+				auto confirmMenu = std::make_unique<Menu>();
+				confirmMenu->AddItem(
+				    "Yes - Overwrite save with Rogue",
+				    [](Engine& e) {
+					    SaveManager::Instance()
+					        .DeleteSave();
+					    e.PopMenu(); // Close confirmation
+					    e.PopMenu(); // Close class selection
+					    e.NewGame();
+					    e.ReturnToMainGame();
+				    });
+				confirmMenu->AddItem(
+				    "No - Return to class selection",
+				    [](Engine& e) {
+					    e.PopMenu(); // Close confirmation
+				    });
+				e.PushMenu(std::move(confirmMenu));
+			} else {
+				e.PopMenu();
+				e.NewGame();
+				e.ReturnToMainGame();
+			}
 		});
 
 		menu->AddItem("Mage - Master of magic", [](Engine& e) {
-			e.PopMenu();
-			e.NewGame();
-			e.ReturnToMainGame();
+			if (SaveManager::Instance().HasSave()) {
+				auto confirmMenu = std::make_unique<Menu>();
+				confirmMenu->AddItem(
+				    "Yes - Overwrite save with Mage",
+				    [](Engine& e) {
+					    SaveManager::Instance()
+					        .DeleteSave();
+					    e.PopMenu(); // Close confirmation
+					    e.PopMenu(); // Close class selection
+					    e.NewGame();
+					    e.ReturnToMainGame();
+				    });
+				confirmMenu->AddItem(
+				    "No - Return to class selection",
+				    [](Engine& e) {
+					    e.PopMenu(); // Close confirmation
+				    });
+				e.PushMenu(std::move(confirmMenu));
+			} else {
+				e.PopMenu();
+				e.NewGame();
+				e.ReturnToMainGame();
+			}
 		});
 
 		PushMenu(std::move(menu));
