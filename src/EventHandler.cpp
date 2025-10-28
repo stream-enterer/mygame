@@ -326,13 +326,14 @@ namespace tutorial
 		SetKeyMap(GameOverKeyMap);
 	}
 
-	// MenuEventHandlerBase - Common implementation for all menu handlers
-	MenuEventHandlerBase::MenuEventHandlerBase(Engine& engine)
+	// CharacterCreationEventHandler - handles input for character creation screen
+	CharacterCreationEventHandler::CharacterCreationEventHandler(
+	    Engine& engine)
 	    : BaseEventHandler(engine)
 	{
 	}
 
-	std::unique_ptr<Command> MenuEventHandlerBase::Dispatch() const
+	std::unique_ptr<Command> CharacterCreationEventHandler::Dispatch() const
 	{
 		SDL_Event sdlEvent;
 
@@ -415,67 +416,15 @@ namespace tutorial
 					    MenuSelectLetterCommand>(letter);
 				}
 
-				// ESCAPE - delegate to subclass
+				// ESCAPE - return to start menu
 				if (sdlKey == SDLK_ESCAPE) {
-					auto escapeCmd = HandleEscape();
-					if (escapeCmd) {
-						return escapeCmd;
-					}
-					// If HandleEscape returns nullptr,
-					// ignore ESC
-					continue;
+					return std::make_unique<
+					    StartMenuCommand>();
 				}
 			}
 		}
 
 		return nullptr;
-	}
-
-	// PauseMenuEventHandler - ESC closes menu and returns to game
-	PauseMenuEventHandler::PauseMenuEventHandler(Engine& engine)
-	    : MenuEventHandlerBase(engine)
-	{
-	}
-
-	std::unique_ptr<Command> PauseMenuEventHandler::HandleEscape() const
-	{
-		return std::make_unique<CloseUICommand>();
-	}
-
-	// StartMenuEventHandler - ESC does nothing (must explicitly select
-	// Exit)
-	StartMenuEventHandler::StartMenuEventHandler(Engine& engine)
-	    : MenuEventHandlerBase(engine)
-	{
-	}
-
-	std::unique_ptr<Command> StartMenuEventHandler::HandleEscape() const
-	{
-		return nullptr; // Ignore ESC
-	}
-
-	// CharacterCreationEventHandler - ESC returns to start menu
-	CharacterCreationEventHandler::CharacterCreationEventHandler(
-	    Engine& engine)
-	    : MenuEventHandlerBase(engine)
-	{
-	}
-
-	std::unique_ptr<Command> CharacterCreationEventHandler::HandleEscape()
-	    const
-	{
-		return std::make_unique<StartMenuCommand>();
-	}
-
-	// LevelUpMenuEventHandler - ESC disabled (must choose stat upgrade)
-	LevelUpMenuEventHandler::LevelUpMenuEventHandler(Engine& engine)
-	    : MenuEventHandlerBase(engine)
-	{
-	}
-
-	std::unique_ptr<Command> LevelUpMenuEventHandler::HandleEscape() const
-	{
-		return nullptr; // Ignore ESC - player must choose
 	}
 
 	tutorial::InventoryEventHandler::InventoryEventHandler(Engine& engine,

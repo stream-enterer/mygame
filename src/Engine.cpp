@@ -11,7 +11,7 @@
 #include "LevelConfig.hpp"
 #include "Map.hpp"
 #include "MapGenerator.hpp"
-#include "MenuWindow.hpp"
+#include "MenuFactory.hpp"
 #include "MessageHistoryWindow.hpp"
 #include "MessageLogWindow.hpp"
 #include "PickupWindow.hpp"
@@ -39,10 +39,9 @@ namespace tutorial
 	      dungeonLevel_(1),
 	      turnsSinceLastAutosave_(0),
 	      context_(nullptr),
-	      menuWindow_(nullptr),
 	      console_(nullptr),
 	      window_(nullptr),
-	      windowState_(StartMenu),
+	      inMainGame_(false),
 	      gameOver_(false),
 	      running_(true),
 	      mousePos_ { 0, 0 },
@@ -311,7 +310,8 @@ namespace tutorial
 		messageLog_.AddMessage(welcomeMsg.text, welcomeMsg.color,
 		                       welcomeMsg.stack);
 
-		windowState_ = MainGame;
+		menuStack_.Clear();
+		inMainGame_ = true;
 		eventHandler_ = std::make_unique<MainGameEventHandler>(*this);
 		gameOver_ = false;
 		turnsSinceLastAutosave_ = 0;
@@ -319,154 +319,76 @@ namespace tutorial
 
 	void Engine::ReturnToMainGame()
 	{
-		if (windowState_ != MainGame) {
-			eventHandler_ =
-			    std::make_unique<MainGameEventHandler>(*this);
-			windowState_ = MainGame;
-			pickupItemsList_.clear();
-		}
+		menuStack_.Clear();
+		inMainGame_ = true;
+		eventHandler_ = std::make_unique<MainGameEventHandler>(*this);
+		pickupItemsList_.clear();
 	}
 
 	void Engine::ShowMessageHistory()
 	{
-		if (windowState_ != MessageHistory) {
-			eventHandler_ =
-			    std::make_unique<MessageHistoryEventHandler>(*this);
-			windowState_ = MessageHistory;
-		}
+		inMainGame_ = false;
+		eventHandler_ =
+		    std::make_unique<MessageHistoryEventHandler>(*this);
 	}
 
 	void Engine::ShowInventory()
 	{
-		if (windowState_ != Inventory) {
-			inventoryWindow_->SetTitle("Inventory");
-			eventHandler_ = std::make_unique<InventoryEventHandler>(
-			    *this, false);
-			windowState_ = Inventory;
-		}
+		inMainGame_ = false;
+		inventoryWindow_->SetTitle("Inventory");
+		eventHandler_ =
+		    std::make_unique<InventoryEventHandler>(*this, false);
 	}
 
 	void Engine::ShowDropMenu()
 	{
-		if (windowState_ != Inventory) {
-			inventoryWindow_->SetTitle("Drop what?");
-			eventHandler_ = std::make_unique<InventoryEventHandler>(
-			    *this, true);
-			windowState_ = Inventory;
-		}
+		inMainGame_ = false;
+		inventoryWindow_->SetTitle("Drop what?");
+		eventHandler_ =
+		    std::make_unique<InventoryEventHandler>(*this, true);
 	}
 
 	void Engine::ShowPickupMenu(const std::vector<Entity*>& items)
 	{
-		if (windowState_ != ItemSelection) {
-			pickupItemsList_ = items;
+		pickupItemsList_ = items;
 
-			auto& cfg = ConfigManager::Instance();
-			int width = cfg.GetInventoryWindowWidth();
-			int height = cfg.GetInventoryWindowHeight();
-			pos_t pos = CalculateWindowPosition(
-			    width, height, cfg.GetInventoryCenterOnScreen());
+		auto& cfg = ConfigManager::Instance();
+		int width = cfg.GetInventoryWindowWidth();
+		int height = cfg.GetInventoryWindowHeight();
+		pos_t pos = CalculateWindowPosition(
+		    width, height, cfg.GetInventoryCenterOnScreen());
 
-			pickupWindow_ = std::make_unique<PickupWindow>(
-			    width, height, pos, pickupItemsList_,
-			    "Pick up what?");
+		pickupWindow_ = std::make_unique<PickupWindow>(
+		    width, height, pos, pickupItemsList_, "Pick up what?");
 
-			eventHandler_ =
-			    std::make_unique<ItemSelectionEventHandler>(*this);
-			windowState_ = ItemSelection;
-		}
+		inMainGame_ = false;
+		eventHandler_ =
+		    std::make_unique<ItemSelectionEventHandler>(*this);
 	}
 
 	void Engine::ShowPauseMenu()
 	{
-		if (windowState_ != PauseMenu) {
-			// Create menu window centered on screen
-			int width = 40;
-			int height = 20;
-			pos_t pos { static_cast<int>(config_.width) / 2
-				        - width / 2,
-				    static_cast<int>(config_.height) / 2
-				        - height / 2 };
-
-			menuWindow_ = std::make_unique<MenuWindow>(
-			    width, height, pos, "PAUSED");
-
-			// Build menu based on game state
-			menuWindow_->Clear();
-			menuWindow_->AddItem(MenuAction::Continue,
-			                     "Resume Game");
-			menuWindow_->AddItem(MenuAction::SaveAndQuit,
-			                     "Save and Quit");
-
-			eventHandler_ =
-			    std::make_unique<PauseMenuEventHandler>(*this);
-			windowState_ = PauseMenu;
-		}
+		menuStack_.Push(MenuFactory::CreatePauseMenu(*this));
+		inMainGame_ = false;
 	}
 
 	void Engine::ShowLevelUpMenu()
 	{
-		if (windowState_ != LevelUpMenu) {
-			// Create menu window centered on screen
-			int width = 50;
-			int height = 18;
-			pos_t pos { static_cast<int>(config_.width) / 2
-				        - width / 2,
-				    static_cast<int>(config_.height) / 2
-				        - height / 2 };
-
-			menuWindow_ = std::make_unique<MenuWindow>(
-			    width, height, pos, "Level Up!");
-
-			// Build level-up options
-			menuWindow_->Clear();
-			menuWindow_->AddItem(MenuAction::LevelUpStrength,
-			                     "Strength (+1 attack)");
-			menuWindow_->AddItem(MenuAction::LevelUpDexterity,
-			                     "Dexterity (+1 defense)");
-			menuWindow_->AddItem(MenuAction::LevelUpIntelligence,
-			                     "Intelligence (+1 mana)");
-
-			eventHandler_ =
-			    std::make_unique<LevelUpMenuEventHandler>(*this);
-			windowState_ = LevelUpMenu;
-		}
+		menuStack_.Push(MenuFactory::CreateLevelUpMenu(*this));
+		inMainGame_ = false;
 	}
 
 	void Engine::ShowStartMenu()
 	{
-		// Create full-screen menu window with border at screen edges
-		int width = static_cast<int>(config_.width);
-		int height = static_cast<int>(config_.height);
-		pos_t pos { 0, 0 };
-
-		menuWindow_ = std::make_unique<MenuWindow>(
-		    width, height, pos, "My Game",
-		    true); // fullScreenBorder = true
-
-		// Set game logo stub
-		menuWindow_->SetGameLogoStub("[GameLogo]");
-
-		// Build start menu options
-		menuWindow_->Clear();
-
-		// Only show "Continue" if a save file exists - make it first
-		// option
-		if (SaveManager::Instance().HasSave()) {
-			menuWindow_->AddItem(MenuAction::Continue, "Continue");
-		}
-
-		menuWindow_->AddItem(MenuAction::NewGame, "New Game");
-		menuWindow_->AddItem(MenuAction::Quit, "Exit");
-
-		eventHandler_ = std::make_unique<StartMenuEventHandler>(*this);
-		windowState_ = StartMenu;
+		menuStack_.Clear();
+		menuStack_.Push(MenuFactory::CreateStartMenu(*this));
+		inMainGame_ = false;
+		eventHandler_ = std::make_unique<MainGameEventHandler>(*this);
 	}
 
 	void Engine::ShowCharacterCreation()
 	{
-		// Clear any previous menu window (e.g., confirmation dialog)
-		menuWindow_.reset();
+		menuStack_.Clear();
 
 		// Create full-screen character creation window
 		int width = static_cast<int>(config_.width);
@@ -477,42 +399,21 @@ namespace tutorial
 		    std::make_unique<CharacterCreationWindow>(width, height,
 		                                              pos);
 
+		inMainGame_ = false;
 		eventHandler_ =
 		    std::make_unique<CharacterCreationEventHandler>(*this);
-		windowState_ = CharacterCreation;
 	}
 
 	void Engine::ShowNewGameConfirmation()
 	{
-		// Create confirmation dialog centered on screen
-		int width = 50;
-		int height = 15;
-		pos_t pos { static_cast<int>(config_.width) / 2 - width / 2,
-			    static_cast<int>(config_.height) / 2 - height / 2 };
-
-		menuWindow_ = std::make_unique<MenuWindow>(
-		    width, height, pos, "Abandon Current Save?");
-
-		// Build confirmation options
-		menuWindow_->Clear();
-		menuWindow_->AddItem(MenuAction::ConfirmNo,
-		                     "No - Return to Menu");
-		menuWindow_->AddItem(MenuAction::ConfirmYes,
-		                     "Yes - Start New Game");
-
-		// Reuse CharacterCreationEventHandler since it has same input
-		// handling (UP/DOWN/ENTER/SPACE/ESC)
-		eventHandler_ =
-		    std::make_unique<CharacterCreationEventHandler>(*this);
-		windowState_ = NewGameConfirmation;
+		menuStack_.Clear();
+		menuStack_.Push(MenuFactory::CreateNewGameConfirmation(*this));
+		inMainGame_ = false;
+		eventHandler_ = std::make_unique<MainGameEventHandler>(*this);
 	}
 
 	void Engine::MenuNavigateUp()
 	{
-		if (menuWindow_) {
-			menuWindow_->SelectPrevious();
-		}
-
 		if (characterCreationWindow_) {
 			characterCreationWindow_->SelectPrevious();
 		}
@@ -520,10 +421,6 @@ namespace tutorial
 
 	void Engine::MenuNavigateDown()
 	{
-		if (menuWindow_) {
-			menuWindow_->SelectNext();
-		}
-
 		if (characterCreationWindow_) {
 			characterCreationWindow_->SelectNext();
 		}
@@ -545,10 +442,6 @@ namespace tutorial
 
 	void Engine::MenuSelectByLetter(char letter)
 	{
-		if (menuWindow_) {
-			menuWindow_->SelectByLetter(letter);
-		}
-
 		if (characterCreationWindow_) {
 			characterCreationWindow_->SelectByLetter(letter);
 		}
@@ -568,44 +461,40 @@ namespace tutorial
 		}
 	}
 
-	void Engine::HandleCharacterCreationConfirm(MenuAction action)
+
+	void Engine::MenuConfirm()
 	{
-		switch (action) {
-			case MenuAction::ConfirmYes:
-				if (characterCreationWindow_) {
-					// Get selected class index
+		// Handle character creation confirmation
+		if (characterCreationWindow_) {
+			auto tab = characterCreationWindow_->GetCurrentTab();
+			if (tab == CreationTab::Confirm) {
+				// Show confirmation dialog when ready
+				if (characterCreationWindow_->IsReadyToConfirm()) {
+					// Get selected class and start new game
 					characterCreation_.selectedClass =
 					    characterCreationWindow_
 					        ->GetSelectedClassIndex();
-
-					// Clear the windows
 					characterCreationWindow_.reset();
-					menuWindow_.reset();
-
-					// Start new game
 					NewGame();
 					ReturnToMainGame();
 				}
-				break;
-
-			case MenuAction::ConfirmNo:
-				// Return to character creation
-				menuWindow_.reset();
-				windowState_ = CharacterCreation;
-				break;
-
-			case MenuAction::None:
-			default:
-				break;
+			} else {
+				// Confirm selection in current tab
+				characterCreationWindow_->ConfirmSelection();
+			}
+			return;
 		}
+
+		// Handle menu stack confirmations (StartMenu, PauseMenu, LevelUpMenu, NewGameConfirmation)
+		// These are now handled by ListMenu input handling via MenuFactory
+		// This method is only kept for CharacterCreation compatibility
 	}
 
-	void Engine::HandleStartMenuConfirm(MenuAction action)
+	void Engine::HandleMenuAction(MenuAction action)
 	{
 		switch (action) {
+			// Start Menu actions
 			case MenuAction::NewGame:
-				// Check if save file exists - if so, show
-				// confirmation
 				if (SaveManager::Instance().HasSave()) {
 					ShowNewGameConfirmation();
 				} else {
@@ -626,163 +515,78 @@ namespace tutorial
 				Quit();
 				break;
 
-			case MenuAction::None:
-			default:
-				break;
-		}
-	}
-
-	void Engine::HandlePauseMenuConfirm(MenuAction action)
-	{
-		switch (action) {
-			case MenuAction::Continue:
-				ReturnToMainGame();
-				break;
-
+			// Pause Menu actions
 			case MenuAction::SaveAndQuit:
-				SaveManager::Instance().SaveGame(
-				    *this, SaveType::Manual);
+				SaveManager::Instance().SaveGame(*this,
+				                                 SaveType::Manual);
 				ShowStartMenu();
 				break;
 
-			case MenuAction::None:
-			default:
-				break;
-		}
-	}
-
-	void Engine::HandleLevelUpConfirm(MenuAction action)
-	{
-		if (!player_ || !player_->GetDestructible()) {
-			ReturnToMainGame();
-			return;
-		}
-
-		auto* destructible = player_->GetDestructible();
-		auto* attacker = player_->GetAttacker();
-
-		// Every level up grants +4 HP
-		destructible->IncreaseMaxHealth(4);
-		LogMessage("Your health increases by 4 HP!", { 0, 255, 0 },
-		           false);
-
-		switch (action) {
+			// Level Up Menu actions
 			case MenuAction::LevelUpStrength:
-				if (attacker) {
-					attacker->IncreaseStrength(1);
-					LogMessage(
-					    "Your strength increases by 1!",
-					    { 255, 100, 0 }, false);
+				if (player_ && player_->GetDestructible()) {
+					auto* destructible =
+					    player_->GetDestructible();
+					auto* attacker = player_->GetAttacker();
+					destructible->IncreaseMaxHealth(4);
+					LogMessage("Your health increases by 4 HP!",
+					           { 0, 255, 0 }, false);
+					if (attacker) {
+						attacker->IncreaseStrength(1);
+						LogMessage(
+						    "Your strength increases by 1!",
+						    { 255, 100, 0 }, false);
+					}
 				}
+				ReturnToMainGame();
 				break;
 
 			case MenuAction::LevelUpDexterity:
-				destructible->IncreaseDexterity(1);
-				LogMessage("Your dexterity increases by 1!",
-				           { 100, 100, 255 }, false);
+				if (player_ && player_->GetDestructible()) {
+					auto* destructible =
+					    player_->GetDestructible();
+					destructible->IncreaseMaxHealth(4);
+					LogMessage("Your health increases by 4 HP!",
+					           { 0, 255, 0 }, false);
+					destructible->IncreaseDexterity(1);
+					LogMessage(
+					    "Your dexterity increases by 1!",
+					    { 100, 100, 255 }, false);
+				}
+				ReturnToMainGame();
 				break;
 
 			case MenuAction::LevelUpIntelligence:
-				destructible->IncreaseIntelligence(1);
-				LogMessage("Your intelligence increases by 1!",
-				           { 138, 43, 226 }, false);
-				LogMessage("Your maximum mana increases by 1!",
-				           { 0, 100, 200 }, false);
+				if (player_ && player_->GetDestructible()) {
+					auto* destructible =
+					    player_->GetDestructible();
+					destructible->IncreaseMaxHealth(4);
+					LogMessage("Your health increases by 4 HP!",
+					           { 0, 255, 0 }, false);
+					destructible->IncreaseIntelligence(1);
+					LogMessage(
+					    "Your intelligence increases by 1!",
+					    { 138, 43, 226 }, false);
+					LogMessage(
+					    "Your maximum mana increases by 1!",
+					    { 0, 100, 200 }, false);
+				}
+				ReturnToMainGame();
 				break;
 
-			case MenuAction::None:
-			default:
-				break;
-		}
-
-		ReturnToMainGame();
-	}
-
-	void Engine::HandleNewGameConfirmation(MenuAction action)
-	{
-		switch (action) {
+			// New Game Confirmation actions
 			case MenuAction::ConfirmYes:
-				// User confirmed - delete save and start new
-				// game
 				SaveManager::Instance().DeleteSave();
 				ShowCharacterCreation();
 				break;
 
 			case MenuAction::ConfirmNo:
-				// User canceled - return to start menu
 				ShowStartMenu();
 				break;
 
 			case MenuAction::None:
 			default:
 				break;
-		}
-	}
-
-	void Engine::MenuConfirm()
-	{
-		if (windowState_ == CharacterCreation) {
-			if (characterCreationWindow_) {
-				auto tab =
-				    characterCreationWindow_->GetCurrentTab();
-				if (tab == CreationTab::Confirm) {
-					// Show confirmation dialog
-					if (characterCreationWindow_
-					        ->IsReadyToConfirm()) {
-						// Create confirmation menu
-						int width = 50;
-						int height = 15;
-						pos_t pos { static_cast<int>(
-							        config_.width)
-							            / 2
-							        - width / 2,
-							    static_cast<int>(
-							        config_.height)
-							            / 2
-							        - height / 2 };
-
-						menuWindow_ = std::make_unique<
-						    MenuWindow>(
-						    width, height, pos,
-						    "Are you sure?");
-						menuWindow_->Clear();
-						menuWindow_->AddItem(
-						    MenuAction::ConfirmYes,
-						    "Yes");
-						menuWindow_->AddItem(
-						    MenuAction::ConfirmNo,
-						    "No");
-						windowState_ =
-						    NewGameConfirmation;
-					}
-				} else {
-					// Confirm selection in current tab
-					characterCreationWindow_
-					    ->ConfirmSelection();
-				}
-			}
-			return;
-		}
-
-		if (!menuWindow_) {
-			return;
-		}
-
-		MenuAction action = menuWindow_->GetSelectedAction();
-
-		if (windowState_ == StartMenu) {
-			HandleStartMenuConfirm(action);
-		} else if (windowState_ == PauseMenu) {
-			HandlePauseMenuConfirm(action);
-		} else if (windowState_ == LevelUpMenu) {
-			HandleLevelUpConfirm(action);
-		} else if (windowState_ == NewGameConfirmation) {
-			// Check if we came from character creation
-			if (characterCreationWindow_) {
-				HandleCharacterCreationConfirm(action);
-			} else {
-				HandleNewGameConfirmation(action);
-			}
 		}
 	}
 
@@ -1141,7 +945,7 @@ namespace tutorial
 		               + std::to_string(dungeonLevel_) + "!",
 		           { 255, 255, 0 }, false);
 
-		windowState_ = MainGame;
+		inMainGame_ = true;
 		eventHandler_ = std::make_unique<MainGameEventHandler>(*this);
 	}
 
@@ -1149,12 +953,6 @@ namespace tutorial
 	                       std::function<bool(pos_t)> validator,
 	                       TargetingType targetingType, float radius)
 	{
-		// Remember previous window state to restore later
-		Window previousWindowState = windowState_;
-
-		// Enter targeting mode (blocks inventory/other UI)
-		windowState_ = MainGame;
-
 		// Render current game state before targeting
 		this->Render();
 
@@ -1163,9 +961,6 @@ namespace tutorial
 
 		// Let cursor handle all input and selection with validator
 		bool result = cursor.SelectTile(pos, validator);
-
-		// Restore window state
-		windowState_ = previousWindowState;
 
 		// Cursor destructor automatically restores console state
 		return result;
@@ -1238,43 +1033,32 @@ namespace tutorial
 	{
 		TCOD_console_clear(console_);
 
-		if (windowState_ == StartMenu) {
-			if (menuWindow_) {
-				menuWindow_->Render(console_);
-			}
-		} else if (windowState_ == CharacterCreation) {
-			if (characterCreationWindow_) {
-				characterCreationWindow_->Render(console_);
-			}
-			// Also render confirmation dialog if present
-			if (menuWindow_) {
-				menuWindow_->Render(console_);
-			}
-		} else if (windowState_ == NewGameConfirmation) {
-			if (menuWindow_) {
-				menuWindow_->Render(console_);
-			}
-		} else if (windowState_ == MainGame) {
+		// Menu stack handles all menu rendering (StartMenu, PauseMenu, LevelUpMenu, NewGameConfirmation)
+		if (!menuStack_.IsEmpty()) {
+			menuStack_.Render(console_, *this);
+		}
+		// Character creation (special case - not in menu stack)
+		else if (characterCreationWindow_) {
+			characterCreationWindow_->Render(console_);
+		}
+		// Main game
+		else if (inMainGame_) {
 			RenderGameBackground(console_);
 			messageLogWindow_->RenderMouseLook(console_, *this);
-		} else if (windowState_ == MessageHistory) {
+		}
+		// Message history
+		else if (messageHistoryWindow_) {
 			messageHistoryWindow_->Render(console_);
-		} else if (windowState_ == Inventory) {
+		}
+		// Inventory
+		else if (inventoryWindow_) {
 			RenderGameBackground(console_);
 			inventoryWindow_->Render(console_);
-		} else if (windowState_ == ItemSelection) {
+		}
+		// Pickup window
+		else if (pickupWindow_) {
 			RenderGameBackground(console_);
 			pickupWindow_->Render(console_);
-		} else if (windowState_ == PauseMenu) {
-			RenderGameBackground(console_);
-			if (menuWindow_) {
-				menuWindow_->Render(console_);
-			}
-		} else if (windowState_ == LevelUpMenu) {
-			RenderGameBackground(console_);
-			if (menuWindow_) {
-				menuWindow_->Render(console_);
-			}
 		}
 
 		TCOD_context_present(context_, console_, &viewportOptions_);

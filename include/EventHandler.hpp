@@ -80,55 +80,14 @@ namespace tutorial
 		GameOverEventHandler(Engine& engine);
 	};
 
-	// Base class for menu-based event handlers with common navigation
-	// logic Reduces ~120 lines of duplicated code across 4 menu handlers
-	class MenuEventHandlerBase : public BaseEventHandler
-	{
-	public:
-		MenuEventHandlerBase(Engine& engine);
-
-		std::unique_ptr<Command> Dispatch() const override;
-
-	protected:
-		// Subclasses override to customize ESC key behavior
-		// Return nullptr if ESC should be ignored
-		virtual std::unique_ptr<Command> HandleEscape() const = 0;
-	};
-
-	class PauseMenuEventHandler final : public MenuEventHandlerBase
-	{
-	public:
-		PauseMenuEventHandler(Engine& engine);
-
-	protected:
-		std::unique_ptr<Command> HandleEscape() const override;
-	};
-
-	class StartMenuEventHandler final : public MenuEventHandlerBase
-	{
-	public:
-		StartMenuEventHandler(Engine& engine);
-
-	protected:
-		std::unique_ptr<Command> HandleEscape() const override;
-	};
-
-	class CharacterCreationEventHandler final : public MenuEventHandlerBase
+	// Character creation event handler - handles input for character creation screen
+	// This is kept separate from the menu stack system due to character creation's
+	// unique tabbed interface
+	class CharacterCreationEventHandler final : public BaseEventHandler
 	{
 	public:
 		CharacterCreationEventHandler(Engine& engine);
-
-	protected:
-		std::unique_ptr<Command> HandleEscape() const override;
-	};
-
-	class LevelUpMenuEventHandler final : public MenuEventHandlerBase
-	{
-	public:
-		LevelUpMenuEventHandler(Engine& engine);
-
-	protected:
-		std::unique_ptr<Command> HandleEscape() const override;
+		std::unique_ptr<Command> Dispatch() const override;
 	};
 
 	class InventoryEventHandler final : public BaseEventHandler
