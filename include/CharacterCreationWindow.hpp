@@ -13,12 +13,7 @@
 
 namespace tutorial
 {
-	enum class CreationTab {
-		Race = 0,
-		Class = 1,
-		Stats = 2,
-		Confirm = 3
-	};
+	enum class CreationTab { Race = 0, Class = 1, Stats = 2, Confirm = 3 };
 
 	struct CreationOption {
 		std::string id;

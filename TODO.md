@@ -45,4 +45,4 @@ Bug: Pressing enter after death starts a new game without bringing up character 
 
 
 - Bug: Confirm menu needs to give an error message if you haven't selected a race or class when you press enter
-
+- Bug: When you select a scroll to target, then esc out of it or press enter on yourself and the targeting cancels, the mouselook thing in the top left still says "player"

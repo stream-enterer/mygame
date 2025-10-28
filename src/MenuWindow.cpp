@@ -7,11 +7,15 @@
 namespace tutorial
 {
 	MenuWindow::MenuWindow(std::size_t width, std::size_t height, pos_t pos,
-	                       const std::string& title,
-	                       bool fullScreenBorder)
-	    : UiWindowBase(width, height, pos), title_(title), selectedIndex_(0),
-	      markedIndex_(-1), fullScreenBorder_(fullScreenBorder),
-	      showLetters_(false), showMarker_(false), gameLogoStub_("")
+	                       const std::string& title, bool fullScreenBorder)
+	    : UiWindowBase(width, height, pos),
+	      title_(title),
+	      selectedIndex_(0),
+	      markedIndex_(-1),
+	      fullScreenBorder_(fullScreenBorder),
+	      showLetters_(false),
+	      showMarker_(false),
+	      gameLogoStub_("")
 	{
 	}
 
@@ -32,20 +36,37 @@ namespace tutorial
 		const int width = TCOD_console_get_width(console_);
 		const int height = TCOD_console_get_height(console_);
 
-		for (int x = 0; x < width; ++x) {
-			TCOD_console_put_rgb(console_, x, 0, ' ', NULL,
-			                     &frameColor, TCOD_BKGND_SET);
+		// Draw corners
+		TCOD_console_put_rgb(console_, 0, 0, 0x2219, &frameColor, NULL,
+		                     TCOD_BKGND_SET); // Top-left: ∙
+		TCOD_console_put_rgb(console_, width - 1, 0, 0x2219,
+		                     &frameColor, NULL,
+		                     TCOD_BKGND_SET); // Top-right: ∙
+		TCOD_console_put_rgb(console_, 0, height - 1, 0x2219,
+		                     &frameColor, NULL,
+		                     TCOD_BKGND_SET); // Bottom-left: ∙
+		TCOD_console_put_rgb(console_, width - 1, height - 1, 0x2219,
+		                     &frameColor, NULL,
+		                     TCOD_BKGND_SET); // Bottom-right: ∙
 
-			TCOD_console_put_rgb(console_, x, height - 1, ' ', NULL,
-			                     &frameColor, TCOD_BKGND_SET);
+		// Draw horizontal edges
+		for (int x = 1; x < width - 1; ++x) {
+			TCOD_console_put_rgb(console_, x, 0, 0x2550,
+			                     &frameColor, NULL,
+			                     TCOD_BKGND_SET); // Top: ═
+			TCOD_console_put_rgb(console_, x, height - 1, 0x2550,
+			                     &frameColor, NULL,
+			                     TCOD_BKGND_SET); // Bottom: ═
 		}
 
+		// Draw vertical edges
 		for (int y = 1; y < height - 1; ++y) {
-			TCOD_console_put_rgb(console_, 0, y, ' ', NULL,
-			                     &frameColor, TCOD_BKGND_SET);
-
-			TCOD_console_put_rgb(console_, width - 1, y, ' ', NULL,
-			                     &frameColor, TCOD_BKGND_SET);
+			TCOD_console_put_rgb(console_, 0, y, 0x2551,
+			                     &frameColor, NULL,
+			                     TCOD_BKGND_SET); // Left: ║
+			TCOD_console_put_rgb(console_, width - 1, y, 0x2551,
+			                     &frameColor, NULL,
+			                     TCOD_BKGND_SET); // Right: ║
 		}
 
 		// Draw game logo stub if present
@@ -100,7 +121,8 @@ namespace tutorial
 			// Build the item string with optional letter prefix and
 			// asterisk
 			std::string itemText;
-			if (showMarker_ && static_cast<int>(i) == markedIndex_) {
+			if (showMarker_
+			    && static_cast<int>(i) == markedIndex_) {
 				itemText += "* ";
 			} else if (showMarker_) {
 				itemText += "  ";
