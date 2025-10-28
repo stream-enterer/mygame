@@ -15,22 +15,26 @@ namespace tutorial
 			bool selected = (static_cast<int>(i) == selectedIndex_);
 			char letter = 'a' + static_cast<char>(i);
 
-			TCOD_ColorRGB color =
-			    selected ? TCOD_ColorRGB { 255, 255, 0 }
-			             : TCOD_ColorRGB { 150, 150, 150 };
-
-			TCOD_console_set_default_foreground(console, color);
+			tcod::ColorRGB color =
+			    selected ? tcod::ColorRGB { 255, 255, 0 }
+			             : tcod::ColorRGB { 150, 150, 150 };
 
 			// Format: "(a) Item Name"
 			char buffer[256];
 			snprintf(buffer, sizeof(buffer), "(%c) %s", letter,
 			         items_[i].label.c_str());
-			TCOD_console_print(console, x, y + i, buffer);
+			TCOD_printf_rgb(
+			    console,
+			    (TCOD_PrintParamsRGB) { .x = x,
+			                            .y = y + static_cast<int>(i),
+			                            .width = 0,
+			                            .height = 0,
+			                            .fg = &color,
+			                            .bg = NULL,
+			                            .flag = TCOD_BKGND_NONE,
+			                            .alignment = TCOD_LEFT },
+			    "%s", buffer);
 		}
-
-		// Reset color
-		TCOD_console_set_default_foreground(
-		    console, TCOD_ColorRGB { 255, 255, 255 });
 	}
 
 	bool Menu::HandleInput(SDL_Keycode key, char character, Engine& engine)

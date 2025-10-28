@@ -88,7 +88,7 @@ namespace tutorial
 
 		void SetKeyMap(
 		    const std::unordered_map<KeyPress, Actions, KeyPressHash>&
-		        keyMap) override
+		        /* keyMap */) override
 		{
 			// Menus don't use keymaps
 		}

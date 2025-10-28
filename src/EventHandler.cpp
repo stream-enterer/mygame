@@ -11,14 +11,13 @@ namespace tutorial
 	namespace
 	{
 		static const std::unordered_map<
-		    Actions, std::unique_ptr<Command> (*)(Engine&)> {
-			tutorial::Actions::MOVE_UP,
-			[](auto& engine) {
-			        (void)engine;
-			        return std::make_unique<tutorial::MoveCommand>(
-			            0, -1);
-			}
-		},
+		    Actions, std::unique_ptr<Command> (*)(Engine&)> kGameActions = {
+			{ tutorial::Actions::MOVE_UP,
+			  [](auto& engine) {
+			          (void)engine;
+			          return std::make_unique<tutorial::MoveCommand>(
+			              0, -1);
+			  } },
 		    { tutorial::Actions::MOVE_DOWN,
 		      [](auto& engine) {
 			      (void)engine;
@@ -112,15 +111,13 @@ namespace tutorial
 			     return std::make_unique<
 			         tutorial::DescendStairsCommand>();
 		     } },
-		{
-			tutorial::Actions::SHOW_START_MENU, [](auto& engine) {
-				(void)engine;
-				return std::make_unique<
-				    tutorial::StartMenuCommand>();
-			}
-		}
-	};
-}; // namespace
+		    { tutorial::Actions::SHOW_START_MENU, [](auto& engine) {
+			      (void)engine;
+			      return std::make_unique<
+			          tutorial::StartMenuCommand>();
+		      } }
+		};
+	} // namespace
 
 BaseEventHandler::BaseEventHandler(Engine& engine) : engine_(engine)
 {
@@ -288,13 +285,13 @@ MenuEventHandler::MenuEventHandler(Engine& engine) : engine_(engine)
 {
 }
 
-std::unique_ptr<Command> MenuEventHandler::Dispatch() const
+std::unique_ptr<tutorial::Command> MenuEventHandler::Dispatch() const
 {
 	SDL_Event sdlEvent;
 
 	while (SDL_PollEvent(&sdlEvent)) {
 		if (sdlEvent.type == SDL_EVENT_QUIT) {
-			return std::make_unique<QuitCommand>();
+			return std::make_unique<tutorial::QuitCommand>();
 		}
 
 		if (sdlEvent.type == SDL_EVENT_KEY_DOWN) {

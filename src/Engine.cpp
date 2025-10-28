@@ -542,7 +542,7 @@ namespace tutorial
 						    e.GetPlayer());
 						if (p) {
 							auto droppedItem =
-							    p->RemoveFromInventory(
+							    p->ExtractFromInventory(
 							        i);
 							if (droppedItem) {
 								e.SpawnEntity(
