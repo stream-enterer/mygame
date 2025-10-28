@@ -70,6 +70,11 @@ namespace tutorial
 			return !menuStack_.empty();
 		}
 		GameState GetGameState() const;
+		void HandleMenuInput(SDL_Keycode key, char character);
+		std::vector<std::unique_ptr<Menu>>& GetMenuStack()
+		{
+			return menuStack_;
+		}
 
 		// Menu builders
 		void ShowInventory();
@@ -80,7 +85,6 @@ namespace tutorial
 		void ShowLevelUpMenu();
 		void ReturnToMainGame();
 		void ShowMessageHistory();
-
 		void SetInventoryMode(InventoryMode mode)
 		{
 			inventoryMode_ = mode;
@@ -93,7 +97,7 @@ namespace tutorial
 		{
 			return itemSelectionList_;
 		}
-		void HandleMenuInput(SDL_Keycode key, char character);
+
 		void Quit();
 		std::unique_ptr<Entity> RemoveEntity(Entity* entity);
 		Entity* SpawnEntity(std::unique_ptr<Entity> entity, pos_t pos);

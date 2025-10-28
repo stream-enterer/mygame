@@ -8,7 +8,6 @@
 #include "Entity.hpp"
 #include "EventHandler.hpp"
 #include "HealthBar.hpp"
-#include "InventoryWindow.hpp"
 #include "LevelConfig.hpp"
 #include "Map.hpp"
 #include "StringTable.hpp"
@@ -435,10 +434,6 @@ namespace tutorial
 					invPos = pos_t { 0, 0 };
 				}
 
-				engine.inventoryWindow_ =
-				    std::make_unique<InventoryWindow>(
-				        invWidth, invHeight, invPos,
-				        *engine.player_);
 			} else {
 				std::cerr << "[SaveManager] Save file missing "
 				             "player data"
@@ -494,7 +489,7 @@ namespace tutorial
 			}
 
 			// Step 7: Restore UI state
-			engine.windowState_ = Window::MainGame;
+			engine.gameState_ = GameState::MainGame;
 			engine.eventHandler_ =
 			    std::make_unique<MainGameEventHandler>(engine);
 			engine.gameOver_ = false;

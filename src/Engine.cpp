@@ -519,7 +519,6 @@ namespace tutorial
 	void Engine::ShowInventory()
 	{
 		auto menu = std::make_unique<Menu>();
-
 		auto* player = dynamic_cast<Player*>(player_);
 		if (!player) {
 			return;
@@ -539,7 +538,6 @@ namespace tutorial
 				menu->AddItem(label, [i](Engine& e) {
 					if (e.GetInventoryMode()
 					    == InventoryMode::Drop) {
-						// Drop item
 						auto* p = dynamic_cast<Player*>(
 						    e.GetPlayer());
 						if (p) {
@@ -564,10 +562,9 @@ namespace tutorial
 						}
 					} else {
 						// Use item
-						auto event =
-						    std::make_unique
-						        UseItemAction
-						    > (e, *e.GetPlayer(), i);
+						auto event = std::make_unique<
+						    UseItemAction>(
+						    e, *e.GetPlayer(), i);
 						event->Execute();
 					}
 					e.PopMenu();
@@ -826,9 +823,9 @@ namespace tutorial
 			DynamicSpawnSystem::Instance().BuildSpawnTablesForLevel(
 			    currentLevel_);
 		} catch (const std::exception& e) {
-			std::cerr
-			    << "[Engine] FATAL: Failed to build spawn tables: "
-			    << e.what() << std::endl;
+			std::cerr << "[Engine] FATAL: Failed to build "
+			             "spawn tables: "
+			          << e.what() << std::endl;
 			throw;
 		}
 	}
@@ -919,7 +916,8 @@ namespace tutorial
 		          << dungeonLevel_ << std::endl;
 
 		LogMessage(
-		    "After a rare moment of peace, you descend deeper into "
+		    "After a rare moment of peace, you descend deeper "
+		    "into "
 		    "the heart of the dungeon...",
 		    { 255, 60, 60 }, false);
 
@@ -963,13 +961,15 @@ namespace tutorial
 		// Create targeting cursor (handles all targeting logic)
 		TargetingCursor cursor(*this, maxRange, targetingType, radius);
 
-		// Let cursor handle all input and selection with validator
+		// Let cursor handle all input and selection with
+		// validator
 		bool result = cursor.SelectTile(pos, validator);
 
 		// Restore game state
 		gameState_ = previousGameState;
 
-		// Cursor destructor automatically restores console state
+		// Cursor destructor automatically restores console
+		// state
 		return result;
 	}
 
@@ -1005,8 +1005,8 @@ namespace tutorial
 		target.GetDestructible()->TakeDamage(damage);
 
 		if (target.GetDestructible()->IsDead()) {
-			// Create and execute DieAction to handle XP, messages,
-			// etc.
+			// Create and execute DieAction to handle XP,
+			// messages, etc.
 			std::unique_ptr<Event> dieAction =
 			    std::make_unique<DieAction>(*this, target);
 			dieAction->Execute();
@@ -1043,8 +1043,8 @@ namespace tutorial
 			messageHistoryWindow_->Render(console_);
 		} else if (gameState_ == GameState::InMenu) {
 			// Show game in background if player exists
-			// (pause/inventory/levelup) Don't show for start menu
-			// (player_ is nullptr)
+			// (pause/inventory/levelup) Don't show for
+			// start menu (player_ is nullptr)
 			if (player_) {
 				RenderGameBackground(console_);
 			}
@@ -1108,14 +1108,14 @@ namespace tutorial
 			    "corpse", corpsePos);
 
 			if (corpse) {
-				// Override the generic name with specific
-				// corpse name
+				// Override the generic name with
+				// specific corpse name
 				corpse->SetName(corpseName);
 
-				// Set corpse priority to -1 so it renders below
-				// any items at this position (Items have
-				// default priority 0 or higher within the ITEMS
-				// layer)
+				// Set corpse priority to -1 so it
+				// renders below any items at this
+				// position (Items have default priority
+				// 0 or higher within the ITEMS layer)
 				corpse->SetRenderPriority(-1);
 				SpawnEntity(std::move(corpse), corpsePos);
 			}
