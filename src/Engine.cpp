@@ -1,5 +1,6 @@
 #include "Engine.hpp"
 
+#include "CharacterCreationWindow.hpp"
 #include "Colors.hpp"
 #include "DynamicSpawnSystem.hpp"
 #include "Entity.hpp"
@@ -7,14 +8,13 @@
 #include "EventHandler.hpp"
 #include "HealthBar.hpp"
 #include "InventoryWindow.hpp"
-#include "ItemSelectionWindow.hpp"
 #include "LevelConfig.hpp"
 #include "Map.hpp"
 #include "MapGenerator.hpp"
 #include "MenuWindow.hpp"
-#include "CharacterCreationWindow.hpp"
 #include "MessageHistoryWindow.hpp"
 #include "MessageLogWindow.hpp"
+#include "PickupWindow.hpp"
 #include "SaveManager.hpp"
 #include "StringTable.hpp"
 
@@ -46,7 +46,7 @@ namespace tutorial
 	      gameOver_(false),
 	      running_(true),
 	      mousePos_ { 0, 0 },
-	      inventoryMode_(InventoryMode::Use)
+	      pickupItemsList_()
 	{
 		console_ = TCOD_console_new(config.width, config.height);
 		if (!console_) {
@@ -323,7 +323,7 @@ namespace tutorial
 			eventHandler_ =
 			    std::make_unique<MainGameEventHandler>(*this);
 			windowState_ = MainGame;
-			itemSelectionList_.clear();
+			pickupItemsList_.clear();
 		}
 	}
 
@@ -339,31 +339,27 @@ namespace tutorial
 	void Engine::ShowInventory()
 	{
 		if (windowState_ != Inventory) {
-			eventHandler_ =
-			    std::make_unique<InventoryEventHandler>(*this);
+			inventoryWindow_->SetTitle("Inventory");
+			eventHandler_ = std::make_unique<InventoryEventHandler>(
+			    *this, false);
 			windowState_ = Inventory;
-
-			if (auto* invHandler =
-			        dynamic_cast<InventoryEventHandler*>(
-			            eventHandler_.get())) {
-				invHandler->SetMode(inventoryMode_);
-
-				if (inventoryMode_ == InventoryMode::Drop) {
-					inventoryWindow_->SetTitle(
-					    "Drop which item?");
-				} else {
-					inventoryWindow_->SetTitle("Inventory");
-				}
-			}
-
-			inventoryMode_ = InventoryMode::Use;
 		}
 	}
 
-	void Engine::ShowItemSelection(const std::vector<Entity*>& items)
+	void Engine::ShowDropMenu()
+	{
+		if (windowState_ != Inventory) {
+			inventoryWindow_->SetTitle("Drop what?");
+			eventHandler_ = std::make_unique<InventoryEventHandler>(
+			    *this, true);
+			windowState_ = Inventory;
+		}
+	}
+
+	void Engine::ShowPickupMenu(const std::vector<Entity*>& items)
 	{
 		if (windowState_ != ItemSelection) {
-			itemSelectionList_ = items;
+			pickupItemsList_ = items;
 
 			auto& cfg = ConfigManager::Instance();
 			int width = cfg.GetInventoryWindowWidth();
@@ -371,10 +367,9 @@ namespace tutorial
 			pos_t pos = CalculateWindowPosition(
 			    width, height, cfg.GetInventoryCenterOnScreen());
 
-			itemSelectionWindow_ =
-			    std::make_unique<ItemSelectionWindow>(
-			        width, height, pos, itemSelectionList_,
-			        "Pick up which item?");
+			pickupWindow_ = std::make_unique<PickupWindow>(
+			    width, height, pos, pickupItemsList_,
+			    "Pick up what?");
 
 			eventHandler_ =
 			    std::make_unique<ItemSelectionEventHandler>(*this);
@@ -394,7 +389,7 @@ namespace tutorial
 				        - height / 2 };
 
 			menuWindow_ = std::make_unique<MenuWindow>(
-			    width, height, pos, "Game Menu");
+			    width, height, pos, "PAUSED");
 
 			// Build menu based on game state
 			menuWindow_->Clear();
@@ -445,9 +440,9 @@ namespace tutorial
 		int height = static_cast<int>(config_.height);
 		pos_t pos { 0, 0 };
 
-		menuWindow_ =
-		    std::make_unique<MenuWindow>(width, height, pos, "My Game",
-		                                 true); // fullScreenBorder = true
+		menuWindow_ = std::make_unique<MenuWindow>(
+		    width, height, pos, "My Game",
+		    true); // fullScreenBorder = true
 
 		// Set game logo stub
 		menuWindow_->SetGameLogoStub("[GameLogo]");
@@ -737,22 +732,19 @@ namespace tutorial
 						// Create confirmation menu
 						int width = 50;
 						int height = 15;
-						pos_t pos {
-							static_cast<int>(
-							    config_.width)
-							        / 2
-							    - width / 2,
-							static_cast<int>(
-							    config_.height)
-							        / 2
-							    - height / 2
-						};
+						pos_t pos { static_cast<int>(
+							        config_.width)
+							            / 2
+							        - width / 2,
+							    static_cast<int>(
+							        config_.height)
+							            / 2
+							        - height / 2 };
 
-						menuWindow_ =
-						    std::make_unique<
-						        MenuWindow>(
-						        width, height, pos,
-						        "Are you sure?");
+						menuWindow_ = std::make_unique<
+						    MenuWindow>(
+						    width, height, pos,
+						    "Are you sure?");
 						menuWindow_->Clear();
 						menuWindow_->AddItem(
 						    MenuAction::ConfirmYes,
@@ -941,7 +933,8 @@ namespace tutorial
 			    && !entity->GetDestructible()->IsDead())
 
 			{
-				float distance = entity->GetDistance(pos.x, pos.y);
+				float distance =
+				    entity->GetDistance(pos.x, pos.y);
 				if (distance < bestDistance
 				    && (distance <= range || range == 0.0f)) {
 					bestDistance = distance;
@@ -1181,8 +1174,7 @@ namespace tutorial
 	Entity* Engine::GetActor(pos_t pos) const
 	{
 		for (const auto& entity : entities_) {
-			if (entity->GetPos() == pos
-			    && entity->GetDestructible()
+			if (entity->GetPos() == pos && entity->GetDestructible()
 			    && !entity->GetDestructible()->IsDead()) {
 				return entity.get();
 			}
@@ -1272,7 +1264,7 @@ namespace tutorial
 			inventoryWindow_->Render(console_);
 		} else if (windowState_ == ItemSelection) {
 			RenderGameBackground(console_);
-			itemSelectionWindow_->Render(console_);
+			pickupWindow_->Render(console_);
 		} else if (windowState_ == PauseMenu) {
 			RenderGameBackground(console_);
 			if (menuWindow_) {

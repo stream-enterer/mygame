@@ -134,20 +134,12 @@ namespace tutorial
 	class InventoryEventHandler final : public BaseEventHandler
 	{
 	public:
-		InventoryEventHandler(Engine& engine);
+		InventoryEventHandler(Engine& engine, bool isDropMode);
 
 		std::unique_ptr<Command> Dispatch() const override;
-		void SetMode(InventoryMode mode)
-		{
-			mode_ = mode;
-		}
-		InventoryMode GetMode() const
-		{
-			return mode_;
-		}
 
 	private:
-		InventoryMode mode_;
+		bool isDropMode_;
 	};
 
 	class ItemSelectionEventHandler final : public BaseEventHandler

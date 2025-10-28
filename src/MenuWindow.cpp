@@ -89,12 +89,12 @@ namespace tutorial
 			contentStartY += 3;
 		}
 
-		// Draw title
+		// Draw title in white on top border (no background)
 		int titleX = (width - static_cast<int>(title_.length())) / 2;
 		TCOD_printf_rgb(
 		    console_,
 		    (TCOD_PrintParamsRGB) { .x = titleX,
-		                            .y = contentStartY,
+		                            .y = 0,
 		                            .width = 0,
 		                            .height = 0,
 		                            .fg = &textColor,
@@ -103,8 +103,13 @@ namespace tutorial
 		                            .alignment = TCOD_LEFT },
 		    "%s", title_.c_str());
 
-		// Draw menu items
-		int startY = contentStartY + 3;
+		// Draw menu items (adjust starting position)
+		int startY = contentStartY;
+		if (!gameLogoStub_.empty()) {
+			startY += 3; // Space after logo
+		} else {
+			startY += 1; // Space after title on border
+		}
 		for (size_t i = 0; i < items_.size(); ++i) {
 			tcod::ColorRGB itemColor;
 			if (static_cast<int>(i) == selectedIndex_) {

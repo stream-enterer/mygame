@@ -353,19 +353,22 @@ namespace tutorial
 				}
 
 				// DOWN key or KP2 - select next item
-				if (sdlKey == SDLK_DOWN || sdlKey == SDLK_KP_2) {
+				if (sdlKey == SDLK_DOWN
+				    || sdlKey == SDLK_KP_2) {
 					return std::make_unique<
 					    MenuNavigateDownCommand>();
 				}
 
 				// LEFT key or KP4 - navigate tabs left
-				if (sdlKey == SDLK_LEFT || sdlKey == SDLK_KP_4) {
+				if (sdlKey == SDLK_LEFT
+				    || sdlKey == SDLK_KP_4) {
 					return std::make_unique<
 					    MenuNavigateLeftCommand>();
 				}
 
 				// RIGHT key or KP6 - navigate tabs right
-				if (sdlKey == SDLK_RIGHT || sdlKey == SDLK_KP_6) {
+				if (sdlKey == SDLK_RIGHT
+				    || sdlKey == SDLK_KP_6) {
 					return std::make_unique<
 					    MenuNavigateRightCommand>();
 				}
@@ -390,8 +393,8 @@ namespace tutorial
 					    MenuConfirmCommand>();
 				}
 
-				// + or = keys (with or without shift) - increment
-				// stat
+				// + or = keys (with or without shift) -
+				// increment stat
 				if (sdlKey == SDLK_EQUALS || sdlKey == SDLK_PLUS
 				    || sdlKey == SDLK_KP_PLUS) {
 					return std::make_unique<
@@ -458,8 +461,8 @@ namespace tutorial
 	{
 	}
 
-	std::unique_ptr<Command>
-	CharacterCreationEventHandler::HandleEscape() const
+	std::unique_ptr<Command> CharacterCreationEventHandler::HandleEscape()
+	    const
 	{
 		return std::make_unique<StartMenuCommand>();
 	}
@@ -475,8 +478,9 @@ namespace tutorial
 		return nullptr; // Ignore ESC - player must choose
 	}
 
-	tutorial::InventoryEventHandler::InventoryEventHandler(Engine& engine)
-	    : BaseEventHandler(engine), mode_(InventoryMode::Use)
+	tutorial::InventoryEventHandler::InventoryEventHandler(Engine& engine,
+	                                                       bool isDropMode)
+	    : BaseEventHandler(engine), isDropMode_(isDropMode)
 	{
 	}
 
@@ -503,7 +507,8 @@ namespace tutorial
 
 				// Escape or 'i' or 'd' returns to game WITHOUT
 				// using a turn
-				if (sdlKey == SDLK_ESCAPE || sdlKey == SDLK_I) {
+				if (sdlKey == SDLK_ESCAPE || sdlKey == SDLK_I
+				    || sdlKey == SDLK_D) {
 					return std::make_unique<
 					    tutorial::CloseUICommand>();
 				}
@@ -511,8 +516,7 @@ namespace tutorial
 				// Check for a-z keys for item selection
 				if (sdlKey >= SDLK_A && sdlKey <= SDLK_Z) {
 					size_t itemIndex = sdlKey - SDLK_A;
-					if (mode_
-					    == tutorial::InventoryMode::Drop) {
+					if (isDropMode_) {
 						return std::make_unique<
 						    tutorial::DropItemCommand>(
 						    itemIndex);
@@ -565,7 +569,7 @@ namespace tutorial
 				if (sdlKey >= SDLK_A && sdlKey <= SDLK_Z) {
 					size_t itemIndex = sdlKey - SDLK_A;
 					const auto& items =
-					    engine_.GetItemSelectionList();
+					    engine_.GetPickupItemsList();
 
 					// Only accept valid item indices
 					if (itemIndex < items.size()) {

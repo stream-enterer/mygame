@@ -31,7 +31,7 @@ namespace tutorial
 	class MessageHistoryWindow;
 	class MessageLogWindow;
 	class InventoryWindow;
-	class ItemSelectionWindow;
+	class PickupWindow;
 
 	enum Window {
 		StartMenu,
@@ -88,7 +88,8 @@ namespace tutorial
 		void SetMousePos(pos_t pos);
 		void ShowMessageHistory();
 		void ShowInventory();
-		void ShowItemSelection(const std::vector<Entity*>& items);
+		void ShowDropMenu();
+		void ShowPickupMenu(const std::vector<Entity*>& items);
 		void ShowPauseMenu();
 		void ShowStartMenu();
 		void ShowCharacterCreation();
@@ -101,17 +102,9 @@ namespace tutorial
 		void MenuSelectByLetter(char letter);
 		void MenuIncrementStat();
 		void MenuDecrementStat();
-		void SetInventoryMode(InventoryMode mode)
+		const std::vector<Entity*>& GetPickupItemsList() const
 		{
-			inventoryMode_ = mode;
-		}
-		InventoryMode GetInventoryMode() const
-		{
-			return inventoryMode_;
-		}
-		const std::vector<Entity*>& GetItemSelectionList() const
-		{
-			return itemSelectionList_;
+			return pickupItemsList_;
 		}
 		void Quit();
 		std::unique_ptr<Entity> RemoveEntity(Entity* entity);
@@ -132,6 +125,14 @@ namespace tutorial
 		const Map& GetMap() const
 		{
 			return *map_;
+		}
+		Map& GetMap()
+		{
+			return *map_;
+		}
+		const MessageLog& GetMessageLog() const
+		{
+			return messageLog_;
 		}
 		int GetMaxRenderPriorityAtPosition(pos_t pos) const;
 		bool IsBlocker(pos_t pos) const;
@@ -228,7 +229,7 @@ namespace tutorial
 		std::unique_ptr<MessageHistoryWindow> messageHistoryWindow_;
 		std::unique_ptr<MessageLogWindow> messageLogWindow_;
 		std::unique_ptr<InventoryWindow> inventoryWindow_;
-		std::unique_ptr<ItemSelectionWindow> itemSelectionWindow_;
+		std::unique_ptr<PickupWindow> pickupWindow_;
 
 		struct CharacterCreationData {
 			int selectedClass = 0; // 0=Warrior, 1=Rogue, 2=Mage
@@ -257,8 +258,7 @@ namespace tutorial
 		bool running_;
 
 		pos_t mousePos_;
-		InventoryMode inventoryMode_;
-		std::vector<Entity*> itemSelectionList_;
+		std::vector<Entity*> pickupItemsList_;
 	};
 } // namespace tutorial
 

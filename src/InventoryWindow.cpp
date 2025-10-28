@@ -1,6 +1,7 @@
 #include "InventoryWindow.hpp"
 
 #include "Colors.hpp"
+#include "ConfigManager.hpp"
 #include "Engine.hpp"
 #include "Entity.hpp"
 
@@ -18,23 +19,41 @@ namespace tutorial
 	{
 		TCOD_console_clear(console_);
 
-		// Draw frame
-		tcod::ColorRGB frameColor = tcod::ColorRGB { 200, 180, 50 };
-		// Draw frame and title separately
-		TCOD_console_draw_frame_rgb(
-		    console_, 0, 0, TCOD_console_get_width(console_),
-		    TCOD_console_get_height(console_), NULL, NULL, NULL,
-		    TCOD_BKGND_DEFAULT, true);
-		int titleX = (TCOD_console_get_width(console_)
-		              - static_cast<int>(title_.length()))
-		             / 2;
+		auto& cfg = ConfigManager::Instance();
+		auto frameColor = cfg.GetUIFrameColor();
+		auto textColor = cfg.GetUITextColor();
+
+		const int width = TCOD_console_get_width(console_);
+		const int height = TCOD_console_get_height(console_);
+
+		// Draw frame with box-drawing characters
+		TCOD_console_draw_frame_rgb(console_, 0, 0, width, height, NULL,
+		                            NULL, NULL, TCOD_BKGND_DEFAULT,
+		                            true);
+
+		// Color the frame
+		for (int x = 0; x < width; ++x) {
+			TCOD_console_set_char_foreground(console_, x, 0,
+			                                 frameColor);
+			TCOD_console_set_char_foreground(
+			    console_, x, height - 1, frameColor);
+		}
+		for (int y = 1; y < height - 1; ++y) {
+			TCOD_console_set_char_foreground(console_, 0, y,
+			                                 frameColor);
+			TCOD_console_set_char_foreground(console_, width - 1, y,
+			                                 frameColor);
+		}
+
+		// Draw title in white on top border (no background)
+		int titleX = (width - static_cast<int>(title_.length())) / 2;
 		TCOD_printf_rgb(
 		    console_,
 		    (TCOD_PrintParamsRGB) { .x = titleX,
 		                            .y = 0,
 		                            .width = 0,
 		                            .height = 0,
-		                            .fg = &frameColor,
+		                            .fg = &textColor,
 		                            .bg = NULL,
 		                            .flag = TCOD_BKGND_NONE,
 		                            .alignment = TCOD_LEFT },
@@ -42,9 +61,6 @@ namespace tutorial
 
 		// Display items with shortcuts
 		if (auto* player = dynamic_cast<const Player*>(&player_)) {
-			tcod::ColorRGB textColor =
-			    tcod::ColorRGB { 255, 255, 255 };
-
 			const auto& inventory = player->GetInventory();
 			char shortcut = 'a';
 			int y = 1;
@@ -82,10 +98,10 @@ namespace tutorial
 			}
 		}
 
-		// Blit to parent
-		TCOD_console_blit(console_, 0, 0,
-		                  TCOD_console_get_width(console_),
-		                  TCOD_console_get_height(console_), parent,
-		                  pos_.x, pos_.y, 1.0f, 1.0f);
+		// Blit to parent: foreground opaque (1.0), background
+		// transparent (0.8)
+		TCOD_console_blit(console_, 0, 0, width, height, parent, pos_.x,
+		                  pos_.y, 1.0f, 0.8f);
 	}
+
 } // namespace tutorial

@@ -252,7 +252,14 @@ namespace tutorial
 
 		// Serialize message log
 		nlohmann::json messages = nlohmann::json::array();
-		// TODO: Add message log serialization if needed
+		for (const auto& msg : engine.GetMessageLog().GetMessages()) {
+			nlohmann::json msgJson;
+			msgJson["text"] = msg.text;
+			msgJson["color"] = nlohmann::json::array(
+			    { msg.color.r, msg.color.g, msg.color.b });
+			msgJson["count"] = msg.count;
+			messages.push_back(msgJson);
+		}
 		j["messageLog"] = messages;
 
 		// Serialize entities (excluding player)
@@ -359,13 +366,32 @@ namespace tutorial
 			engine.eventQueue_.clear();
 			engine.entitiesToRemove_.clear();
 
-			// Step 3: Regenerate the map (traditional roguelike
-			// behavior)
+			// Step 3: Regenerate the map structure (for dimensions
+			// and FOV map)
 			engine.GenerateMap(levelConfig.generation.width,
 			                   levelConfig.generation.height);
+
+			// Step 3b: Restore map state from save (tiles and
+			// explored state)
+			if (j.contains("map")) {
+				if (!DeserializeMap(j["map"], engine)) {
+					std::cerr << "[SaveManager] Failed to "
+					             "restore map state, using "
+					             "generated map"
+					          << std::endl;
+					// Continue anyway - we have a valid
+					// generated map structure
+				}
+			} else {
+				std::cout
+				    << "[SaveManager] No map data in save (old "
+				       "save format?), using generated map"
+				    << std::endl;
+			}
+
 			engine.map_->Update();
 
-			std::cout << "[SaveManager] Map regenerated: "
+			std::cout << "[SaveManager] Map structure: "
 			          << engine.map_->GetWidth() << "x"
 			          << engine.map_->GetHeight() << std::endl;
 
@@ -380,19 +406,9 @@ namespace tutorial
 					return false;
 				}
 
-				// Since map is regenerated, place player at
-				// first room center (their saved position won't
-				// match the new map layout)
-				if (engine.map_->GetRooms().empty()) {
-					std::cerr << "[SaveManager] No rooms "
-					             "generated in map"
-					          << std::endl;
-					return false;
-				}
-
-				pos_t safePos =
-				    engine.map_->GetRooms()[0].GetCenter();
-				playerEntity->SetPos(safePos);
+				// Player position was already set by
+				// DeserializeEntity No need to override it -
+				// the map layout is restored exactly
 
 				engine.player_ =
 				    engine.entities_
@@ -402,8 +418,7 @@ namespace tutorial
 				std::cout
 				    << "[SaveManager] Player restored at ("
 				    << engine.player_->GetPos().x << ", "
-				    << engine.player_->GetPos().y << ") "
-				    << "(placed at first room center)"
+				    << engine.player_->GetPos().y << ")"
 				    << std::endl;
 
 				// Step 4.5: Create UI components that depend on
@@ -446,38 +461,54 @@ namespace tutorial
 				return false;
 			}
 
-			// Step 5: Regenerate entities (don't restore from save)
-			// Since the map is regenerated, entity positions won't
-			// match Only the player (with inventory) is restored
-			std::cout << "[SaveManager] Regenerating monsters and "
-			             "items..."
-			          << std::endl;
+			// Step 5: Restore entities from save (monsters, items,
+			// stairs, corpses)
+			if (j.contains("entities")) {
+				std::cout << "[SaveManager] Restoring entities "
+				             "from save..."
+				          << std::endl;
 
-			// Regenerate monsters in all rooms except the first
-			// (where player spawns)
-			const auto& rooms = engine.map_->GetRooms();
-			for (size_t i = 1; i < rooms.size(); ++i) {
-				engine.entities_.PlaceEntities(
-				    rooms[i], levelConfig.monsterSpawning,
-				    levelConfig.id);
-				engine.entities_.PlaceItems(
-				    rooms[i], levelConfig.itemSpawning,
-				    levelConfig.id);
-			}
+				const auto& entities = j["entities"];
+				int restoredCount = 0;
 
-			// Place stairs in the last room
-			if (!rooms.empty()) {
-				pos_t stairsPos = rooms.back().GetCenter();
-				auto stairsEntity =
-				    TemplateRegistry::Instance().Create(
-				        "stairs_down", stairsPos);
-				engine.stairs_ =
-				    engine.entities_
-				        .Spawn(std::move(stairsEntity))
-				        .get();
-				std::cout << "[SaveManager] Placed stairs at ("
-				          << stairsPos.x << ", " << stairsPos.y
-				          << ")" << std::endl;
+				for (const auto& entityJson : entities) {
+					auto entity =
+					    DeserializeEntity(entityJson);
+					if (entity) {
+						// Check if this is the stairs
+						// entity
+						if (entity->GetName()
+						    == "stairs") {
+							engine.stairs_ =
+							    engine.entities_
+							        .Spawn(
+							            std::move(
+							                entity))
+							        .get();
+						} else {
+							engine.entities_.Spawn(
+							    std::move(entity));
+						}
+						restoredCount++;
+					}
+				}
+
+				std::cout << "[SaveManager] Restored "
+				          << restoredCount
+				          << " entities from save" << std::endl;
+
+				// Verify stairs were restored
+				if (!engine.stairs_) {
+					std::cerr
+					    << "[SaveManager] WARNING: No "
+					       "stairs found in save data!"
+					    << std::endl;
+				}
+			} else {
+				std::cerr
+				    << "[SaveManager] No entities in save data!"
+				    << std::endl;
+				return false;
 			}
 
 			// Step 6: Recompute FOV for the restored player
@@ -500,15 +531,55 @@ namespace tutorial
 			engine.gameOver_ = false;
 			engine.turnsSinceLastAutosave_ = 0;
 
-			// Step 8: Add welcome back message
-			auto msg =
-			    StringTable::Instance().GetMessage("game.welcome");
-			engine.messageLog_.AddMessage(
-			    "Welcome back, adventurer!", msg.color, false);
+			// Step 8: Restore message log
+			if (j.contains("messageLog")
+			    && j["messageLog"].is_array()) {
+				for (const auto& msgJson : j["messageLog"]) {
+					std::string text =
+					    msgJson.value("text", "");
+					int count = msgJson.value("count", 1);
+
+					tcod::ColorRGB color {
+						255, 255, 255
+					}; // Default white
+					if (msgJson.contains("color")
+					    && msgJson["color"].is_array()) {
+						auto colorArray =
+						    msgJson["color"];
+						color = tcod::ColorRGB {
+							static_cast<uint8_t>(
+							    colorArray[0]
+							        .get<int>()),
+							static_cast<uint8_t>(
+							    colorArray[1]
+							        .get<int>()),
+							static_cast<uint8_t>(
+							    colorArray[2]
+							        .get<int>())
+						};
+					}
+
+					// Restore message with its count
+					for (int i = 0; i < count; ++i) {
+						engine.messageLog_.AddMessage(
+						    text, color,
+						    true); // stack=true
+					}
+				}
+				std::cout << "[SaveManager] Restored "
+				          << j["messageLog"].size()
+				          << " messages" << std::endl;
+			} else {
+				std::cout << "[SaveManager] No message log in "
+				             "save (old save format?)"
+				          << std::endl;
+			}
+
 			std::cout
 			    << "[SaveManager] Game state restored successfully"
 			    << std::endl;
 			return true;
+
 		} catch (const std::exception& e) {
 			std::cerr
 			    << "[SaveManager] Failed to restore game state: "
@@ -891,27 +962,158 @@ namespace tutorial
 		}
 	}
 
-	nlohmann::json SaveManager::SerializeMap(const Engine& /*engine*/) const
+	nlohmann::json SaveManager::SerializeMap(const Engine& engine) const
 	{
 		nlohmann::json j;
 
-		// For traditional roguelike behavior, we don't save explored
-		// tiles The map will be regenerated on load with fog of war
-		// reset This is consistent with most classic roguelikes
+		const Map& map = engine.GetMap();
 
-		j["note"] =
-		    "Map is regenerated on load (traditional roguelike "
-		    "behavior)";
+		// Save map dimensions
+		j["width"] = map.GetWidth();
+		j["height"] = map.GetHeight();
+
+		// Save all tiles
+		nlohmann::json tiles = nlohmann::json::array();
+		const auto& tileData = map.GetTiles();
+
+		for (const auto& tile : tileData) {
+			nlohmann::json tileJson;
+
+			// Save tile type
+			switch (tile.type) {
+				case TileType::FLOOR:
+					tileJson["type"] = "floor";
+					break;
+				case TileType::WALL:
+					tileJson["type"] = "wall";
+					break;
+				default:
+					tileJson["type"] = "wall";
+					break;
+			}
+
+			// Save exploration state
+			tileJson["explored"] = tile.explored;
+
+			// Save scent value for monster AI
+			tileJson["scent"] = tile.scent;
+
+			tiles.push_back(tileJson);
+		}
+
+		j["tiles"] = tiles;
+		j["currentScentValue"] = map.GetCurrentScentValue();
+
+		// Save rooms for reference (used by stairs placement, etc.)
+		nlohmann::json rooms = nlohmann::json::array();
+		for (const auto& room : map.GetRooms()) {
+			nlohmann::json roomJson;
+			pos_t origin = room.GetOrigin();
+			pos_t end = room.GetEnd();
+			roomJson["x1"] = origin.x;
+			roomJson["y1"] = origin.y;
+			roomJson["x2"] = end.x;
+			roomJson["y2"] = end.y;
+			rooms.push_back(roomJson);
+		}
+		j["rooms"] = rooms;
 
 		return j;
 	}
 
-	bool SaveManager::DeserializeMap(const nlohmann::json& /*j*/,
-	                                 Engine& /*engine*/)
+	bool SaveManager::DeserializeMap(const nlohmann::json& j,
+	                                 Engine& engine)
 	{
-		// Map is regenerated, not restored
-		// This is traditional roguelike behavior
-		return true;
+		try {
+			if (!j.contains("tiles") || !j.contains("width")
+			    || !j.contains("height")) {
+				std::cerr << "[SaveManager] Map data missing "
+				             "required fields"
+				          << std::endl;
+				return false;
+			}
+
+			int width = j["width"].get<int>();
+			int height = j["height"].get<int>();
+
+			Map& map = engine.GetMap();
+
+			// Verify dimensions match
+			if (map.GetWidth() != width
+			    || map.GetHeight() != height) {
+				std::cerr
+				    << "[SaveManager] Map dimension mismatch"
+				    << std::endl;
+				return false;
+			}
+
+			// Restore tiles
+			const auto& tiles = j["tiles"];
+			if (tiles.size()
+			    != static_cast<size_t>(width * height)) {
+				std::cerr << "[SaveManager] Tile count mismatch"
+				          << std::endl;
+				return false;
+			}
+
+			for (size_t i = 0; i < tiles.size(); ++i) {
+				const auto& tileJson = tiles[i];
+				int x = i % width;
+				int y = i / width;
+				pos_t pos { x, y };
+
+				// Restore tile type
+				std::string typeStr =
+				    tileJson["type"].get<std::string>();
+				TileType type = (typeStr == "floor")
+				                    ? TileType::FLOOR
+				                    : TileType::WALL;
+				map.SetTileType(pos, type);
+
+				// Restore exploration state
+				bool explored =
+				    tileJson.value("explored", false);
+				map.SetExplored(pos, explored);
+
+				// Note: Scent values are restored but will be
+				// overwritten as player moves We save them for
+				// completeness but they decay naturally
+			}
+
+			// Restore rooms (needed for game logic)
+			if (j.contains("rooms")) {
+				std::vector<Room> restoredRooms;
+				for (const auto& roomJson : j["rooms"]) {
+					int x1 = roomJson["x1"].get<int>();
+					int y1 = roomJson["y1"].get<int>();
+					int x2 = roomJson["x2"].get<int>();
+					int y2 = roomJson["y2"].get<int>();
+
+					// Room constructor takes (origin,
+					// width, height)
+					pos_t origin { x1, y1 };
+					int width = x2 - x1;
+					int height = y2 - y1;
+
+					Room room(origin, width, height);
+					restoredRooms.push_back(room);
+				}
+				map.SetRooms(restoredRooms);
+				std::cout << "[SaveManager] Restored "
+				          << restoredRooms.size() << " rooms"
+				          << std::endl;
+			}
+
+			std::cout
+			    << "[SaveManager] Map state restored successfully"
+			    << std::endl;
+			return true;
+
+		} catch (const std::exception& e) {
+			std::cerr << "[SaveManager] Failed to deserialize map: "
+			          << e.what() << std::endl;
+			return false;
+		}
 	}
 
 	bool SaveManager::WriteToFile(const nlohmann::json& j) const

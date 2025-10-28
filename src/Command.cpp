@@ -18,8 +18,7 @@ namespace tutorial
 
 	void OpenDropInventoryCommand::Execute(Engine& engine)
 	{
-		engine.SetInventoryMode(InventoryMode::Drop);
-		engine.ShowInventory();
+		engine.ShowDropMenu();
 	}
 
 	void OpenMessageHistoryCommand::Execute(Engine& engine)

@@ -277,7 +277,7 @@ namespace tutorial
 			    .Execute();
 		} else {
 			// Multiple items - show selection menu
-			engine_.ShowItemSelection(itemsHere);
+			engine_.ShowPickupMenu(itemsHere);
 		}
 	}
 } // namespace tutorial
