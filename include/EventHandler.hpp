@@ -80,83 +80,25 @@ namespace tutorial
 		GameOverEventHandler(Engine& engine);
 	};
 
-	// Base class for menu-based event handlers with common navigation
-	// logic Reduces ~120 lines of duplicated code across 4 menu handlers
-	class MenuEventHandlerBase : public BaseEventHandler
+	// Unified menu event handler - handles ALL menu input
+	class MenuEventHandler final : public EventHandler
 	{
 	public:
-		MenuEventHandlerBase(Engine& engine);
+		MenuEventHandler(Engine& engine);
+
+		void SetKeyMap(
+		    const std::unordered_map<KeyPress, Actions, KeyPressHash>&
+		        keyMap) override
+		{
+			// Menus don't use keymaps
+		}
 
 		std::unique_ptr<Command> Dispatch() const override;
-
-	protected:
-		// Subclasses override to customize ESC key behavior
-		// Return nullptr if ESC should be ignored
-		virtual std::unique_ptr<Command> HandleEscape() const = 0;
-	};
-
-	class PauseMenuEventHandler final : public MenuEventHandlerBase
-	{
-	public:
-		PauseMenuEventHandler(Engine& engine);
-
-	protected:
-		std::unique_ptr<Command> HandleEscape() const override;
-	};
-
-	class StartMenuEventHandler final : public MenuEventHandlerBase
-	{
-	public:
-		StartMenuEventHandler(Engine& engine);
-
-	protected:
-		std::unique_ptr<Command> HandleEscape() const override;
-	};
-
-	class CharacterCreationEventHandler final : public MenuEventHandlerBase
-	{
-	public:
-		CharacterCreationEventHandler(Engine& engine);
-
-	protected:
-		std::unique_ptr<Command> HandleEscape() const override;
-	};
-
-	class LevelUpMenuEventHandler final : public MenuEventHandlerBase
-	{
-	public:
-		LevelUpMenuEventHandler(Engine& engine);
-
-	protected:
-		std::unique_ptr<Command> HandleEscape() const override;
-	};
-
-	class InventoryEventHandler final : public BaseEventHandler
-	{
-	public:
-		InventoryEventHandler(Engine& engine);
-
-		std::unique_ptr<Command> Dispatch() const override;
-		void SetMode(InventoryMode mode)
-		{
-			mode_ = mode;
-		}
-		InventoryMode GetMode() const
-		{
-			return mode_;
-		}
 
 	private:
-		InventoryMode mode_;
+		Engine& engine_;
 	};
 
-	class ItemSelectionEventHandler final : public BaseEventHandler
-	{
-	public:
-		ItemSelectionEventHandler(Engine& engine);
-
-		std::unique_ptr<Command> Dispatch() const override;
-	};
 } // namespace tutorial
 
 #endif // EVENT_HANDLER_HPP

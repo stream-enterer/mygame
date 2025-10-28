@@ -31,7 +31,9 @@ namespace tutorial
 
 	void NewGameEvent::Execute()
 	{
-		engine_.ShowCharacterCreation();
+		// TODO: Implement character creation flow
+		// For now, start game directly with default character
+		engine_.NewGame();
 	}
 } // namespace tutorial
 

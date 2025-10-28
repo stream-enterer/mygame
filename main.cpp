@@ -17,28 +17,11 @@ int main()
 	// Load default locale
 	tutorial::StringTable::Instance().LoadLocale("en_US");
 
-	// Load character creation locales (race, class, stats)
-	// TODO: Multi-language support - load based on current locale (e.g.,
-	// race.<locale>.json)
-	try {
-		tutorial::StringTable::Instance().LoadLocale("race.en_US");
-	} catch (const std::exception& e) {
-		std::cerr << "[Main] WARNING: Failed to load race.en_US.json: "
-		          << e.what() << std::endl;
-	}
-
+	// Load character class names (for display in class selection menu)
 	try {
 		tutorial::StringTable::Instance().LoadLocale("class.en_US");
 	} catch (const std::exception& e) {
-		std::cerr
-		    << "[Main] WARNING: Failed to load class.en_US.json: "
-		    << e.what() << std::endl;
-	}
-
-	try {
-		tutorial::StringTable::Instance().LoadLocale("stats.en_US");
-	} catch (const std::exception& e) {
-		std::cerr << "[Main] WARNING: Failed to load stats.en_US.json: "
+		std::cerr << "[Main] WARNING: Failed to load class.en_US.json: "
 		          << e.what() << std::endl;
 	}
 

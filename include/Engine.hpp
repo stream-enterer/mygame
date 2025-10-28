@@ -19,6 +19,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace tutorial
 {
@@ -30,34 +31,9 @@ namespace tutorial
 	class Map;
 	class MessageHistoryWindow;
 	class MessageLogWindow;
-	class InventoryWindow;
-	class ItemSelectionWindow;
+	class Menu;
 
-	enum Window {
-		StartMenu,
-		MainGame,
-		MessageHistory,
-		Inventory,
-		ItemSelection,
-		PauseMenu,
-		LevelUpMenu,
-		CharacterCreation,
-		NewGameConfirmation
-	};
-
-	class Entity;
-	class Event;
-	class EventHandler;
-	class HealthBar;
-	class Map;
-	class MessageHistoryWindow;
-	class MessageLogWindow;
-	class InventoryWindow;
-	class ItemSelectionWindow;
-	class MenuWindow;
-	class CharacterCreationWindow;
-
-	enum class MenuAction;
+	enum class GameState { MainGame, MessageHistory, InMenu };
 
 	class Engine
 	{
@@ -84,23 +60,27 @@ namespace tutorial
 		    TargetingType targetingType = TargetingType::None,
 		    float radius = 0.0f);
 		Entity* GetActor(pos_t pos) const;
-		void ReturnToMainGame();
 		void SetMousePos(pos_t pos);
-		void ShowMessageHistory();
+
+		// Menu stack management
+		void PushMenu(std::unique_ptr<Menu> menu);
+		void PopMenu();
+		bool HasMenus() const
+		{
+			return !menuStack_.empty();
+		}
+		GameState GetGameState() const;
+
+		// Menu builders
 		void ShowInventory();
 		void ShowItemSelection(const std::vector<Entity*>& items);
 		void ShowPauseMenu();
 		void ShowStartMenu();
-		void ShowCharacterCreation();
-		void ShowNewGameConfirmation();
-		void MenuNavigateUp();
-		void MenuNavigateDown();
-		void MenuNavigateLeft();
-		void MenuNavigateRight();
-		void MenuConfirm();
-		void MenuSelectByLetter(char letter);
-		void MenuIncrementStat();
-		void MenuDecrementStat();
+		void ShowClassSelection();
+		void ShowLevelUpMenu();
+		void ReturnToMainGame();
+		void ShowMessageHistory();
+
 		void SetInventoryMode(InventoryMode mode)
 		{
 			inventoryMode_ = mode;
@@ -113,6 +93,7 @@ namespace tutorial
 		{
 			return itemSelectionList_;
 		}
+		void HandleMenuInput(SDL_Keycode key, char character);
 		void Quit();
 		std::unique_ptr<Entity> RemoveEntity(Entity* entity);
 		Entity* SpawnEntity(std::unique_ptr<Entity> entity, pos_t pos);
@@ -150,7 +131,6 @@ namespace tutorial
 		Entity* GetStairs() const;
 		int GetDungeonLevel() const;
 		void NextLevel();
-		void ShowLevelUpMenu();
 
 		void RenderGameUI(TCOD_Console* targetConsole) const;
 
@@ -164,6 +144,7 @@ namespace tutorial
 		friend class UseItemCommand;
 		friend class DropItemCommand;
 		friend class SaveManager;
+
 		void AddEvent(Event_ptr& event);
 		void GenerateMap(int width, int height);
 		void ProcessDeferredRemovals();
@@ -172,13 +153,6 @@ namespace tutorial
 		// Rendering helpers
 		void RenderGameBackground(TCOD_Console* console);
 
-		// Menu confirmation handlers
-		void HandleCharacterCreationConfirm(MenuAction action);
-		void HandleStartMenuConfirm(MenuAction action);
-		void HandlePauseMenuConfirm(MenuAction action);
-		void HandleLevelUpConfirm(MenuAction action);
-		void HandleNewGameConfirmation(MenuAction action);
-
 		// Level transition helpers
 		struct PlayerState {
 			std::string name;
@@ -186,7 +160,6 @@ namespace tutorial
 			DestructibleComponent destructible;
 			std::vector<std::unique_ptr<Entity>> inventory;
 
-			// Provide explicit constructor with default values
 			PlayerState(const std::string& n,
 			            const AttackerComponent& atk,
 			            const DestructibleComponent& dest)
@@ -194,7 +167,6 @@ namespace tutorial
 			{
 			}
 
-			// Make this movable but not copyable
 			PlayerState(PlayerState&&) = default;
 			PlayerState& operator=(PlayerState&&) = default;
 			PlayerState(const PlayerState&) = delete;
@@ -227,32 +199,25 @@ namespace tutorial
 		std::unique_ptr<Map> map_;
 		std::unique_ptr<MessageHistoryWindow> messageHistoryWindow_;
 		std::unique_ptr<MessageLogWindow> messageLogWindow_;
-		std::unique_ptr<InventoryWindow> inventoryWindow_;
-		std::unique_ptr<ItemSelectionWindow> itemSelectionWindow_;
-
-		struct CharacterCreationData {
-			int selectedClass = 0; // 0=Warrior, 1=Rogue, 2=Mage
-		} characterCreation_;
 
 		Entity* player_;
 		std::unique_ptr<HealthBar> healthBar_;
 
-		Entity* stairs_;   // Pointer to stairs entity (not owned, just
-		                   // referenced)
-		int dungeonLevel_; // Current dungeon depth (starts at 1)
+		Entity* stairs_;
+		int dungeonLevel_;
 		int turnsSinceLastAutosave_;
 
-		// New SDL3/libtcod context members
+		// SDL3/libtcod context members
 		TCOD_Context* context_;
 		tcod::TilesetPtr tileset_;
-		std::unique_ptr<MenuWindow> menuWindow_;
-		std::unique_ptr<CharacterCreationWindow>
-		    characterCreationWindow_;
 		TCOD_Console* console_;
 		SDL_Window* window_;
 		TCOD_ViewportOptions viewportOptions_;
 
-		Window windowState_;
+		// Menu system
+		std::vector<std::unique_ptr<Menu>> menuStack_;
+
+		GameState gameState_;
 		bool gameOver_;
 		bool running_;
 
