@@ -139,9 +139,13 @@ namespace tutorial
 			return;
 		}
 
+		size_t menuCountBefore = menuStack_.size();
 		bool shouldClose =
 		    menuStack_.back()->HandleInput(key, character, *this);
-		if (shouldClose) {
+		size_t menuCountAfter = menuStack_.size();
+
+		// Only close if no sub-menu was pushed
+		if (shouldClose && menuCountBefore == menuCountAfter) {
 			PopMenu();
 		}
 	}
@@ -439,8 +443,7 @@ namespace tutorial
 
 		menu->AddItem("Save and Quit", [](Engine& e) {
 			SaveManager::Instance().SaveGame(e, SaveType::Manual);
-			e.ReturnToMainGame();
-			e.ShowStartMenu();
+			e.Quit();
 		});
 
 		PushMenu(std::move(menu));
@@ -1047,6 +1050,16 @@ namespace tutorial
 			// start menu (player_ is nullptr)
 			if (player_) {
 				RenderGameBackground(console_);
+			} else {
+				// Main menu - render opaque black background
+				tcod::ColorRGB black { 0, 0, 0 };
+				for (int y = 0; y < config_.height; ++y) {
+					for (int x = 0; x < config_.width; ++x) {
+						TCOD_console_put_rgb(
+						    console_, x, y, ' ', &black,
+						    &black, TCOD_BKGND_SET);
+					}
+				}
 			}
 
 			// Render topmost menu centered
