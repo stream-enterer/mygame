@@ -49,6 +49,13 @@ namespace tutorial
 		}
 		tpl.name = j["name"];
 
+		// Optional: plural name (defaults to name + "s")
+		if (j.contains("pluralName")) {
+			tpl.pluralName = j["pluralName"];
+		} else {
+			tpl.pluralName = tpl.name + "s";
+		}
+
 		// Required: char
 		if (!j.contains("char") || !j["char"].is_string()) {
 			throw std::runtime_error("Item '" + id
@@ -184,6 +191,13 @@ namespace tutorial
 		}
 		tpl.name = j["name"];
 
+		// Optional: plural name (defaults to name + "s")
+		if (j.contains("pluralName")) {
+			tpl.pluralName = j["pluralName"];
+		} else {
+			tpl.pluralName = tpl.name + "s";
+		}
+
 		// Required: char
 		if (!j.contains("char") || !j["char"].is_string()) {
 			throw std::runtime_error("Unit '" + id
@@ -284,6 +298,14 @@ namespace tutorial
 			    + "' missing required field 'name'");
 		}
 		tpl.name = j["name"];
+
+		// Parse optional plural name (defaults to name + "s" if not
+		// specified)
+		if (j.contains("pluralName")) {
+			tpl.pluralName = j["pluralName"];
+		} else {
+			tpl.pluralName = tpl.name + "s";
+		}
 
 		if (!j.contains("char")) {
 			throw std::runtime_error(
@@ -528,7 +550,7 @@ namespace tutorial
 
 		// Create appropriate entity type
 		if (factionEnum == Faction::PLAYER) {
-			return std::make_unique<Player>(
+			auto entity = std::make_unique<Player>(
 			    pos, name, blocks,
 			    AttackerComponent {
 			        static_cast<unsigned int>(power) },
@@ -538,6 +560,9 @@ namespace tutorial
 			        static_cast<unsigned int>(hp) },
 			    IconRenderable { color, icon }, factionEnum,
 			    pickable);
+			entity->SetPluralName(pluralName);
+			entity->SetTemplateId(id);
+			return entity;
 		} else if (aiComponent != nullptr) {
 			// Monster with AI - create destructible with XP reward
 			DestructibleComponent destructible {
@@ -548,16 +573,19 @@ namespace tutorial
 			destructible.SetXpReward(
 			    static_cast<unsigned int>(xpReward));
 
-			return std::make_unique<Npc>(
+			auto entity = std::make_unique<Npc>(
 			    pos, name, blocks,
 			    AttackerComponent {
 			        static_cast<unsigned int>(power) },
 			    destructible, IconRenderable { color, icon },
 			    factionEnum, std::move(aiComponent), pickable,
 			    isCorpse);
+			entity->SetPluralName(pluralName);
+			entity->SetTemplateId(id);
+			return entity;
 		} else {
 			// Item or neutral entity without AI
-			return std::make_unique<BaseEntity>(
+			auto entity = std::make_unique<BaseEntity>(
 			    pos, name, blocks,
 			    AttackerComponent {
 			        static_cast<unsigned int>(power) },
@@ -567,6 +595,9 @@ namespace tutorial
 			        static_cast<unsigned int>(hp) },
 			    IconRenderable { color, icon }, factionEnum,
 			    std::move(itemComponent), pickable, isCorpse);
+			entity->SetPluralName(pluralName);
+			entity->SetTemplateId(id);
+			return entity;
 		}
 	}
 } // namespace tutorial

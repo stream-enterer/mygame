@@ -1,5 +1,6 @@
 {
 	"name": "health potion",
+	"pluralName": "health potions",
 	"char": "!",
 	"color": [63, 159, 255],
 	"targeting": "self",

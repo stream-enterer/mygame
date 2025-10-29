@@ -1,14 +1,16 @@
 #include "Event.hpp"
-#include <memory>
-#include <string>
-#include <vector>
-
 #include "Colors.hpp"
 #include "Engine.hpp"
 #include "Entity.hpp"
 #include "SaveManager.hpp"
 #include "StringTable.hpp"
+#include "TemplateRegistry.hpp"
 #include "Util.hpp"
+
+#include <iostream>
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace tutorial
 {
@@ -249,17 +251,18 @@ namespace tutorial
 	{
 		Action::Execute();
 
-		auto entityPos = entity_.GetPos();
+		pos_t entityPos = entity_.GetPos();
 
 		// Collect all pickable items at this position
 		std::vector<Entity*> itemsHere;
 		const auto& entities = engine_.GetEntities();
 
-		for (auto it = entities.begin(); it != entities.end(); ++it) {
-			const auto& actor = *it;
+		for (const auto& actor : entities) {
+			bool isPickableItem =
+			    actor->GetItem() && actor->GetPos() == entityPos
+			    && !actor->IsBlocker() && actor->IsPickable();
 
-			if (actor->GetItem() && actor->GetPos() == entityPos
-			    && !actor->IsBlocker() && actor->IsPickable()) {
+			if (isPickableItem) {
 				itemsHere.push_back(actor.get());
 			}
 		}
@@ -298,32 +301,28 @@ namespace tutorial
 			return;
 		}
 
-		// Try to pick up the item (only works for Player)
-		if (auto* player = dynamic_cast<Player*>(&entity_)) {
-			auto actorName = item_->GetName();
-
-			// Remove from world and add to inventory
-			if (player->AddToInventory(
-			        engine_.RemoveEntity(item_))) {
-				auto msg = StringTable::Instance().GetMessage(
-				    "messages.pickup.success",
-				    { { "item", actorName } });
-				engine_.LogMessage(msg.text, msg.color,
-				                   msg.stack);
-
-				// Close the item selection menu after
-				// successful pickup
-				engine_.ReturnToMainGame();
-			} else {
-				auto msg = StringTable::Instance().GetMessage(
-				    "messages.pickup.inventory_full");
-				engine_.LogMessage(msg.text, msg.color,
-				                   msg.stack);
-
-				// Close menu even if inventory is full
-				engine_.ReturnToMainGame();
-			}
+		auto* player = dynamic_cast<Player*>(&entity_);
+		if (!player) {
+			return;
 		}
+
+		std::string itemName = item_->GetName();
+		bool success =
+		    player->AddToInventory(engine_.RemoveEntity(item_));
+
+		if (success) {
+			auto msg = StringTable::Instance().GetMessage(
+			    "messages.pickup.success",
+			    { { "item", itemName } });
+			engine_.LogMessage(msg.text, msg.color, msg.stack);
+		} else {
+			auto msg = StringTable::Instance().GetMessage(
+			    "messages.pickup.inventory_full");
+			engine_.LogMessage(msg.text, msg.color, msg.stack);
+		}
+
+		// Close the item selection menu
+		engine_.ReturnToMainGame();
 	}
 } // namespace tutorial
 
@@ -339,25 +338,133 @@ namespace tutorial
 	{
 		Action::Execute();
 
-		if (auto* player = dynamic_cast<Player*>(&entity_)) {
-			if (Entity* item =
-			        player->GetInventoryItem(itemIndex_)) {
-				if (item->GetItem()) {
-					if (item->GetItem()->Use(*player,
-					                         engine_)) {
-						// Item was used successfully,
-						// remove from inventory
-						player->RemoveFromInventory(
-						    itemIndex_);
-					}
-				}
-			}
+		auto* player = dynamic_cast<Player*>(&entity_);
+		if (!player) {
+			engine_.LogMessage("[DEBUG] Not a player",
+			                   { 255, 0, 0 }, false);
+			return;
+		}
+
+		if (itemIndex_ >= player->GetInventorySize()) {
+			engine_.LogMessage("[DEBUG] Index out of bounds",
+			                   { 255, 0, 0 }, false);
+			return;
+		}
+
+		Entity* item = player->GetInventoryItem(itemIndex_);
+		if (!item || !item->GetItem()) {
+			engine_.LogMessage("[DEBUG] Item null or not usable",
+			                   { 255, 0, 0 }, false);
+			return;
+		}
+
+		int stackCountBefore = item->GetStackCount();
+
+		engine_.LogMessage(
+		    "[DEBUG] Before: stack=" + std::to_string(stackCountBefore),
+		    { 255, 255, 0 }, false);
+
+		bool wasUsed = item->GetItem()->Use(*player, engine_);
+
+		engine_.LogMessage(
+		    "[DEBUG] Use returned: "
+		        + std::string(wasUsed ? "true" : "false"),
+		    { 255, 255, 0 }, false);
+
+		if (!wasUsed) {
+			return;
+		}
+
+		if (itemIndex_ >= player->GetInventorySize()) {
+			engine_.LogMessage(
+			    "[DEBUG] Inventory changed during use",
+			    { 255, 0, 0 }, false);
+			return;
+		}
+
+		Entity* itemAfterUse = player->GetInventoryItem(itemIndex_);
+		if (!itemAfterUse) {
+			engine_.LogMessage("[DEBUG] Item became null",
+			                   { 255, 0, 0 }, false);
+			return;
+		}
+
+		int stackCountAfter = itemAfterUse->GetStackCount();
+		engine_.LogMessage(
+		    "[DEBUG] After: stack=" + std::to_string(stackCountAfter),
+		    { 0, 255, 255 }, false);
+
+		if (stackCountBefore <= 1) {
+			engine_.LogMessage("[DEBUG] Removing last item",
+			                   { 0, 255, 255 }, false);
+			player->RemoveFromInventory(itemIndex_);
+		} else {
+			engine_.LogMessage(
+			    "[DEBUG] Decrementing: "
+			        + std::to_string(stackCountBefore) + " -> "
+			        + std::to_string(stackCountBefore - 1),
+			    { 0, 255, 255 }, false);
+			itemAfterUse->SetStackCount(stackCountBefore - 1);
+
+			int finalCount = itemAfterUse->GetStackCount();
+			engine_.LogMessage("[DEBUG] Final count: "
+			                       + std::to_string(finalCount),
+			                   { 0, 255, 0 }, false);
 		}
 	}
 } // namespace tutorial
 
 namespace tutorial
 {
+	// Helper to create and spawn a single dropped item
+	static void SpawnDroppedItem(Engine& engine,
+	                             const std::string& templateId,
+	                             pos_t dropPos, const std::string& itemName)
+	{
+		auto droppedItem =
+		    TemplateRegistry::Instance().Create(templateId, dropPos);
+		if (!droppedItem) {
+			return;
+		}
+
+		int newPriority =
+		    engine.GetMaxRenderPriorityAtPosition(dropPos) + 1;
+		droppedItem->SetRenderPriority(newPriority);
+		droppedItem->SetStackCount(1);
+
+		engine.SpawnEntity(std::move(droppedItem), dropPos);
+
+		auto msg = StringTable::Instance().GetMessage(
+		    "messages.drop.success", { { "item", itemName } });
+		engine.LogMessage(msg.text, msg.color, msg.stack);
+
+		engine.ReturnToMainGame();
+	}
+
+	// Helper to drop entire item entity
+	static void DropEntireItem(Engine& engine, Player* player,
+	                           size_t itemIndex,
+	                           const std::string& itemName)
+	{
+		auto extractedItem = player->ExtractFromInventory(itemIndex);
+		if (!extractedItem) {
+			return;
+		}
+
+		pos_t dropPos = player->GetPos();
+		int newPriority =
+		    engine.GetMaxRenderPriorityAtPosition(dropPos) + 1;
+		extractedItem->SetRenderPriority(newPriority);
+
+		engine.SpawnEntity(std::move(extractedItem), dropPos);
+
+		auto msg = StringTable::Instance().GetMessage(
+		    "messages.drop.success", { { "item", itemName } });
+		engine.LogMessage(msg.text, msg.color, msg.stack);
+
+		engine.ReturnToMainGame();
+	}
+
 	DropItemAction::DropItemAction(Engine& engine, Entity& entity,
 	                               size_t itemIndex)
 	    : Action(engine, entity), itemIndex_(itemIndex)
@@ -368,41 +475,28 @@ namespace tutorial
 	{
 		Action::Execute();
 
-		if (auto* player = dynamic_cast<Player*>(&entity_)) {
-			if (Entity* item =
-			        player->GetInventoryItem(itemIndex_)) {
-				std::string itemName = item->GetName();
+		auto* player = dynamic_cast<Player*>(&entity_);
+		if (!player) {
+			return;
+		}
 
-				auto extractedItem =
-				    player->ExtractFromInventory(itemIndex_);
-				if (extractedItem) {
-					pos_t dropPos = player->GetPos();
+		Entity* item = player->GetInventoryItem(itemIndex_);
+		if (!item) {
+			return;
+		}
 
-					// Auto-assign render priority: higher
-					// than anything at this position
-					int newPriority =
-					    engine_
-					        .GetMaxRenderPriorityAtPosition(
-					            dropPos)
-					    + 1;
-					extractedItem->SetRenderPriority(
-					    newPriority);
+		int stackCount = item->GetStackCount();
+		std::string itemName = item->GetName();
+		pos_t dropPos = player->GetPos();
 
-					// Spawn with proper priority (sorting
-					// handles placement)
-					engine_.SpawnEntity(
-					    std::move(extractedItem), dropPos);
-
-					auto msg =
-					    StringTable::Instance().GetMessage(
-					        "messages.drop.success",
-					        { { "item", itemName } });
-					engine_.LogMessage(msg.text, msg.color,
-					                   msg.stack);
-
-					engine_.ReturnToMainGame();
-				}
-			}
+		if (stackCount > 1) {
+			// Drop one from stack and decrement
+			SpawnDroppedItem(engine_, item->GetTemplateId(),
+			                 dropPos, itemName);
+			item->SetStackCount(stackCount - 1);
+		} else {
+			// Drop the entire item (last in stack)
+			DropEntireItem(engine_, player, itemIndex_, itemName);
 		}
 	}
 } // namespace tutorial

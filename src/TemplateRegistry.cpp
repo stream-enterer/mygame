@@ -151,6 +151,8 @@ namespace tutorial
 					// EntityTemplate
 					entityTpl.id = itemTpl.id;
 					entityTpl.name = itemTpl.name;
+					entityTpl.pluralName =
+					    itemTpl.pluralName;
 					entityTpl.icon = itemTpl.icon;
 					entityTpl.color = itemTpl.color;
 					entityTpl.blocks = false;
@@ -216,6 +218,8 @@ namespace tutorial
 					// EntityTemplate
 					entityTpl.id = unitTpl.id;
 					entityTpl.name = unitTpl.name;
+					entityTpl.pluralName =
+					    unitTpl.pluralName;
 					entityTpl.icon = unitTpl.icon;
 					entityTpl.color = unitTpl.color;
 					entityTpl.blocks = unitTpl.blocks;

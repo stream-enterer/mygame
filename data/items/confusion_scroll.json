@@ -1,5 +1,6 @@
 {
 	"name": "scroll of confusion",
+	"pluralName": "scrolls of confusion",
 	"char": "#",
 	"color": [63, 159, 255],
 	"targeting": "first_in_beam",

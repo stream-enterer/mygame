@@ -24,6 +24,7 @@ namespace tutorial
 	                       Faction faction, std::unique_ptr<Item> item,
 	                       bool pickable, bool isCorpse)
 	    : name_(name),
+	      pluralName_(name + "s"),
 	      renderable_(std::make_unique<IconRenderable>(renderable)),
 	      defense_(std::make_unique<DestructibleComponent>(defense)),
 	      attack_(std::make_unique<AttackerComponent>(attack)),
@@ -33,7 +34,8 @@ namespace tutorial
 	      blocker_(blocker),
 	      pickable_(pickable),
 	      isCorpse_(isCorpse),
-	      renderPriority_(0) // Default priority
+	      renderPriority_(0),
+	      stackCount_(1)
 	{
 	}
 
@@ -139,6 +141,36 @@ namespace tutorial
 		renderPriority_ = priority;
 	}
 
+	int BaseEntity::GetStackCount() const
+	{
+		return stackCount_;
+	}
+
+	void BaseEntity::SetStackCount(int count)
+	{
+		stackCount_ = count;
+	}
+
+	const std::string& BaseEntity::GetPluralName() const
+	{
+		return pluralName_;
+	}
+
+	void BaseEntity::SetPluralName(const std::string& pluralName)
+	{
+		pluralName_ = pluralName;
+	}
+
+	const std::string& BaseEntity::GetTemplateId() const
+	{
+		return templateId_;
+	}
+
+	void BaseEntity::SetTemplateId(const std::string& templateId)
+	{
+		templateId_ = templateId;
+	}
+
 	RenderLayer BaseEntity::GetRenderLayer() const
 	{
 		if (isCorpse_) {
@@ -214,6 +246,27 @@ namespace tutorial
 
 	bool Player::AddToInventory(std::unique_ptr<Entity> item)
 	{
+		if (!item) {
+			return false;
+		}
+
+		// Try to stack with existing item if stackable
+		if (item->GetItem()) { // Only items (not corpses/entities) can
+			               // stack
+			for (auto& existing : inventory_) {
+				// Check if items have same name and are
+				// stackable
+				if (existing->GetName() == item->GetName()
+				    && existing->GetItem()) {
+					// Stack them together
+					existing->SetStackCount(
+					    existing->GetStackCount() + 1);
+					return true;
+				}
+			}
+		}
+
+		// If not stacked, add as new inventory slot
 		size_t maxSize = static_cast<size_t>(
 		    ConfigManager::Instance().GetMaxInventorySize());
 

@@ -50,6 +50,19 @@ namespace tutorial
 			int y = 1;
 
 			for (const auto& item : inventory) {
+				int stackCount = item->GetStackCount();
+
+				std::string displayName;
+				if (stackCount > 1) {
+					// Show count and plural name for stacks
+					displayName = std::to_string(stackCount)
+					              + " "
+					              + item->GetPluralName();
+				} else {
+					// Single item, use regular name
+					displayName = item->GetName();
+				}
+
 				TCOD_printf_rgb(console_,
 				                (TCOD_PrintParamsRGB) {
 				                    .x = 2,
@@ -61,7 +74,7 @@ namespace tutorial
 				                    .flag = TCOD_BKGND_NONE,
 				                    .alignment = TCOD_LEFT },
 				                "(%c) %s", shortcut,
-				                item->GetName().c_str());
+				                displayName.c_str());
 
 				y++;
 				shortcut++;

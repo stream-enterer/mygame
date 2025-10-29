@@ -24,8 +24,9 @@ namespace tutorial
 	struct ItemTemplate {
 		std::string id;   // Filename becomes ID (e.g., "health_potion")
 		std::string name; // Display name
-		char icon;        // Character to render
-		tcod::ColorRGB color; // RGB color
+		std::string pluralName; // Plural display name
+		char icon;              // Character to render
+		tcod::ColorRGB color;   // RGB color
 
 		// Targeting - flat structure
 		std::string targetingType; // "self", "closest_enemy", "single",
@@ -45,11 +46,12 @@ namespace tutorial
 	};
 
 	struct UnitTemplate {
-		std::string id;       // Filename becomes ID (e.g., "orc")
-		std::string name;     // Display name
-		char icon;            // Character to render
-		tcod::ColorRGB color; // RGB color
-		bool blocks;          // Blocks movement?
+		std::string id;         // Filename becomes ID (e.g., "orc")
+		std::string name;       // Display name
+		std::string pluralName; // Plural display name
+		char icon;              // Character to render
+		tcod::ColorRGB color;   // RGB color
+		bool blocks;            // Blocks movement?
 
 		// Combat stats
 		int hp;
@@ -97,10 +99,12 @@ namespace tutorial
 	struct EntityTemplate {
 		std::string id;   // Template ID (e.g., "orc", "health_potion")
 		std::string name; // Display name
-		char icon;        // Character to render
-		tcod::ColorRGB color; // RGB color
-		bool blocks;          // Blocks movement?
-		std::string faction;  // "monster", "player", "neutral"
+		std::string pluralName; // Plural display name (e.g., "health
+		                        // potions", "scrolls of fireball")
+		char icon;              // Character to render
+		tcod::ColorRGB color;   // RGB color
+		bool blocks;            // Blocks movement?
+		std::string faction;    // "monster", "player", "neutral"
 
 		// Combat stats
 		int hp;

@@ -1,5 +1,6 @@
 {
 	"name": "scroll of chain lightning",
+	"pluralName": "scrolls of chain lightning",
 	"char": "#",
 	"color": [63, 159, 255],
 	"targeting": "beam",

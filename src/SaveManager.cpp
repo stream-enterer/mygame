@@ -529,6 +529,9 @@ namespace tutorial
 
 		// Basic properties
 		j["name"] = entity.GetName();
+		j["pluralName"] = entity.GetPluralName();
+		j["stackCount"] = entity.GetStackCount();
+		j["templateId"] = entity.GetTemplateId();
 		j["pos"]["x"] = entity.GetPos().x;
 		j["pos"]["y"] = entity.GetPos().y;
 		j["blocker"] = entity.IsBlocker();
@@ -629,6 +632,10 @@ namespace tutorial
 		try {
 			// Extract basic properties
 			std::string name = j.value("name", "unknown");
+			std::string pluralName =
+			    j.value("pluralName", name + "s");
+			int stackCount = j.value("stackCount", 1);
+			std::string templateId = j.value("templateId", "");
 			pos_t pos { j["pos"]["x"].get<int>(),
 				    j["pos"]["y"].get<int>() };
 			bool blocker = j.value("blocker", false);
@@ -782,6 +789,9 @@ namespace tutorial
 					}
 				}
 
+				player->SetPluralName(pluralName);
+				player->SetStackCount(stackCount);
+				player->SetTemplateId(templateId);
 				player->SetRenderPriority(renderPriority);
 				return player;
 			} else if (j.contains("ai")) {
@@ -814,6 +824,9 @@ namespace tutorial
 				    renderable, faction, std::move(ai),
 				    pickable, isCorpse);
 
+				npc->SetPluralName(pluralName);
+				npc->SetStackCount(stackCount);
+				npc->SetTemplateId(templateId);
 				npc->SetRenderPriority(renderPriority);
 				return npc;
 			} else {
@@ -859,6 +872,12 @@ namespace tutorial
 							}
 						}
 
+						entity->SetPluralName(
+						    pluralName);
+						entity->SetStackCount(
+						    stackCount);
+						entity->SetTemplateId(
+						    templateId);
 						entity->SetRenderPriority(
 						    renderPriority);
 						return entity;
@@ -880,6 +899,9 @@ namespace tutorial
 				    renderable, faction, nullptr, pickable,
 				    isCorpse);
 
+				entity->SetPluralName(pluralName);
+				entity->SetStackCount(stackCount);
+				entity->SetTemplateId(templateId);
 				entity->SetRenderPriority(renderPriority);
 				return entity;
 			}

@@ -1,5 +1,6 @@
 {
 	"name": "troll",
+	"pluralName": "trolls",
 	"char": "T",
 	"color": [0, 127, 0],
 	"blocks": true,

@@ -1,5 +1,6 @@
 #include "Engine.hpp"
 
+#include "CharacterCreationWindow.hpp"
 #include "Colors.hpp"
 #include "DynamicSpawnSystem.hpp"
 #include "Entity.hpp"
@@ -12,7 +13,6 @@
 #include "Map.hpp"
 #include "MapGenerator.hpp"
 #include "MenuWindow.hpp"
-#include "CharacterCreationWindow.hpp"
 #include "MessageHistoryWindow.hpp"
 #include "MessageLogWindow.hpp"
 #include "SaveManager.hpp"
@@ -445,9 +445,9 @@ namespace tutorial
 		int height = static_cast<int>(config_.height);
 		pos_t pos { 0, 0 };
 
-		menuWindow_ =
-		    std::make_unique<MenuWindow>(width, height, pos, "My Game",
-		                                 true); // fullScreenBorder = true
+		menuWindow_ = std::make_unique<MenuWindow>(
+		    width, height, pos, "My Game",
+		    true); // fullScreenBorder = true
 
 		// Set game logo stub
 		menuWindow_->SetGameLogoStub("[GameLogo]");
@@ -737,22 +737,19 @@ namespace tutorial
 						// Create confirmation menu
 						int width = 50;
 						int height = 15;
-						pos_t pos {
-							static_cast<int>(
-							    config_.width)
-							        / 2
-							    - width / 2,
-							static_cast<int>(
-							    config_.height)
-							        / 2
-							    - height / 2
-						};
+						pos_t pos { static_cast<int>(
+							        config_.width)
+							            / 2
+							        - width / 2,
+							    static_cast<int>(
+							        config_.height)
+							            / 2
+							        - height / 2 };
 
-						menuWindow_ =
-						    std::make_unique<
-						        MenuWindow>(
-						        width, height, pos,
-						        "Are you sure?");
+						menuWindow_ = std::make_unique<
+						    MenuWindow>(
+						    width, height, pos,
+						    "Are you sure?");
 						menuWindow_->Clear();
 						menuWindow_->AddItem(
 						    MenuAction::ConfirmYes,
@@ -941,7 +938,8 @@ namespace tutorial
 			    && !entity->GetDestructible()->IsDead())
 
 			{
-				float distance = entity->GetDistance(pos.x, pos.y);
+				float distance =
+				    entity->GetDistance(pos.x, pos.y);
 				if (distance < bestDistance
 				    && (distance <= range || range == 0.0f)) {
 					bestDistance = distance;
@@ -1181,8 +1179,7 @@ namespace tutorial
 	Entity* Engine::GetActor(pos_t pos) const
 	{
 		for (const auto& entity : entities_) {
-			if (entity->GetPos() == pos
-			    && entity->GetDestructible()
+			if (entity->GetPos() == pos && entity->GetDestructible()
 			    && !entity->GetDestructible()->IsDead()) {
 				return entity.get();
 			}

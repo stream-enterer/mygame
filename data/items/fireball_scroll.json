@@ -1,5 +1,6 @@
 {
 	"name": "scroll of fireball",
+	"pluralName": "scrolls of fireball",
 	"char": "#",
 	"color": [63, 159, 255],
 	"targeting": "area",

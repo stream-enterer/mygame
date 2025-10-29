@@ -45,6 +45,12 @@ namespace tutorial
 		virtual RenderLayer GetRenderLayer() const = 0;
 		virtual int GetRenderPriority() const = 0;
 		virtual void SetRenderPriority(int priority) = 0;
+		virtual int GetStackCount() const = 0;
+		virtual void SetStackCount(int count) = 0;
+		virtual const std::string& GetPluralName() const = 0;
+		virtual void SetPluralName(const std::string& pluralName) = 0;
+		virtual const std::string& GetTemplateId() const = 0;
+		virtual void SetTemplateId(const std::string& templateId) = 0;
 
 		// Null-safety helpers - throw if component doesn't exist
 		AttackerComponent& RequireAttacker() const
@@ -135,9 +141,19 @@ namespace tutorial
 		virtual RenderLayer GetRenderLayer() const override;
 		virtual int GetRenderPriority() const override;
 		virtual void SetRenderPriority(int priority) override;
+		virtual int GetStackCount() const override;
+		virtual void SetStackCount(int count) override;
+		virtual const std::string& GetPluralName() const override;
+		virtual void SetPluralName(
+		    const std::string& pluralName) override;
+		virtual const std::string& GetTemplateId() const override;
+		virtual void SetTemplateId(
+		    const std::string& templateId) override;
 
 	protected:
 		std::string name_;
+		std::string pluralName_;
+		std::string templateId_;
 		std::unique_ptr<IconRenderable> renderable_;
 		std::unique_ptr<DestructibleComponent> defense_;
 		std::unique_ptr<AttackerComponent> attack_;
@@ -148,6 +164,7 @@ namespace tutorial
 		bool pickable_;
 		bool isCorpse_;
 		int renderPriority_; // Higher = renders later (on top)
+		int stackCount_; // Number of items in stack (1 = single item)
 	};
 } // namespace tutorial
 

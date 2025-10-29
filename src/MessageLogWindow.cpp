@@ -5,6 +5,7 @@
 #include "UiWindow.hpp"
 
 #include <cstring>
+#include <map>
 
 namespace tutorial
 {
@@ -81,8 +82,13 @@ namespace tutorial
 		}
 
 		// Build comma-separated list of entity names at mouse position
-		char buf[128] = "";
+		// Group identical entities and show counts
+		char buf[256] = "";
 		bool first = true;
+
+		// Map to count entities by name
+		std::map<std::string, int> entityCounts;
+		std::map<std::string, const Entity*> entityRefs;
 
 		// Scan through all entities IN REVERSE (top to bottom render
 		// order)
@@ -90,12 +96,41 @@ namespace tutorial
 		for (auto it = entities.rbegin(); it != entities.rend(); ++it) {
 			const auto& entity = *it;
 			if (entity->GetPos() == mousePos) {
-				if (!first) {
-					strcat(buf, ", ");
-				} else {
-					first = false;
+				std::string name = entity->GetName();
+				int stackCount = entity->GetStackCount();
+
+				// Accumulate counts
+				entityCounts[name] += stackCount;
+
+				// Keep reference for plural name
+				if (entityRefs.find(name) == entityRefs.end()) {
+					entityRefs[name] = entity.get();
 				}
-				strcat(buf, entity->GetName().c_str());
+			}
+		}
+
+		// Build the display string
+		for (const auto& pair : entityCounts) {
+			if (!first) {
+				strcat(buf, ", ");
+			} else {
+				first = false;
+			}
+
+			const std::string& name = pair.first;
+			int count = pair.second;
+			const Entity* entity = entityRefs[name];
+
+			if (count > 1) {
+				// Use plural name for multiple items
+				char countBuf[32];
+				snprintf(countBuf, sizeof(countBuf), "%d ",
+				         count);
+				strcat(buf, countBuf);
+				strcat(buf, entity->GetPluralName().c_str());
+			} else {
+				// Single item, use regular name
+				strcat(buf, name.c_str());
 			}
 		}
 
