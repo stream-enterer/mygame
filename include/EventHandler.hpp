@@ -30,6 +30,7 @@ namespace tutorial
 		QUIT,
 		OPEN_PAUSE_MENU,
 		DESCEND_STAIRS,
+		SPELL_MENU,
 		SHOW_START_MENU
 	};
 
@@ -148,6 +149,14 @@ namespace tutorial
 
 	private:
 		InventoryMode mode_;
+	};
+
+	class SpellMenuEventHandler : public BaseEventHandler
+	{
+	public:
+		SpellMenuEventHandler(Engine& engine);
+
+		std::unique_ptr<Command> Dispatch() const override;
 	};
 
 	class ItemSelectionEventHandler final : public BaseEventHandler

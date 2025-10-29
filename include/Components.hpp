@@ -49,23 +49,24 @@ namespace tutorial
 		unsigned int CalculateLevel(unsigned int xp) const;
 		bool CheckLevelUp(unsigned int oldXp, unsigned int newXp) const;
 
-		// Mana management
-		unsigned int GetMana() const;
-		unsigned int GetMaxMana() const;
-		void SpendMana(unsigned int amount);
-		void RestoreMana(unsigned int amount);
+		// Mana management (MP system - works like HP)
+		unsigned int GetMp() const;
+		unsigned int GetMaxMp() const;
+		void SpendMp(unsigned int amount);
+		void RegenerateMp(unsigned int amount);
 		unsigned int GetIntelligence() const;
 		void IncreaseIntelligence(unsigned int amount);
+		void IncreaseMaxMp(unsigned int amount);
 
 	private:
 		unsigned int dexterity_; // DEX stat (1 DEX = 1 defense)
 		unsigned int maxHp_;
 		int hp_;
-		unsigned int xp_;           // Current XP (for player)
-		unsigned int xpReward_;     // XP granted when this entity dies
-		unsigned int intelligence_; // INT stat (1 INT = 1 max mana)
-		unsigned int mana_;         // Current mana
-		unsigned int maxMana_;      // Maximum mana (based on INT)
+		unsigned int xp_;       // Current XP (for player)
+		unsigned int xpReward_; // XP granted when this entity dies
+		unsigned int intelligence_;
+		unsigned int mp_;
+		unsigned int maxMp_;
 	};
 	class RenderableComponent
 	{

@@ -4,6 +4,8 @@
 #include "Entity.hpp"
 #include "Event.hpp"
 #include "SaveManager.hpp"
+#include "SpellRegistry.hpp"
+#include "SpellcasterComponent.hpp"
 
 namespace tutorial
 {
@@ -219,6 +221,49 @@ namespace tutorial
 
 		// Consume one item from the stack
 		ConsumeItemFromStack(player, itemIndex_, stackCountBefore);
+	}
+
+	void CastSpellCommand::Execute(Engine& engine)
+	{
+		consumedTurn_ = false;
+
+		auto* player = dynamic_cast<Player*>(engine.GetPlayer());
+		if (!player) {
+			return;
+		}
+
+		auto* caster = player->GetSpellcaster();
+		if (!caster) {
+			return;
+		}
+
+		// Check if player knows the spell
+		if (!caster->KnowsSpell(spellId_)) {
+			return;
+		}
+
+		// Get spell data
+		const SpellData* spell =
+		    SpellRegistry::Instance().Get(spellId_);
+		if (!spell) {
+			return;
+		}
+
+		// Create and execute CastSpellAction
+		std::unique_ptr<Event> action =
+		    std::make_unique<CastSpellAction>(engine, *player,
+		                                      spellId_);
+		action->Execute();
+
+		// Check if spell was actually cast (MP was spent)
+		// If CastSpellAction successfully executed, it spent MP
+		// We assume success if action executed without error
+		consumedTurn_ = true;
+	}
+
+	void SpellMenuCommand::Execute(Engine& engine)
+	{
+		engine.ShowSpellMenu();
 	}
 
 	void DropItemCommand::Execute(Engine& engine)

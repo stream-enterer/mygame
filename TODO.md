@@ -48,3 +48,13 @@ Bug: Pressing enter after death starts a new game without bringing up character 
 - Bug: When you select a scroll to target, then esc out of it or press enter on yourself and the targeting cancels, the mouselook thing in the top left still says "player"
 
 - Bug: Leveling up off a chain lightning kill does not trigger the menu.
+
+
+
+"All the world will be your enemy, Prince with a Thousand Enemies,
+and whenever they catch you, they will kill you.
+But first they must catch you, digger, listener, runner,
+prince with the swift warning. Be cunning and full of tricks,
+and your people shall never be destroyed."
+
+— Richard Adams, Watership Down

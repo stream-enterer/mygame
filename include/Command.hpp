@@ -262,6 +262,30 @@ namespace tutorial
 		bool consumedTurn_;
 	};
 
+	class CastSpellCommand : public Command
+	{
+	public:
+		CastSpellCommand(const std::string& spellId) : spellId_(spellId)
+		{
+		}
+
+		void Execute(Engine& engine) override;
+		bool ConsumesTurn() override
+		{
+			return consumedTurn_;
+		}
+
+	private:
+		std::string spellId_;
+		bool consumedTurn_ = false;
+	};
+
+	class SpellMenuCommand : public Command
+	{
+	public:
+		void Execute(Engine& engine) override;
+	};
+
 	class DropItemCommand final : public ActionCommand
 	{
 	public:

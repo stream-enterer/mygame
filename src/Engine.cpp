@@ -16,6 +16,8 @@
 #include "MessageHistoryWindow.hpp"
 #include "MessageLogWindow.hpp"
 #include "SaveManager.hpp"
+#include "SpellMenuWindow.hpp"
+#include "SpellRegistry.hpp"
 #include "StringTable.hpp"
 
 #include <iostream>
@@ -168,6 +170,15 @@ namespace tutorial
 		}
 
 		eventQueue_.clear();
+
+		// Regenerate MP for all entities with spellcaster component
+		for (auto& entity : entities_) {
+			if (entity->GetSpellcaster()
+			    && entity->GetDestructible()) {
+				entity->GetDestructible()->RegenerateMp(1);
+			}
+		}
+
 		ProcessDeferredRemovals();
 	}
 	void Engine::LogMessage(const std::string& text, tcod::ColorRGB color,
@@ -230,6 +241,11 @@ namespace tutorial
 			TemplateRegistry::Instance().LoadSimplifiedDirectory(
 			    "data/items", "item");
 
+			// Load spells
+			SpellRegistry::Instance().Clear();
+			SpellRegistry::Instance().LoadFromDirectory(
+			    "data/spells");
+
 			std::cout
 			    << "[Engine] Loaded "
 			    << TemplateRegistry::Instance().GetAllIds().size()
@@ -276,6 +292,30 @@ namespace tutorial
 		auto playerEntity = TemplateRegistry::Instance().Create(
 		    "player", rooms[0].GetCenter());
 		player_ = entities_.Spawn(std::move(playerEntity)).get();
+
+		// Give player starting spells and MP
+		if (player_) {
+			auto* destructible = player_->GetDestructible();
+			if (destructible) {
+				// Set player's intelligence to 20 for testing
+				// (gives 20 MP)
+				destructible->IncreaseIntelligence(
+				    19); // +19 to base of 1
+			}
+
+			// Create spellcaster component with starting spells
+			auto spellcaster =
+			    std::make_unique<SpellcasterComponent>();
+			spellcaster->AddSpell("fireball");
+			spellcaster->AddSpell("lightning_bolt");
+			spellcaster->AddSpell("chain_lightning");
+			spellcaster->AddSpell("confusion");
+
+			// Attach to player (we need a way to do this
+			// post-creation) Since BaseEntity's spellcaster_ is
+			// private, we need a setter For now, let's add this to
+			// BaseEntity
+		}
 
 		auto& cfg = ConfigManager::Instance();
 		healthBar_ = std::make_unique<HealthBar>(
@@ -357,6 +397,25 @@ namespace tutorial
 			}
 
 			inventoryMode_ = InventoryMode::Use;
+		}
+	}
+
+	void Engine::ShowSpellMenu()
+	{
+		if (windowState_ != SpellMenu) {
+			eventHandler_ =
+			    std::make_unique<SpellMenuEventHandler>(*this);
+			windowState_ = SpellMenu;
+
+			// Create spell menu window
+			auto& cfg = ConfigManager::Instance();
+			int width = cfg.GetInventoryWindowWidth();
+			int height = cfg.GetInventoryWindowHeight();
+			pos_t pos = CalculateWindowPosition(
+			    width, height, cfg.GetInventoryCenterOnScreen());
+
+			spellMenuWindow_ = std::make_unique<SpellMenuWindow>(
+			    width, height, pos, *player_);
 		}
 	}
 
@@ -1267,6 +1326,9 @@ namespace tutorial
 		} else if (windowState_ == Inventory) {
 			RenderGameBackground(console_);
 			inventoryWindow_->Render(console_);
+		} else if (windowState_ == SpellMenu) {
+			RenderGameBackground(console_);
+			spellMenuWindow_->Render(console_);
 		} else if (windowState_ == ItemSelection) {
 			RenderGameBackground(console_);
 			itemSelectionWindow_->Render(console_);

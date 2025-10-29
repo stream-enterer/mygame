@@ -3,6 +3,8 @@
 #include "Engine.hpp"
 #include "Entity.hpp"
 #include "SaveManager.hpp"
+#include "SpellRegistry.hpp"
+#include "SpellcasterComponent.hpp"
 #include "StringTable.hpp"
 #include "TemplateRegistry.hpp"
 #include "Util.hpp"
@@ -377,6 +379,84 @@ namespace tutorial
 			player->RemoveFromInventory(itemIndex_);
 		} else {
 			itemAfter->SetStackCount(stackCountBefore - 1);
+		}
+	}
+} // namespace tutorial
+
+namespace tutorial
+{
+	CastSpellAction::CastSpellAction(Engine& engine, Entity& entity,
+	                                 const std::string& spellId)
+	    : Action(engine, entity), spellId_(spellId)
+	{
+	}
+
+	void CastSpellAction::Execute()
+	{
+		Action::Execute();
+
+		// Check if entity can cast spells
+		auto* caster = entity_.GetSpellcaster();
+		if (!caster) {
+			return;
+		}
+
+		// Check if spell is known
+		if (!caster->KnowsSpell(spellId_)) {
+			auto msg = StringTable::Instance().GetMessage(
+			    "messages.spell.unknown");
+			engine_.LogMessage(msg.text, msg.color, msg.stack);
+			return;
+		}
+
+		// Get spell data
+		const SpellData* spell =
+		    SpellRegistry::Instance().Get(spellId_);
+		if (!spell) {
+			engine_.LogMessage(
+			    "[DEBUG] Spell not found: " + spellId_,
+			    { 255, 0, 0 }, false);
+			return;
+		}
+
+		// Check if entity has enough MP
+		auto* destructible = entity_.GetDestructible();
+		if (!destructible) {
+			return;
+		}
+
+		if (destructible->GetMp() < spell->manaCost) {
+			auto msg = StringTable::Instance().GetMessage(
+			    "messages.spell.not_enough_mana");
+			engine_.LogMessage(msg.text, msg.color, msg.stack);
+			engine_.ReturnToMainGame();
+			return;
+		}
+
+		// Create target selector and effects from spell data
+		auto selector = spell->CreateTargetSelector();
+		auto effects = spell->CreateEffects();
+
+		// Select targets
+		std::vector<Entity*> targets;
+		if (!selector->SelectTargets(entity_, engine_, targets)) {
+			return; // Targeting cancelled
+		}
+
+		// Apply effects to all targets
+		bool anySuccess = false;
+		for (auto* target : targets) {
+			for (const auto& effect : effects) {
+				if (effect->ApplyTo(*target, engine_)) {
+					anySuccess = true;
+				}
+			}
+		}
+
+		// Spell is consumed if at least one effect succeeded
+		if (anySuccess) {
+			destructible->SpendMp(spell->manaCost);
+			engine_.ReturnToMainGame();
 		}
 	}
 } // namespace tutorial

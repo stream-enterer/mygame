@@ -1,0 +1,10 @@
+{
+	"name": "Confusion",
+	"manaCost": 0,
+	"effect": "ai_change",
+	"effectParams": {
+		"message": "effects.confusion.success"
+	},
+	"targeting": "single",
+	"range": 8
+}

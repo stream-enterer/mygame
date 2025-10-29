@@ -5,6 +5,7 @@
 #include "Components.hpp"
 #include "ConfigManager.hpp"
 #include "Engine.hpp"
+#include "SpellcasterComponent.hpp"
 #include "Util.hpp"
 
 #include <cmath>
@@ -17,18 +18,21 @@ namespace tutorial
 	}
 
 	// BaseEntity Constructor
-	BaseEntity::BaseEntity(pos_t pos, const std::string& name, bool blocker,
-	                       AttackerComponent attack,
-	                       const DestructibleComponent& defense,
-	                       const IconRenderable& renderable,
-	                       Faction faction, std::unique_ptr<Item> item,
-	                       bool pickable, bool isCorpse)
+	BaseEntity::BaseEntity(
+	    pos_t pos, const std::string& name, bool blocker,
+	    AttackerComponent attack, const DestructibleComponent& defense,
+	    const IconRenderable& renderable, Faction faction,
+	    std::unique_ptr<Item> item,
+	    std::unique_ptr<SpellcasterComponent> spellcaster, bool pickable,
+	    bool isCorpse)
 	    : name_(name),
-	      pluralName_(name + "s"),
+	      pluralName_(name),
+	      templateId_(""),
 	      renderable_(std::make_unique<IconRenderable>(renderable)),
 	      defense_(std::make_unique<DestructibleComponent>(defense)),
 	      attack_(std::make_unique<AttackerComponent>(attack)),
 	      item_(std::move(item)),
+	      spellcaster_(std::move(spellcaster)),
 	      pos_(pos),
 	      faction_(faction),
 	      blocker_(blocker),
@@ -92,6 +96,17 @@ namespace tutorial
 	DestructibleComponent* BaseEntity::GetDestructible() const
 	{
 		return defense_.get();
+	}
+
+	SpellcasterComponent* BaseEntity::GetSpellcaster() const
+	{
+		return spellcaster_.get();
+	}
+
+	void BaseEntity::SetSpellcaster(
+	    std::unique_ptr<SpellcasterComponent> spellcaster)
+	{
+		spellcaster_ = std::move(spellcaster);
 	}
 
 	const std::string& BaseEntity::GetName() const
@@ -202,7 +217,7 @@ namespace tutorial
 	         const IconRenderable& renderable, Faction faction,
 	         std::unique_ptr<AiComponent> ai, bool pickable, bool isCorpse)
 	    : BaseEntity(pos, name, blocker, attack, defense, renderable,
-	                 faction, nullptr, pickable, isCorpse),
+	                 faction, nullptr, nullptr, pickable, isCorpse),
 	      ai_(std::move(ai))
 	{
 	}
@@ -233,7 +248,7 @@ namespace tutorial
 	               const IconRenderable& renderable, Faction faction,
 	               bool pickable, bool isCorpse)
 	    : BaseEntity(pos, name, blocker, attack, defense, renderable,
-	                 faction, nullptr, pickable, isCorpse)
+	                 faction, nullptr, nullptr, pickable, isCorpse)
 	{
 	}
 

@@ -32,6 +32,7 @@ namespace tutorial
 	class MessageLogWindow;
 	class InventoryWindow;
 	class ItemSelectionWindow;
+	class SpellMenuWindow;
 
 	enum Window {
 		StartMenu,
@@ -39,6 +40,7 @@ namespace tutorial
 		MessageHistory,
 		Inventory,
 		ItemSelection,
+		SpellMenu,
 		PauseMenu,
 		LevelUpMenu,
 		CharacterCreation,
@@ -54,6 +56,7 @@ namespace tutorial
 	class MessageLogWindow;
 	class InventoryWindow;
 	class ItemSelectionWindow;
+	class SpellMenuWindow;
 	class MenuWindow;
 	class CharacterCreationWindow;
 
@@ -88,6 +91,7 @@ namespace tutorial
 		void SetMousePos(pos_t pos);
 		void ShowMessageHistory();
 		void ShowInventory();
+		void ShowSpellMenu();
 		void ShowItemSelection(const std::vector<Entity*>& items);
 		void ShowPauseMenu();
 		void ShowStartMenu();
@@ -228,6 +232,7 @@ namespace tutorial
 		std::unique_ptr<MessageHistoryWindow> messageHistoryWindow_;
 		std::unique_ptr<MessageLogWindow> messageLogWindow_;
 		std::unique_ptr<InventoryWindow> inventoryWindow_;
+		std::unique_ptr<SpellMenuWindow> spellMenuWindow_;
 		std::unique_ptr<ItemSelectionWindow> itemSelectionWindow_;
 
 		struct CharacterCreationData {

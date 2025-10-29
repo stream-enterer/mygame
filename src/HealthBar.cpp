@@ -94,8 +94,8 @@ namespace tutorial
 
 			// Fill foreground with full mana color
 			const int manaWidth =
-			    (int)((float)destructible->GetMana()
-			          / destructible->GetMaxMana() * consoleWidth);
+			    (int)((float)destructible->GetMp()
+			          / destructible->GetMaxMp() * consoleWidth);
 			if (manaWidth > 0) {
 				tcod::ColorRGB manaFull =
 				    ConfigManager::Instance()
@@ -110,8 +110,8 @@ namespace tutorial
 			// Print mana text
 			char manaBuffer[50];
 			snprintf(manaBuffer, sizeof(manaBuffer), "MP: %u/%u",
-			         destructible->GetMana(),
-			         destructible->GetMaxMana());
+			         destructible->GetMp(),
+			         destructible->GetMaxMp());
 			TCOD_printf_rgb(
 			    console_,
 			    (TCOD_PrintParamsRGB) { .x = 1,

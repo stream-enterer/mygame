@@ -7,6 +7,7 @@
 #include "Entity.hpp"
 #include "Item.hpp"
 #include "Position.hpp"
+#include "SpellcasterComponent.hpp"
 #include "TargetSelector.hpp"
 
 #include <iostream>
@@ -594,7 +595,8 @@ namespace tutorial
 			        static_cast<unsigned int>(maxHp),
 			        static_cast<unsigned int>(hp) },
 			    IconRenderable { color, icon }, factionEnum,
-			    std::move(itemComponent), pickable, isCorpse);
+			    std::move(itemComponent), nullptr, pickable,
+			    isCorpse);
 			entity->SetPluralName(pluralName);
 			entity->SetTemplateId(id);
 			return entity;

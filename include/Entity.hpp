@@ -14,6 +14,7 @@ class Item; // Forward declaration
 
 namespace tutorial
 {
+	class SpellcasterComponent;
 
 	enum class Faction { PLAYER, MONSTER, NEUTRAL };
 
@@ -35,6 +36,7 @@ namespace tutorial
 		virtual bool CanAct() const = 0;
 		virtual AttackerComponent* GetAttacker() const = 0;
 		virtual DestructibleComponent* GetDestructible() const = 0;
+		virtual SpellcasterComponent* GetSpellcaster() const = 0;
 		virtual const std::string& GetName() const = 0;
 		virtual void SetName(const std::string& name) = 0;
 		virtual const RenderableComponent* GetRenderable() const = 0;
@@ -85,6 +87,16 @@ namespace tutorial
 			}
 			return *component;
 		}
+		SpellcasterComponent& RequireSpellcaster() const
+		{
+			auto* component = GetSpellcaster();
+			if (!component) {
+				throw std::runtime_error(
+				    "Entity " + GetName()
+				    + " requires Spellcaster component");
+			}
+			return *component;
+		}
 	};
 } // namespace tutorial
 
@@ -113,18 +125,21 @@ namespace tutorial
 	class BaseEntity : public Entity
 	{
 	public:
-		BaseEntity(pos_t pos, const std::string& name, bool blocker,
-		           AttackerComponent attack,
-		           const DestructibleComponent& defense,
-		           const IconRenderable& renderable, Faction faction,
-		           std::unique_ptr<Item> item = nullptr,
-		           bool pickable = true, bool isCorpse = false);
+		BaseEntity(
+		    pos_t pos, const std::string& name, bool blocker,
+		    AttackerComponent attack,
+		    const DestructibleComponent& defense,
+		    const IconRenderable& renderable, Faction faction,
+		    std::unique_ptr<Item> item = nullptr,
+		    std::unique_ptr<SpellcasterComponent> spellcaster = nullptr,
+		    bool pickable = true, bool isCorpse = false);
 
 		virtual void Act(Engine& engine) override;
 		virtual void Die() override;
 		virtual void Use(Engine& engine) override;
 		virtual void SetPos(pos_t pos) override;
 		virtual Item* GetItem() const override;
+		virtual SpellcasterComponent* GetSpellcaster() const override;
 		virtual bool IsPickable() const override;
 		virtual bool IsCorpse() const override;
 		virtual bool CanAct() const override;
@@ -149,6 +164,8 @@ namespace tutorial
 		virtual const std::string& GetTemplateId() const override;
 		virtual void SetTemplateId(
 		    const std::string& templateId) override;
+		void SetSpellcaster(
+		    std::unique_ptr<SpellcasterComponent> spellcaster);
 
 	protected:
 		std::string name_;
@@ -158,6 +175,7 @@ namespace tutorial
 		std::unique_ptr<DestructibleComponent> defense_;
 		std::unique_ptr<AttackerComponent> attack_;
 		std::unique_ptr<Item> item_;
+		std::unique_ptr<SpellcasterComponent> spellcaster_;
 		pos_t pos_;
 		Faction faction_;
 		bool blocker_;

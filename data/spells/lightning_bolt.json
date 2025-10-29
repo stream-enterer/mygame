@@ -1,0 +1,11 @@
+{
+	"name": "Lightning Bolt",
+	"manaCost": 0,
+	"effect": "damage",
+	"effectParams": {
+		"amount": 20,
+		"message": "effects.damage.lightning"
+	},
+	"targeting": "first_in_beam",
+	"range": 5
+}

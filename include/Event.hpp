@@ -179,6 +179,18 @@ namespace tutorial
 		size_t itemIndex_;
 	};
 
+	class CastSpellAction final : public Action
+	{
+	public:
+		CastSpellAction(Engine& engine, Entity& entity,
+		                const std::string& spellId);
+
+		void Execute() override;
+
+	private:
+		std::string spellId_;
+	};
+
 	class DropItemAction final : public Action
 	{
 	public:

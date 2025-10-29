@@ -2,6 +2,8 @@
 
 #include "Engine.hpp"
 #include "Event.hpp"
+#include "SpellRegistry.hpp"
+#include "SpellcasterComponent.hpp"
 
 #include <SDL3/SDL.h>
 
@@ -15,7 +17,7 @@ namespace tutorial
 {
 	inline namespace
 	{
-		constexpr std::size_t kNumActions = 19;
+		constexpr std::size_t kNumActions = 20;
 
 		static const std::array<
 		    std::function<std::unique_ptr<tutorial::Command>(Engine&)>,
@@ -128,6 +130,12 @@ namespace tutorial
 			            (void)engine;
 			            return std::make_unique<
 			                tutorial::DescendStairsCommand>();
+			    },
+			    // Spell menu
+			    [](auto& engine) {
+			            (void)engine;
+			            return std::make_unique<
+			                tutorial::SpellMenuCommand>();
 			    },
 			    // Show start menu
 			    [](auto& engine) {
@@ -291,6 +299,7 @@ namespace tutorial
 		    { { TCODK_CHAR, 'i' }, tutorial::Actions::INVENTORY },
 		    { { TCODK_CHAR, 'v' }, tutorial::Actions::MESSAGE_HISTORY },
 		    { { TCODK_CHAR, 'd' }, tutorial::Actions::DROP_ITEM },
+		    { { TCODK_CHAR, 'z' }, tutorial::Actions::SPELL_MENU },
 		    { { TCODK_CHAR, '>' }, tutorial::Actions::DESCEND_STAIRS },
 		    { TCODK_ESCAPE, tutorial::Actions::OPEN_PAUSE_MENU }
 	    };
@@ -353,19 +362,22 @@ namespace tutorial
 				}
 
 				// DOWN key or KP2 - select next item
-				if (sdlKey == SDLK_DOWN || sdlKey == SDLK_KP_2) {
+				if (sdlKey == SDLK_DOWN
+				    || sdlKey == SDLK_KP_2) {
 					return std::make_unique<
 					    MenuNavigateDownCommand>();
 				}
 
 				// LEFT key or KP4 - navigate tabs left
-				if (sdlKey == SDLK_LEFT || sdlKey == SDLK_KP_4) {
+				if (sdlKey == SDLK_LEFT
+				    || sdlKey == SDLK_KP_4) {
 					return std::make_unique<
 					    MenuNavigateLeftCommand>();
 				}
 
 				// RIGHT key or KP6 - navigate tabs right
-				if (sdlKey == SDLK_RIGHT || sdlKey == SDLK_KP_6) {
+				if (sdlKey == SDLK_RIGHT
+				    || sdlKey == SDLK_KP_6) {
 					return std::make_unique<
 					    MenuNavigateRightCommand>();
 				}
@@ -390,8 +402,8 @@ namespace tutorial
 					    MenuConfirmCommand>();
 				}
 
-				// + or = keys (with or without shift) - increment
-				// stat
+				// + or = keys (with or without shift) -
+				// increment stat
 				if (sdlKey == SDLK_EQUALS || sdlKey == SDLK_PLUS
 				    || sdlKey == SDLK_KP_PLUS) {
 					return std::make_unique<
@@ -458,8 +470,8 @@ namespace tutorial
 	{
 	}
 
-	std::unique_ptr<Command>
-	CharacterCreationEventHandler::HandleEscape() const
+	std::unique_ptr<Command> CharacterCreationEventHandler::HandleEscape()
+	    const
 	{
 		return std::make_unique<StartMenuCommand>();
 	}
@@ -521,6 +533,74 @@ namespace tutorial
 						    tutorial::UseItemCommand>(
 						    itemIndex);
 					}
+				}
+			}
+		}
+
+		return command;
+	}
+
+	tutorial::SpellMenuEventHandler::SpellMenuEventHandler(Engine& engine)
+	    : BaseEventHandler(engine)
+	{
+	}
+
+	std::unique_ptr<tutorial::Command>
+	tutorial::SpellMenuEventHandler::Dispatch() const
+	{
+		SDL_Event sdlEvent;
+		std::unique_ptr<tutorial::Command> command { nullptr };
+
+		while (SDL_PollEvent(&sdlEvent)) {
+			if (sdlEvent.type == SDL_EVENT_QUIT) {
+				return std::make_unique<QuitCommand>();
+			}
+
+			// Right-click to close without consuming a turn
+			if (sdlEvent.type == SDL_EVENT_MOUSE_BUTTON_DOWN
+			    && sdlEvent.button.button == SDL_BUTTON_RIGHT) {
+				return std::make_unique<
+				    tutorial::CloseUICommand>();
+			}
+
+			if (sdlEvent.type == SDL_EVENT_KEY_DOWN) {
+				SDL_Keycode sdlKey = sdlEvent.key.key;
+
+				// Escape closes menu without consuming a turn
+				if (sdlKey == SDLK_ESCAPE) {
+					return std::make_unique
+					    tutorial::CloseUICommand>();
+				}
+
+				// Check for a-z keys for spell selection
+				if (sdlKey >= SDLK_A && sdlKey <= SDLK_Z) {
+					size_t spellIndex = sdlKey - SDLK_A;
+
+					// Get player's known spells
+					const auto* player =
+					    engine_.GetPlayer();
+					if (!player) {
+						continue;
+					}
+
+					const auto* caster =
+					    player->GetSpellcaster();
+					if (!caster) {
+						continue;
+					}
+
+					const auto& spells =
+					    caster->GetKnownSpells();
+
+					// Only accept valid spell indices
+					if (spellIndex < spells.size()) {
+						return std::make_unique
+						           tutorial::
+						               CastSpellCommand
+						       > (spells[spellIndex]);
+					}
+					// Invalid key - don't do anything,
+					// don't close menu
 				}
 			}
 		}

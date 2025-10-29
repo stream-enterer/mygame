@@ -34,8 +34,8 @@ namespace tutorial
 	      xp_(0),
 	      xpReward_(0),
 	      intelligence_(1),
-	      mana_(1),
-	      maxMana_(1)
+	      mp_(1),
+	      maxMp_(1)
 	{
 	}
 
@@ -47,8 +47,8 @@ namespace tutorial
 	      xp_(0),
 	      xpReward_(0),
 	      intelligence_(1),
-	      mana_(1),
-	      maxMana_(1)
+	      mp_(1),
+	      maxMp_(1)
 	{
 	}
 
@@ -120,28 +120,28 @@ namespace tutorial
 		dexterity_ += amount;
 	}
 
-	unsigned int DestructibleComponent::GetMana() const
+	unsigned int DestructibleComponent::GetMp() const
 	{
-		return mana_;
+		return mp_;
 	}
 
-	unsigned int DestructibleComponent::GetMaxMana() const
+	unsigned int DestructibleComponent::GetMaxMp() const
 	{
-		return maxMana_;
+		return maxMp_;
 	}
 
-	void DestructibleComponent::SpendMana(unsigned int amount)
+	void DestructibleComponent::SpendMp(unsigned int amount)
 	{
-		if (amount > mana_) {
-			mana_ = 0;
+		if (amount > mp_) {
+			mp_ = 0;
 		} else {
-			mana_ -= amount;
+			mp_ -= amount;
 		}
 	}
 
-	void DestructibleComponent::RestoreMana(unsigned int amount)
+	void DestructibleComponent::RegenerateMp(unsigned int amount)
 	{
-		mana_ = std::min(maxMana_, mana_ + amount);
+		mp_ = std::min(maxMp_, mp_ + amount);
 	}
 
 	unsigned int DestructibleComponent::GetIntelligence() const
@@ -152,11 +152,19 @@ namespace tutorial
 	void DestructibleComponent::IncreaseIntelligence(unsigned int amount)
 	{
 		intelligence_ += amount;
-		maxMana_ += amount; // Each INT point = +1 max mana
-		mana_ += amount;    // Also restore mana by the same amount
+		maxMp_ += amount; // Each INT point = +1 max MP
+		mp_ += amount;    // Also restore MP by the same amount
 	}
 
-	unsigned int DestructibleComponent::CalculateLevel(unsigned int xp) const
+	void DestructibleComponent::IncreaseMaxMp(unsigned int amount)
+	{
+		maxMp_ += amount;
+		mp_ += amount; // Also restore MP by the same amount (matches
+		               // IncreaseMaxHealth pattern)
+	}
+
+	unsigned int DestructibleComponent::CalculateLevel(
+	    unsigned int xp) const
 	{
 		const unsigned int LEVEL_UP_BASE = 200;
 		const unsigned int LEVEL_UP_FACTOR = 150;
@@ -164,9 +172,11 @@ namespace tutorial
 		unsigned int level = 1;
 		unsigned int xpForCurrentLevel = 0;
 
-		while (xpForCurrentLevel + LEVEL_UP_BASE + level * LEVEL_UP_FACTOR
+		while (xpForCurrentLevel + LEVEL_UP_BASE
+		           + level * LEVEL_UP_FACTOR
 		       <= xp) {
-			xpForCurrentLevel += LEVEL_UP_BASE + level * LEVEL_UP_FACTOR;
+			xpForCurrentLevel +=
+			    LEVEL_UP_BASE + level * LEVEL_UP_FACTOR;
 			level++;
 		}
 

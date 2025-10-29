@@ -25,6 +25,467 @@ namespace fs = std::filesystem;
 
 namespace tutorial
 {
+	// Helper functions to reduce nesting
+	namespace detail
+	{
+		bool LoadTemplatesAndSpawnTables(const LevelConfig& config)
+		{
+			try {
+				TemplateRegistry::Instance().Clear();
+				TemplateRegistry::Instance().LoadFromDirectory(
+				    "data/entities");
+				TemplateRegistry::Instance()
+				    .LoadSimplifiedDirectory("data/units",
+				                             "unit");
+				TemplateRegistry::Instance()
+				    .LoadSimplifiedDirectory("data/items",
+				                             "item");
+
+				std::cout
+				    << "[SaveManager] Loaded "
+				    << TemplateRegistry::Instance()
+				           .GetAllIds()
+				           .size()
+				    << " templates (special + units + items)"
+				    << std::endl;
+			} catch (const std::exception& e) {
+				std::cerr << "[SaveManager] FATAL: Failed to "
+				             "load entity templates: "
+				          << e.what() << std::endl;
+				throw;
+			}
+
+			try {
+				DynamicSpawnSystem::Instance().Clear();
+				DynamicSpawnSystem::Instance()
+				    .BuildSpawnTablesForLevel(config);
+			} catch (const std::exception& e) {
+				std::cerr << "[SaveManager] FATAL: Failed to "
+				             "build spawn tables: "
+				          << e.what() << std::endl;
+				throw;
+			}
+
+			return true;
+		}
+
+		bool InitializeEngineState(Engine& engine,
+		                           const nlohmann::json& j)
+		{
+			// Clear existing state
+			engine.entities_.Clear();
+			engine.messageLog_.Clear();
+			engine.eventQueue_.clear();
+			engine.entitiesToRemove_.clear();
+
+			// Restore dungeon level
+			if (j["level"].contains("dungeonLevel")) {
+				engine.dungeonLevel_ =
+				    j["level"]["dungeonLevel"].get<int>();
+				std::cout
+				    << "[SaveManager] Restored dungeon level: "
+				    << engine.dungeonLevel_ << std::endl;
+			} else {
+				engine.dungeonLevel_ = 1;
+			}
+
+			return true;
+		}
+
+		bool RestorePlayerAndUI(Engine& engine,
+		                        const nlohmann::json& playerJson)
+		{
+			auto playerEntity =
+			    SaveManager::Instance().DeserializeEntity(
+			        playerJson);
+			if (!playerEntity) {
+				std::cerr << "[SaveManager] Failed to "
+				             "restore player"
+				          << std::endl;
+				return false;
+			}
+
+			// Place player at first room center
+			if (engine.map_->GetRooms().empty()) {
+				std::cerr << "[SaveManager] No rooms "
+				             "generated in map"
+				          << std::endl;
+				return false;
+			}
+
+			pos_t safePos = engine.map_->GetRooms()[0].GetCenter();
+			playerEntity->SetPos(safePos);
+
+			engine.player_ =
+			    engine.entities_.Spawn(std::move(playerEntity))
+			        .get();
+
+			std::cout << "[SaveManager] Player restored at ("
+			          << engine.player_->GetPos().x << ", "
+			          << engine.player_->GetPos().y << ") "
+			          << "(placed at first room center)"
+			          << std::endl;
+
+			// Create UI components
+			auto& cfg = ConfigManager::Instance();
+
+			engine.healthBar_ = std::make_unique<HealthBar>(
+			    cfg.GetHealthBarWidth(), cfg.GetHealthBarHeight(),
+			    pos_t { cfg.GetHealthBarX(), cfg.GetHealthBarY() },
+			    *engine.player_);
+
+			int invWidth = cfg.GetInventoryWindowWidth();
+			int invHeight = cfg.GetInventoryWindowHeight();
+			pos_t invPos;
+
+			if (cfg.GetInventoryCenterOnScreen()) {
+				invPos = pos_t {
+					static_cast<int>(engine.config_.width)
+					        / 2
+					    - invWidth / 2,
+					static_cast<int>(engine.config_.height)
+					        / 2
+					    - invHeight / 2
+				};
+			} else {
+				invPos = pos_t { 0, 0 };
+			}
+
+			engine.inventoryWindow_ =
+			    std::make_unique<InventoryWindow>(
+			        invWidth, invHeight, invPos, *engine.player_);
+
+			return true;
+		}
+
+		void RegenerateEntitiesAndStairs(Engine& engine,
+		                                 const LevelConfig& config)
+		{
+			std::cout << "[SaveManager] Regenerating monsters and "
+			             "items..."
+			          << std::endl;
+
+			const auto& rooms = engine.map_->GetRooms();
+			for (size_t i = 1; i < rooms.size(); ++i) {
+				engine.entities_.PlaceEntities(
+				    rooms[i], config.monsterSpawning,
+				    config.id);
+				engine.entities_.PlaceItems(
+				    rooms[i], config.itemSpawning, config.id);
+			}
+
+			// Place stairs in last room
+			if (!rooms.empty()) {
+				pos_t stairsPos = rooms.back().GetCenter();
+				auto stairsEntity =
+				    TemplateRegistry::Instance().Create(
+				        "stairs_down", stairsPos);
+				engine.stairs_ =
+				    engine.entities_
+				        .Spawn(std::move(stairsEntity))
+				        .get();
+				std::cout << "[SaveManager] Placed stairs at ("
+				          << stairsPos.x << ", " << stairsPos.y
+				          << ")" << std::endl;
+			}
+		}
+
+		AttackerComponent ParseAttackerComponent(
+		    const nlohmann::json& j)
+		{
+			if (!j.contains("attacker")) {
+				return AttackerComponent { 1 };
+			}
+
+			unsigned int strength = 1;
+			if (j["attacker"].contains("strength")) {
+				strength = j["attacker"]["strength"]
+				               .get<unsigned int>();
+			} else if (j["attacker"].contains("power")) {
+				strength =
+				    j["attacker"]["power"].get<unsigned int>();
+			}
+
+			return AttackerComponent { strength };
+		}
+
+		DestructibleComponent ParseDestructibleComponent(
+		    const nlohmann::json& j)
+		{
+			if (!j.contains("destructible")) {
+				return DestructibleComponent { 1, 1, 1 };
+			}
+
+			unsigned int dexterity = 1;
+			if (j["destructible"].contains("dexterity")) {
+				dexterity = j["destructible"]["dexterity"]
+				                .get<unsigned int>();
+			} else if (j["destructible"].contains("defense")) {
+				dexterity = j["destructible"]["defense"]
+				                .get<unsigned int>();
+			}
+
+			unsigned int maxHp =
+			    j["destructible"]["maxHp"].get<unsigned int>();
+			unsigned int hp =
+			    j["destructible"]["hp"].get<unsigned int>();
+
+			DestructibleComponent destructible { dexterity, maxHp,
+				                             hp };
+
+			// Restore XP data
+			if (j["destructible"].contains("xp")) {
+				unsigned int xp =
+				    j["destructible"]["xp"].get<unsigned int>();
+				destructible.AddXp(xp);
+			}
+			if (j["destructible"].contains("xpReward")) {
+				unsigned int xpReward =
+				    j["destructible"]["xpReward"]
+				        .get<unsigned int>();
+				destructible.SetXpReward(xpReward);
+			}
+
+			// Restore mana/INT data
+			if (j["destructible"].contains("intelligence")) {
+				unsigned int intelligence =
+				    j["destructible"]["intelligence"]
+				        .get<unsigned int>();
+				if (intelligence > 1) {
+					destructible.IncreaseIntelligence(
+					    intelligence - 1);
+				}
+			}
+			if (j["destructible"].contains("mp")) {
+				unsigned int mp =
+				    j["destructible"]["mp"].get<unsigned int>();
+				unsigned int currentMp = destructible.GetMp();
+				if (mp < currentMp) {
+					destructible.SpendMp(currentMp - mp);
+				} else if (mp > currentMp) {
+					destructible.RegenerateMp(mp
+					                          - currentMp);
+				}
+			}
+
+			return destructible;
+		}
+
+		IconRenderable ParseRenderableComponent(const nlohmann::json& j)
+		{
+			char icon = '@';
+			tcod::ColorRGB color { 255, 255, 255 };
+
+			if (!j.contains("renderable")) {
+				return IconRenderable { color, icon };
+			}
+
+			std::string iconStr =
+			    j["renderable"]["icon"].get<std::string>();
+			if (!iconStr.empty()) {
+				icon = iconStr[0];
+			}
+
+			if (j["renderable"].contains("color")
+			    && j["renderable"]["color"].is_array()) {
+				auto colorArray = j["renderable"]["color"];
+				color = tcod::ColorRGB {
+					static_cast<uint8_t>(
+					    colorArray[0].get<int>()),
+					static_cast<uint8_t>(
+					    colorArray[1].get<int>()),
+					static_cast<uint8_t>(
+					    colorArray[2].get<int>())
+				};
+			}
+
+			return IconRenderable { color, icon };
+		}
+
+		std::unique_ptr<AiComponent> ParseAiComponent(
+		    const nlohmann::json& j)
+		{
+			if (!j.contains("ai")) {
+				return nullptr;
+			}
+
+			std::string aiType = j["ai"].get<std::string>();
+
+			if (aiType == "confused") {
+				int turnsLeft = j.value("confusionTurns", 5);
+				auto baseAi = std::make_unique<HostileAi>();
+				return std::make_unique<ConfusedMonsterAi>(
+				    turnsLeft, std::move(baseAi));
+			}
+
+			// Default to hostile for unknown or "hostile"
+			return std::make_unique<HostileAi>();
+		}
+
+		std::unique_ptr<Entity> CreatePlayerEntity(
+		    const nlohmann::json& j, pos_t pos, const std::string& name,
+		    const std::string& pluralName, int stackCount,
+		    const std::string& templateId, int renderPriority,
+		    bool blocker, AttackerComponent attacker,
+		    DestructibleComponent destructible,
+		    IconRenderable renderable, Faction faction, bool pickable,
+		    bool isCorpse)
+		{
+			auto player = std::make_unique<Player>(
+			    pos, name, blocker, attacker, destructible,
+			    renderable, faction, pickable, isCorpse);
+
+			// Restore inventory
+			if (j.contains("inventory")
+			    && j["inventory"].is_array()) {
+				for (const auto& itemJson : j["inventory"]) {
+					auto item =
+					    SaveManager::Instance()
+					        .DeserializeEntity(itemJson);
+					if (item) {
+						player->AddToInventory(
+						    std::move(item));
+					}
+				}
+			}
+
+			player->SetPluralName(pluralName);
+			player->SetStackCount(stackCount);
+			player->SetTemplateId(templateId);
+			player->SetRenderPriority(renderPriority);
+			return player;
+		}
+
+		std::unique_ptr<Entity> CreateNpcEntity(
+		    const nlohmann::json& j, pos_t pos, const std::string& name,
+		    const std::string& pluralName, int stackCount,
+		    const std::string& templateId, int renderPriority,
+		    bool blocker, AttackerComponent attacker,
+		    DestructibleComponent destructible,
+		    IconRenderable renderable, Faction faction, bool pickable,
+		    bool isCorpse)
+		{
+			auto ai = ParseAiComponent(j);
+			if (!ai) {
+				ai = std::make_unique<HostileAi>();
+			}
+
+			auto npc = std::make_unique<Npc>(
+			    pos, name, blocker, attacker, destructible,
+			    renderable, faction, std::move(ai), pickable,
+			    isCorpse);
+
+			npc->SetPluralName(pluralName);
+			npc->SetStackCount(stackCount);
+			npc->SetTemplateId(templateId);
+			npc->SetRenderPriority(renderPriority);
+			return npc;
+		}
+
+		std::unique_ptr<Entity> RestoreItemFromTemplate(
+		    const nlohmann::json& j, pos_t pos, const std::string& name,
+		    const std::string& pluralName, int stackCount,
+		    const std::string& templateId, int renderPriority)
+		{
+			if (templateId.empty()
+			    || !TemplateRegistry::Instance().Get(templateId)) {
+				std::cerr << "[SaveManager] WARNING: "
+				             "Could not restore item: "
+				          << name
+				          << " (template ID: " << templateId
+				          << ")" << std::endl;
+				return nullptr;
+			}
+
+			auto entity = TemplateRegistry::Instance().Create(
+			    templateId, pos);
+
+			// Restore HP if modified
+			if (entity->GetDestructible()
+			    && j.contains("destructible")) {
+				unsigned int hp =
+				    j["destructible"]["hp"].get<unsigned int>();
+				unsigned int maxHp = j["destructible"]["maxHp"]
+				                         .get<unsigned int>();
+
+				if (hp < maxHp) {
+					entity->GetDestructible()->TakeDamage(
+					    maxHp - hp);
+				}
+			}
+
+			entity->SetPluralName(pluralName);
+			entity->SetStackCount(stackCount);
+			entity->SetTemplateId(templateId);
+			entity->SetRenderPriority(renderPriority);
+			return entity;
+		}
+
+		std::unique_ptr<Entity> CreateItemEntity(
+		    const nlohmann::json& j, pos_t pos, const std::string& name,
+		    const std::string& pluralName, int stackCount,
+		    const std::string& templateId, int renderPriority,
+		    bool blocker, AttackerComponent attacker,
+		    DestructibleComponent destructible,
+		    IconRenderable renderable, Faction faction, bool pickable,
+		    bool isCorpse)
+		{
+			// Try to restore from template if it has item component
+			if (j.contains("hasItem") && j["hasItem"].get<bool>()) {
+				auto entity = RestoreItemFromTemplate(
+				    j, pos, name, pluralName, stackCount,
+				    templateId, renderPriority);
+				if (entity) {
+					return entity;
+				}
+			}
+
+			// Fallback: create basic entity
+			auto entity = std::make_unique<BaseEntity>(
+			    pos, name, blocker, attacker, destructible,
+			    renderable, faction, nullptr, nullptr, pickable,
+			    isCorpse);
+
+			entity->SetPluralName(pluralName);
+			entity->SetStackCount(stackCount);
+			entity->SetTemplateId(templateId);
+			entity->SetRenderPriority(renderPriority);
+			return entity;
+		}
+
+		void ExtractPlayerMetadata(const nlohmann::json& engineData,
+		                           SaveManager::SaveMetadata& metadata)
+		{
+			if (!engineData.contains("player")) {
+				return;
+			}
+
+			const auto& playerData = engineData["player"];
+			metadata.playerName =
+			    playerData.value("name", "Unknown");
+
+			if (!playerData.contains("destructible")) {
+				return;
+			}
+
+			metadata.playerHP =
+			    playerData["destructible"].value("hp", 0);
+			metadata.playerMaxHP =
+			    playerData["destructible"].value("maxHp", 0);
+		}
+
+		void ExtractLevelMetadata(const nlohmann::json& engineData,
+		                          SaveManager::SaveMetadata& metadata)
+		{
+			if (!engineData.contains("level")) {
+				return;
+			}
+
+			metadata.levelName =
+			    engineData["level"].value("id", "Unknown");
+		}
+	} // namespace detail
+
 	SaveManager& SaveManager::Instance()
 	{
 		static SaveManager instance;
@@ -88,8 +549,6 @@ namespace tutorial
 				std::cerr << "[SaveManager] Save file is empty "
 				             "or corrupted"
 				          << std::endl;
-				// Don't delete - might be a read error, not a
-				// corrupt file
 				return false;
 			}
 
@@ -98,8 +557,6 @@ namespace tutorial
 				std::cerr
 				    << "[SaveManager] Save file missing version"
 				    << std::endl;
-				// Don't delete - let user handle old saves
-				// manually
 				return false;
 			}
 
@@ -108,8 +565,6 @@ namespace tutorial
 				std::cerr << "[SaveManager] Save file missing "
 				             "engine data"
 				          << std::endl;
-				// Don't delete - corrupted but might be
-				// recoverable
 				return false;
 			}
 
@@ -121,34 +576,17 @@ namespace tutorial
 				std::cout
 				    << "[SaveManager] Game loaded successfully"
 				    << std::endl;
-
-				// === OPTION: Don't delete, just mark as loaded
-				// === Save will be overwritten on next
-				// save/autosave This means save persists until
-				// overwritten Safer against crashes, but allows
-				// save-scumming by copying the file
-				// DeleteSave();  // Comment out
-				// === END OPTION ===
-
 				return true;
-			} else {
-				std::cerr << "[SaveManager] Failed to "
-				             "deserialize game state"
-				          << std::endl;
-				// Don't delete save - deserialization failed,
-				// preserve save for debugging
-				return false;
 			}
+
+			std::cerr << "[SaveManager] Failed to "
+			             "deserialize game state"
+			          << std::endl;
+			return false;
 		} catch (const std::exception& e) {
 			std::cerr
 			    << "[SaveManager] Failed to load game: " << e.what()
 			    << std::endl;
-
-			// === DON'T DELETE ON EXCEPTION ===
-			// Save file might be fine, just a temporary error
-			// Let user try again or manually delete
-			// === END ===
-
 			return false;
 		}
 	}
@@ -192,29 +630,10 @@ namespace tutorial
 
 			if (saveData.contains("engine")) {
 				const auto& engineData = saveData["engine"];
-
-				if (engineData.contains("player")) {
-					const auto& playerData =
-					    engineData["player"];
-					metadata.playerName =
-					    playerData.value("name", "Unknown");
-
-					if (playerData.contains(
-					        "destructible")) {
-						metadata.playerHP =
-						    playerData["destructible"]
-						        .value("hp", 0);
-						metadata.playerMaxHP =
-						    playerData["destructible"]
-						        .value("maxHp", 0);
-					}
-				}
-
-				if (engineData.contains("level")) {
-					metadata.levelName =
-					    engineData["level"].value(
-					        "id", "Unknown");
-				}
+				detail::ExtractPlayerMetadata(engineData,
+				                              metadata);
+				detail::ExtractLevelMetadata(engineData,
+				                             metadata);
 			}
 
 			if (saveData.contains("timestamp")) {
@@ -242,17 +661,11 @@ namespace tutorial
 		}
 
 		// Serialize current level config
-		// Note: We store the level ID and regenerate on load
-		// This maintains roguelike tradition of not saving exact map
-		// state Access currentLevel_ through Engine (it's a private
-		// member, but we need a getter) For now, we'll add a public
-		// getter to Engine
 		j["level"]["id"] = engine.GetCurrentLevelId();
 		j["level"]["dungeonLevel"] = engine.GetDungeonLevel();
 
 		// Serialize message log
 		nlohmann::json messages = nlohmann::json::array();
-		// TODO: Add message log serialization if needed
 		j["messageLog"] = messages;
 
 		// Serialize entities (excluding player)
@@ -275,26 +688,14 @@ namespace tutorial
 	{
 		try {
 			engine.EnsureInitialized();
-			// Step 1: Load the level configuration
+
+			// Step 1: Load level configuration
 			std::string levelId =
 			    j["level"]["id"].get<std::string>();
 			std::string levelPath =
 			    "data/levels/" + levelId + ".json";
 
-			// Restore dungeon level
-			if (j["level"].contains("dungeonLevel")) {
-				engine.dungeonLevel_ =
-				    j["level"]["dungeonLevel"].get<int>();
-				std::cout
-				    << "[SaveManager] Restored dungeon level: "
-				    << engine.dungeonLevel_ << std::endl;
-			} else {
-				engine.dungeonLevel_ =
-				    1; // Default to level 1 for old saves
-			}
-
-			// Check if level file exists, fallback to dungeon_1 if
-			// not
+			// Check if level file exists
 			if (!std::filesystem::exists(levelPath)) {
 				std::cerr
 				    << "[SaveManager] Level file not found: "
@@ -305,62 +706,15 @@ namespace tutorial
 
 			LevelConfig levelConfig =
 			    LevelConfig::LoadFromFile(levelPath);
-			engine.currentLevel_ = levelConfig; // Store in engine
+			engine.currentLevel_ = levelConfig;
 
-			// Initialize entity templates and spawn tables
-			try {
-				TemplateRegistry::Instance().Clear();
+			// Step 2: Initialize templates and spawn tables
+			detail::LoadTemplatesAndSpawnTables(levelConfig);
 
-				// Load special entities (player, corpse,
-				// stairs) from legacy format
-				TemplateRegistry::Instance().LoadFromDirectory(
-				    "data/entities");
+			// Step 3: Initialize engine state
+			detail::InitializeEngineState(engine, j);
 
-				// Load units (monsters/NPCs) - one file per
-				// unit
-				TemplateRegistry::Instance()
-				    .LoadSimplifiedDirectory("data/units",
-				                             "unit");
-
-				// Load items - one file per item
-				TemplateRegistry::Instance()
-				    .LoadSimplifiedDirectory("data/items",
-				                             "item");
-
-				std::cout
-				    << "[SaveManager] Loaded "
-				    << TemplateRegistry::Instance()
-				           .GetAllIds()
-				           .size()
-				    << " templates (special + units + items)"
-				    << std::endl;
-			} catch (const std::exception& e) {
-				std::cerr << "[SaveManager] FATAL: Failed to "
-				             "load entity templates: "
-				          << e.what() << std::endl;
-				throw;
-			}
-
-			try {
-				DynamicSpawnSystem::Instance().Clear();
-				DynamicSpawnSystem::Instance()
-				    .BuildSpawnTablesForLevel(levelConfig);
-			} catch (const std::exception& e) {
-				std::cerr << "[SaveManager] FATAL: Failed to "
-				             "build spawn tables: "
-				          << e.what() << std::endl;
-				throw;
-			}
-
-			// Step 2: Initialize the engine with fresh state
-			// Clear existing entities and message log
-			engine.entities_.Clear();
-			engine.messageLog_.Clear();
-			engine.eventQueue_.clear();
-			engine.entitiesToRemove_.clear();
-
-			// Step 3: Regenerate the map (traditional roguelike
-			// behavior)
+			// Step 4: Regenerate map
 			engine.GenerateMap(levelConfig.generation.width,
 			                   levelConfig.generation.height);
 			engine.map_->Update();
@@ -369,119 +723,23 @@ namespace tutorial
 			          << engine.map_->GetWidth() << "x"
 			          << engine.map_->GetHeight() << std::endl;
 
-			// Step 4: Restore the player
-			if (j.contains("player")) {
-				auto playerEntity =
-				    DeserializeEntity(j["player"]);
-				if (!playerEntity) {
-					std::cerr << "[SaveManager] Failed to "
-					             "restore player"
-					          << std::endl;
-					return false;
-				}
-
-				// Since map is regenerated, place player at
-				// first room center (their saved position won't
-				// match the new map layout)
-				if (engine.map_->GetRooms().empty()) {
-					std::cerr << "[SaveManager] No rooms "
-					             "generated in map"
-					          << std::endl;
-					return false;
-				}
-
-				pos_t safePos =
-				    engine.map_->GetRooms()[0].GetCenter();
-				playerEntity->SetPos(safePos);
-
-				engine.player_ =
-				    engine.entities_
-				        .Spawn(std::move(playerEntity))
-				        .get();
-
-				std::cout
-				    << "[SaveManager] Player restored at ("
-				    << engine.player_->GetPos().x << ", "
-				    << engine.player_->GetPos().y << ") "
-				    << "(placed at first room center)"
-				    << std::endl;
-
-				// Step 4.5: Create UI components that depend on
-				// player
-				auto& cfg = ConfigManager::Instance();
-
-				engine.healthBar_ = std::make_unique<HealthBar>(
-				    cfg.GetHealthBarWidth(),
-				    cfg.GetHealthBarHeight(),
-				    pos_t { cfg.GetHealthBarX(),
-				            cfg.GetHealthBarY() },
-				    *engine.player_);
-
-				int invWidth = cfg.GetInventoryWindowWidth();
-				int invHeight = cfg.GetInventoryWindowHeight();
-				pos_t invPos;
-
-				if (cfg.GetInventoryCenterOnScreen()) {
-					invPos =
-					    pos_t { static_cast<int>(
-						        engine.config_.width)
-						            / 2
-						        - invWidth / 2,
-						    static_cast<int>(
-						        engine.config_.height)
-						            / 2
-						        - invHeight / 2 };
-				} else {
-					invPos = pos_t { 0, 0 };
-				}
-
-				engine.inventoryWindow_ =
-				    std::make_unique<InventoryWindow>(
-				        invWidth, invHeight, invPos,
-				        *engine.player_);
-			} else {
+			// Step 5: Restore player and UI
+			if (!j.contains("player")) {
 				std::cerr << "[SaveManager] Save file missing "
 				             "player data"
 				          << std::endl;
 				return false;
 			}
 
-			// Step 5: Regenerate entities (don't restore from save)
-			// Since the map is regenerated, entity positions won't
-			// match Only the player (with inventory) is restored
-			std::cout << "[SaveManager] Regenerating monsters and "
-			             "items..."
-			          << std::endl;
-
-			// Regenerate monsters in all rooms except the first
-			// (where player spawns)
-			const auto& rooms = engine.map_->GetRooms();
-			for (size_t i = 1; i < rooms.size(); ++i) {
-				engine.entities_.PlaceEntities(
-				    rooms[i], levelConfig.monsterSpawning,
-				    levelConfig.id);
-				engine.entities_.PlaceItems(
-				    rooms[i], levelConfig.itemSpawning,
-				    levelConfig.id);
+			if (!detail::RestorePlayerAndUI(engine, j["player"])) {
+				return false;
 			}
 
-			// Place stairs in the last room
-			if (!rooms.empty()) {
-				pos_t stairsPos = rooms.back().GetCenter();
-				auto stairsEntity =
-				    TemplateRegistry::Instance().Create(
-				        "stairs_down", stairsPos);
-				engine.stairs_ =
-				    engine.entities_
-				        .Spawn(std::move(stairsEntity))
-				        .get();
-				std::cout << "[SaveManager] Placed stairs at ("
-				          << stairsPos.x << ", " << stairsPos.y
-				          << ")" << std::endl;
-			}
+			// Step 6: Regenerate entities and stairs
+			detail::RegenerateEntitiesAndStairs(engine,
+			                                    levelConfig);
 
-			// Step 6: Recompute FOV for the restored player
-			// position
+			// Step 7: Recompute FOV
 			if (engine.player_) {
 				std::cout << "[SaveManager] Computing FOV at "
 				             "player position ("
@@ -489,22 +747,22 @@ namespace tutorial
 				          << engine.player_->GetPos().y << ")"
 				          << std::endl;
 				engine.ComputeFOV();
-				engine.map_->Update(); // Update map after FOV
-				                       // computation
+				engine.map_->Update();
 			}
 
-			// Step 7: Restore UI state
+			// Step 8: Restore UI state
 			engine.windowState_ = Window::MainGame;
 			engine.eventHandler_ =
 			    std::make_unique<MainGameEventHandler>(engine);
 			engine.gameOver_ = false;
 			engine.turnsSinceLastAutosave_ = 0;
 
-			// Step 8: Add welcome back message
+			// Step 9: Add welcome back message
 			auto msg =
 			    StringTable::Instance().GetMessage("game.welcome");
 			engine.messageLog_.AddMessage(
 			    "Welcome back, adventurer!", msg.color, false);
+
 			std::cout
 			    << "[SaveManager] Game state restored successfully"
 			    << std::endl;
@@ -514,8 +772,7 @@ namespace tutorial
 			    << "[SaveManager] Failed to restore game state: "
 			    << e.what() << std::endl;
 
-			// On failure, start a new game so the player isn't
-			// stuck
+			// On failure, start new game
 			std::cerr << "[SaveManager] Starting new game instead"
 			          << std::endl;
 			engine.NewGame();
@@ -562,9 +819,8 @@ namespace tutorial
 			    destructible->GetDexterity();
 			j["destructible"]["intelligence"] =
 			    destructible->GetIntelligence();
-			j["destructible"]["mana"] = destructible->GetMana();
-			j["destructible"]["maxMana"] =
-			    destructible->GetMaxMana();
+			j["destructible"]["mp"] = destructible->GetMp();
+			j["destructible"]["maxMp"] = destructible->GetMaxMp();
 			j["destructible"]["hp"] = destructible->GetHealth();
 			j["destructible"]["maxHp"] =
 			    destructible->GetMaxHealth();
@@ -573,9 +829,8 @@ namespace tutorial
 			    destructible->GetXpReward();
 		}
 
-		// Renderable (store icon and color)
+		// Renderable
 		if (const auto* renderable = entity.GetRenderable()) {
-			// Cast to IconRenderable to access icon and color
 			if (const auto* iconRenderable =
 			        dynamic_cast<const IconRenderable*>(
 			            renderable)) {
@@ -589,12 +844,10 @@ namespace tutorial
 			}
 		}
 
-		// Item component (if entity is an item)
+		// Item component
 		if (entity.GetItem()) {
 			j["hasItem"] = true;
 
-			// Store template ID so we can recreate with proper Item
-			// component
 			auto allIds = TemplateRegistry::Instance().GetAllIds();
 			for (const auto& id : allIds) {
 				const auto* tpl =
@@ -606,15 +859,12 @@ namespace tutorial
 			}
 		}
 
-		// Special handling for NPCs with AI
+		// AI for NPCs
 		if (dynamic_cast<const Npc*>(&entity)) {
-			// For now, we'll save all NPCs as "hostile"
-			// TODO: Detect confused AI and save original AI type +
-			// turns
 			j["ai"] = "hostile";
 		}
 
-		// Special handling for Player inventory
+		// Player inventory
 		if (const auto* player = dynamic_cast<const Player*>(&entity)) {
 			nlohmann::json inventory = nlohmann::json::array();
 			for (const auto& item : player->GetInventory()) {
@@ -653,258 +903,34 @@ namespace tutorial
 			}
 
 			// Parse components
-			AttackerComponent attacker { 1 }; // Default STR = 1
-			if (j.contains("attacker")) {
-				// Try new format first (strength), fall back to
-				// old format (power)
-				unsigned int strength = 1;
-				if (j["attacker"].contains("strength")) {
-					strength = j["attacker"]["strength"]
-					               .get<unsigned int>();
-				} else if (j["attacker"].contains("power")) {
-					// Backwards compatibility with old
-					// saves
-					strength = j["attacker"]["power"]
-					               .get<unsigned int>();
-				}
-				attacker = AttackerComponent { strength };
-			}
+			AttackerComponent attacker =
+			    detail::ParseAttackerComponent(j);
+			DestructibleComponent destructible =
+			    detail::ParseDestructibleComponent(j);
+			IconRenderable renderable =
+			    detail::ParseRenderableComponent(j);
 
-			DestructibleComponent destructible {
-				1, 1, 1
-			}; // Default DEX = 1
-			if (j.contains("destructible")) {
-				// Try new format first (dexterity), fall back
-				// to old format (defense)
-				unsigned int dexterity = 1;
-				if (j["destructible"].contains("dexterity")) {
-					dexterity =
-					    j["destructible"]["dexterity"]
-					        .get<unsigned int>();
-				} else if (j["destructible"].contains(
-				               "defense")) {
-					// Backwards compatibility with old
-					// saves
-					dexterity = j["destructible"]["defense"]
-					                .get<unsigned int>();
-				}
-
-				unsigned int maxHp = j["destructible"]["maxHp"]
-				                         .get<unsigned int>();
-				unsigned int hp =
-				    j["destructible"]["hp"].get<unsigned int>();
-				destructible =
-				    DestructibleComponent { dexterity, maxHp,
-					                    hp };
-
-				// Restore XP data if present
-				if (j["destructible"].contains("xp")) {
-					unsigned int xp =
-					    j["destructible"]["xp"]
-					        .get<unsigned int>();
-					destructible.AddXp(xp);
-				}
-				if (j["destructible"].contains("xpReward")) {
-					unsigned int xpReward =
-					    j["destructible"]["xpReward"]
-					        .get<unsigned int>();
-					destructible.SetXpReward(xpReward);
-				}
-
-				// Restore mana/INT data if present (new format)
-				if (j["destructible"].contains(
-				        "intelligence")) {
-					unsigned int intelligence =
-					    j["destructible"]["intelligence"]
-					        .get<unsigned int>();
-					// Set INT by increasing from base (1)
-					if (intelligence > 1) {
-						destructible
-						    .IncreaseIntelligence(
-						        intelligence - 1);
-					}
-				}
-				if (j["destructible"].contains("mana")) {
-					unsigned int mana =
-					    j["destructible"]["mana"]
-					        .get<unsigned int>();
-					unsigned int currentMana =
-					    destructible.GetMana();
-					if (mana < currentMana) {
-						destructible.SpendMana(
-						    currentMana - mana);
-					} else if (mana > currentMana) {
-						destructible.RestoreMana(
-						    mana - currentMana);
-					}
-				}
-			}
-
-			// Parse renderable
-			char icon = '@';
-			tcod::ColorRGB color { 255, 255, 255 };
-			if (j.contains("renderable")) {
-				std::string iconStr =
-				    j["renderable"]["icon"].get<std::string>();
-				if (!iconStr.empty()) {
-					icon = iconStr[0];
-				}
-
-				if (j["renderable"].contains("color")
-				    && j["renderable"]["color"].is_array()) {
-					auto colorArray =
-					    j["renderable"]["color"];
-					color = tcod::ColorRGB {
-						static_cast<uint8_t>(
-						    colorArray[0].get<int>()),
-						static_cast<uint8_t>(
-						    colorArray[1].get<int>()),
-						static_cast<uint8_t>(
-						    colorArray[2].get<int>())
-					};
-				}
-			}
-
-			IconRenderable renderable { color, icon };
-
-			// Create the appropriate entity type based on faction
-			// and AI
+			// Create entity based on type
 			if (faction == Faction::PLAYER) {
-				// Create Player entity
-				auto player = std::make_unique<Player>(
-				    pos, name, blocker, attacker, destructible,
-				    renderable, faction, pickable, isCorpse);
-
-				// Restore inventory if present
-				if (j.contains("inventory")
-				    && j["inventory"].is_array()) {
-					for (const auto& itemJson :
-					     j["inventory"]) {
-						auto item =
-						    DeserializeEntity(itemJson);
-						if (item) {
-							player->AddToInventory(
-							    std::move(item));
-						}
-					}
-				}
-
-				player->SetPluralName(pluralName);
-				player->SetStackCount(stackCount);
-				player->SetTemplateId(templateId);
-				player->SetRenderPriority(renderPriority);
-				return player;
-			} else if (j.contains("ai")) {
-				// Create NPC with AI
-				std::string aiType = j["ai"].get<std::string>();
-				std::unique_ptr<AiComponent> ai = nullptr;
-
-				if (aiType == "hostile") {
-					ai = std::make_unique<HostileAi>();
-				} else if (aiType == "confused") {
-					// For confused AI, we need to recreate
-					// the wrapped AI For now, default to
-					// hostile as the base
-					// TODO: Save/restore the original AI
-					// type and confusion turns
-					int turnsLeft =
-					    j.value("confusionTurns", 5);
-					auto baseAi =
-					    std::make_unique<HostileAi>();
-					ai =
-					    std::make_unique<ConfusedMonsterAi>(
-					        turnsLeft, std::move(baseAi));
-				} else {
-					// Default to hostile if unknown
-					ai = std::make_unique<HostileAi>();
-				}
-
-				auto npc = std::make_unique<Npc>(
-				    pos, name, blocker, attacker, destructible,
-				    renderable, faction, std::move(ai),
+				return detail::CreatePlayerEntity(
+				    j, pos, name, pluralName, stackCount,
+				    templateId, renderPriority, blocker,
+				    attacker, destructible, renderable, faction,
 				    pickable, isCorpse);
-
-				npc->SetPluralName(pluralName);
-				npc->SetStackCount(stackCount);
-				npc->SetTemplateId(templateId);
-				npc->SetRenderPriority(renderPriority);
-				return npc;
-			} else {
-				// Check if this entity has an item component
-				if (j.contains("hasItem")
-				    && j["hasItem"].get<bool>()) {
-					// Check if we have a template ID
-					std::string templateId =
-					    j.value("templateId", "");
-
-					if (!templateId.empty()
-					    && TemplateRegistry::Instance().Get(
-					        templateId)) {
-						// Create from template to get
-						// proper Item component
-						auto entity =
-						    TemplateRegistry::Instance()
-						        .Create(templateId,
-						                pos);
-
-						// Restore HP if it was modified
-						// (for damaged items)
-						if (entity->GetDestructible()
-						    && j.contains(
-						        "destructible")) {
-							unsigned int hp =
-							    j["destructible"]
-							     ["hp"]
-							         .get<
-							             unsigned int>();
-							unsigned int maxHp =
-							    j["destructible"]
-							     ["maxHp"]
-							         .get<
-							             unsigned int>();
-
-							if (hp < maxHp) {
-								entity
-								    ->GetDestructible()
-								    ->TakeDamage(
-								        maxHp
-								        - hp);
-							}
-						}
-
-						entity->SetPluralName(
-						    pluralName);
-						entity->SetStackCount(
-						    stackCount);
-						entity->SetTemplateId(
-						    templateId);
-						entity->SetRenderPriority(
-						    renderPriority);
-						return entity;
-					} else {
-						std::cerr
-						    << "[SaveManager] WARNING: "
-						       "Could not restore "
-						       "item: "
-						    << name << " (template ID: "
-						    << templateId << ")"
-						    << std::endl;
-					}
-				}
-
-				// Create basic entity (corpses, or items that
-				// couldn't be restored)
-				auto entity = std::make_unique<BaseEntity>(
-				    pos, name, blocker, attacker, destructible,
-				    renderable, faction, nullptr, pickable,
-				    isCorpse);
-
-				entity->SetPluralName(pluralName);
-				entity->SetStackCount(stackCount);
-				entity->SetTemplateId(templateId);
-				entity->SetRenderPriority(renderPriority);
-				return entity;
 			}
+
+			if (j.contains("ai")) {
+				return detail::CreateNpcEntity(
+				    j, pos, name, pluralName, stackCount,
+				    templateId, renderPriority, blocker,
+				    attacker, destructible, renderable, faction,
+				    pickable, isCorpse);
+			}
+
+			return detail::CreateItemEntity(
+			    j, pos, name, pluralName, stackCount, templateId,
+			    renderPriority, blocker, attacker, destructible,
+			    renderable, faction, pickable, isCorpse);
 		} catch (const std::exception& e) {
 			std::cerr
 			    << "[SaveManager] Failed to deserialize entity: "
@@ -917,10 +943,7 @@ namespace tutorial
 	{
 		nlohmann::json j;
 
-		// For traditional roguelike behavior, we don't save explored
-		// tiles The map will be regenerated on load with fog of war
-		// reset This is consistent with most classic roguelikes
-
+		// Map is regenerated on load (traditional roguelike behavior)
 		j["note"] =
 		    "Map is regenerated on load (traditional roguelike "
 		    "behavior)";
@@ -932,7 +955,6 @@ namespace tutorial
 	                                 Engine& /*engine*/)
 	{
 		// Map is regenerated, not restored
-		// This is traditional roguelike behavior
 		return true;
 	}
 
@@ -949,8 +971,7 @@ namespace tutorial
 				return false;
 			}
 
-			// Write with pretty formatting (4 spaces, easier to
-			// debug/edit)
+			// Write with pretty formatting
 			file << std::setw(4) << j << std::endl;
 
 			return true;
