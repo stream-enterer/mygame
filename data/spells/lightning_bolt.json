@@ -4,7 +4,7 @@
 	"effect": "damage",
 	"effectParams": {
 		"amount": 20,
-		"message": "effects.damage.lightning"
+		"message": "messages.effects.damage.lightning"
 	},
 	"targeting": "first_in_beam",
 	"range": 5

@@ -3,7 +3,7 @@
 	"manaCost": 0,
 	"effect": "ai_change",
 	"effectParams": {
-		"message": "effects.confusion.success"
+		"message": "messages.effects.confusion.success"
 	},
 	"targeting": "single",
 	"range": 8

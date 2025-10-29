@@ -568,7 +568,7 @@ namespace tutorial
 
 				// Escape closes menu without consuming a turn
 				if (sdlKey == SDLK_ESCAPE) {
-					return std::make_unique
+					return std::make_unique<
 					    tutorial::CloseUICommand>();
 				}
 
@@ -594,10 +594,9 @@ namespace tutorial
 
 					// Only accept valid spell indices
 					if (spellIndex < spells.size()) {
-						return std::make_unique
-						           tutorial::
-						               CastSpellCommand
-						       > (spells[spellIndex]);
+						return std::make_unique<
+						    tutorial::CastSpellCommand>(
+						    spells[spellIndex]);
 					}
 					// Invalid key - don't do anything,
 					// don't close menu

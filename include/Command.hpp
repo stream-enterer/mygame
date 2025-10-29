@@ -2,6 +2,7 @@
 #define COMMAND_HPP
 
 #include <memory>
+#include <string>
 
 namespace tutorial
 {
@@ -284,6 +285,10 @@ namespace tutorial
 	{
 	public:
 		void Execute(Engine& engine) override;
+		bool ConsumesTurn() override
+		{
+			return false;
+		}
 	};
 
 	class DropItemCommand final : public ActionCommand

@@ -5,10 +5,12 @@
 #include "ConfigManager.hpp"
 #include "Configuration.hpp"
 #include "EntityManager.hpp"
+#include "Event.hpp"
 #include "InventoryMode.hpp"
 #include "LevelConfig.hpp"
 #include "MessageLog.hpp"
 #include "Position.hpp"
+#include "SpellcasterComponent.hpp"
 #include "TargetingCursor.hpp"
 #include "TemplateRegistry.hpp"
 
@@ -157,6 +159,21 @@ namespace tutorial
 		void ShowLevelUpMenu();
 
 		void RenderGameUI(TCOD_Console* targetConsole) const;
+
+		// Setter for dungeon level (for save/load)
+		void SetDungeonLevel(int level)
+		{
+			dungeonLevel_ = level;
+		}
+
+		// Clear engine state (for loading saves)
+		void ClearState()
+		{
+			entities_.Clear();
+			messageLog_.Clear();
+			eventQueue_.clear();
+			entitiesToRemove_.clear();
+		}
 
 	private:
 		friend class TurnManager;

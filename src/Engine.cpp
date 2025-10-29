@@ -18,6 +18,7 @@
 #include "SaveManager.hpp"
 #include "SpellMenuWindow.hpp"
 #include "SpellRegistry.hpp"
+#include "SpellcasterComponent.hpp"
 #include "StringTable.hpp"
 
 #include <iostream>
@@ -311,10 +312,12 @@ namespace tutorial
 			spellcaster->AddSpell("chain_lightning");
 			spellcaster->AddSpell("confusion");
 
-			// Attach to player (we need a way to do this
-			// post-creation) Since BaseEntity's spellcaster_ is
-			// private, we need a setter For now, let's add this to
-			// BaseEntity
+			// Attach to player using SetSpellcaster
+			if (auto* basePlayer =
+			        dynamic_cast<BaseEntity*>(player_)) {
+				basePlayer->SetSpellcaster(
+				    std::move(spellcaster));
+			}
 		}
 
 		auto& cfg = ConfigManager::Instance();

@@ -5,7 +5,7 @@
 	"effectParams": {
 		"amount": 25,
 		"radius": 3,
-		"message": "effects.damage.fireball"
+		"message": "messages.effects.damage.fireball"
 	},
 	"targeting": "area",
 	"range": 5

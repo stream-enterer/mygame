@@ -1,11 +1,13 @@
 #include "Event.hpp"
 #include "Colors.hpp"
+#include "Effect.hpp"
 #include "Engine.hpp"
 #include "Entity.hpp"
 #include "SaveManager.hpp"
 #include "SpellRegistry.hpp"
 #include "SpellcasterComponent.hpp"
 #include "StringTable.hpp"
+#include "TargetSelector.hpp"
 #include "TemplateRegistry.hpp"
 #include "Util.hpp"
 

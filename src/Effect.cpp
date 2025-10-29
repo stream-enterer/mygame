@@ -5,6 +5,7 @@
 #include "Engine.hpp"
 #include "Entity.hpp"
 #include "StringTable.hpp"
+#include "Util.hpp"
 
 namespace tutorial
 {
@@ -52,7 +53,8 @@ namespace tutorial
 			if (!messageKey_.empty()) {
 				auto msg = StringTable::Instance().GetMessage(
 				    messageKey_,
-				    { { "target", target.GetName() },
+				    { { "target",
+				        util::capitalize(target.GetName()) },
 				      { "damage", std::to_string(damage) } });
 				engine.LogMessage(msg.text, msg.color,
 				                  msg.stack);

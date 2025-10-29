@@ -4,7 +4,7 @@
 	"effect": "damage",
 	"effectParams": {
 		"amount": 8,
-		"message": "effects.damage.chain_lightning"
+		"message": "messages.effects.damage.chain_lightning"
 	},
 	"targeting": "beam",
 	"range": 8

@@ -175,7 +175,8 @@ namespace tutorial
 		    DestructibleComponent { 0, 1, 1 }, // Minimal stats
 		    IconRenderable { color, icon }, Faction::NEUTRAL,
 		    std::move(itemComponent),
-		    true // Pickable
+		    nullptr, // No spellcaster component for items
+		    true     // Pickable
 		);
 	}
 
