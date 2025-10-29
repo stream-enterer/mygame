@@ -340,76 +340,43 @@ namespace tutorial
 
 		auto* player = dynamic_cast<Player*>(&entity_);
 		if (!player) {
-			engine_.LogMessage("[DEBUG] Not a player",
-			                   { 255, 0, 0 }, false);
 			return;
 		}
 
 		if (itemIndex_ >= player->GetInventorySize()) {
-			engine_.LogMessage("[DEBUG] Index out of bounds",
-			                   { 255, 0, 0 }, false);
 			return;
 		}
 
 		Entity* item = player->GetInventoryItem(itemIndex_);
 		if (!item || !item->GetItem()) {
-			engine_.LogMessage("[DEBUG] Item null or not usable",
-			                   { 255, 0, 0 }, false);
 			return;
 		}
 
+		// Store stack count BEFORE using item
 		int stackCountBefore = item->GetStackCount();
 
-		engine_.LogMessage(
-		    "[DEBUG] Before: stack=" + std::to_string(stackCountBefore),
-		    { 255, 255, 0 }, false);
-
+		// Attempt to use the item
 		bool wasUsed = item->GetItem()->Use(*player, engine_);
-
-		engine_.LogMessage(
-		    "[DEBUG] Use returned: "
-		        + std::string(wasUsed ? "true" : "false"),
-		    { 255, 255, 0 }, false);
 
 		if (!wasUsed) {
 			return;
 		}
 
+		// Item was successfully used - re-validate item still exists
 		if (itemIndex_ >= player->GetInventorySize()) {
-			engine_.LogMessage(
-			    "[DEBUG] Inventory changed during use",
-			    { 255, 0, 0 }, false);
 			return;
 		}
 
-		Entity* itemAfterUse = player->GetInventoryItem(itemIndex_);
-		if (!itemAfterUse) {
-			engine_.LogMessage("[DEBUG] Item became null",
-			                   { 255, 0, 0 }, false);
+		Entity* itemAfter = player->GetInventoryItem(itemIndex_);
+		if (!itemAfter) {
 			return;
 		}
 
-		int stackCountAfter = itemAfterUse->GetStackCount();
-		engine_.LogMessage(
-		    "[DEBUG] After: stack=" + std::to_string(stackCountAfter),
-		    { 0, 255, 255 }, false);
-
+		// Consume ONE item from the stack
 		if (stackCountBefore <= 1) {
-			engine_.LogMessage("[DEBUG] Removing last item",
-			                   { 0, 255, 255 }, false);
 			player->RemoveFromInventory(itemIndex_);
 		} else {
-			engine_.LogMessage(
-			    "[DEBUG] Decrementing: "
-			        + std::to_string(stackCountBefore) + " -> "
-			        + std::to_string(stackCountBefore - 1),
-			    { 0, 255, 255 }, false);
-			itemAfterUse->SetStackCount(stackCountBefore - 1);
-
-			int finalCount = itemAfterUse->GetStackCount();
-			engine_.LogMessage("[DEBUG] Final count: "
-			                       + std::to_string(finalCount),
-			                   { 0, 255, 0 }, false);
+			itemAfter->SetStackCount(stackCountBefore - 1);
 		}
 	}
 } // namespace tutorial

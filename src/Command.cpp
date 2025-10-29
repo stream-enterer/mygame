@@ -3,8 +3,6 @@
 #include "Engine.hpp"
 #include "Entity.hpp"
 #include "Event.hpp"
-#include "InventoryMode.hpp"
-#include "Position.hpp"
 #include "SaveManager.hpp"
 
 namespace tutorial
@@ -164,30 +162,63 @@ namespace tutorial
 		engine.AddEventFront(action);
 	}
 
+	// Helper function to handle stack decrement/removal
+	static void ConsumeItemFromStack(Player* player, size_t itemIndex,
+	                                 int stackCountBefore)
+	{
+		if (stackCountBefore <= 1) {
+			// Last item - remove slot
+			player->RemoveFromInventory(itemIndex);
+			return;
+		}
+
+		// Still items in stack - decrement by 1
+		Entity* itemAfter = player->GetInventoryItem(itemIndex);
+		if (itemAfter) {
+			itemAfter->SetStackCount(stackCountBefore - 1);
+		}
+	}
+
 	void UseItemCommand::Execute(Engine& engine)
 	{
-		consumedTurn_ = false; // Default to not consuming
+		consumedTurn_ = false;
 
-		if (auto* player = dynamic_cast<Player*>(engine.GetPlayer())) {
-			if (Entity* item =
-			        player->GetInventoryItem(itemIndex_)) {
-				if (item->GetItem()) {
-					// Execute item use directly to get
-					// return value
-					bool itemUsed = item->GetItem()->Use(
-					    *player, engine);
-
-					if (itemUsed) {
-						// Item was consumed
-						player->RemoveFromInventory(
-						    itemIndex_);
-						consumedTurn_ = true;
-					}
-					// else: item use failed/canceled, turn
-					// not consumed
-				}
-			}
+		auto* player = dynamic_cast<Player*>(engine.GetPlayer());
+		if (!player) {
+			return;
 		}
+
+		// Validate item exists
+		if (itemIndex_ >= player->GetInventorySize()) {
+			return;
+		}
+
+		Entity* item = player->GetInventoryItem(itemIndex_);
+		if (!item || !item->GetItem()) {
+			return;
+		}
+
+		// Store stack count BEFORE using item
+		int stackCountBefore = item->GetStackCount();
+
+		// Use the item
+		bool itemUsed = item->GetItem()->Use(*player, engine);
+
+		if (!itemUsed) {
+			// Item use failed or was cancelled
+			return;
+		}
+
+		// Item was successfully used
+		consumedTurn_ = true;
+
+		// Re-validate item still exists (inventory may have changed)
+		if (itemIndex_ >= player->GetInventorySize()) {
+			return;
+		}
+
+		// Consume one item from the stack
+		ConsumeItemFromStack(player, itemIndex_, stackCountBefore);
 	}
 
 	void DropItemCommand::Execute(Engine& engine)
