@@ -171,15 +171,24 @@ namespace tutorial
 			}
 
 			if (sdlEvent.type == SDL_EVENT_MOUSE_MOTION) {
-				// Use libtcod's coordinate conversion which
-				// handles viewport transforms
 				int tileX = static_cast<int>(sdlEvent.motion.x);
 				int tileY = static_cast<int>(sdlEvent.motion.y);
 				TCOD_context_screen_pixel_to_tile_i(
 				    engine_.GetContext(), &tileX, &tileY);
 
-				engine_.SetMousePos(
-				    tutorial::pos_t { tileX, tileY });
+				// Mouse coordinates are relative to root
+				// console Game console starts at (0, 0), so no
+				// offset needed Just clamp to game console
+				// bounds
+				auto& cfg = ConfigManager::Instance();
+				int gameHeight = engine_.GetConfig().height
+				                 - cfg.GetMapHeightOffset();
+
+				// Only set mouse pos if within game area
+				if (tileY >= 0 && tileY < gameHeight) {
+					engine_.SetMousePos(
+					    tutorial::pos_t { tileX, tileY });
+				}
 			}
 
 			if (sdlEvent.type == SDL_EVENT_KEY_DOWN) {

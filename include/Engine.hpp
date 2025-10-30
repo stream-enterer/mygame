@@ -191,6 +191,8 @@ namespace tutorial
 		void EnsureInitialized();
 
 		// Rendering helpers
+		void RenderGame();
+		void RenderUI(TCOD_Console* targetConsole);
 		void RenderGameBackground(TCOD_Console* console);
 
 		// Menu confirmation handlers
@@ -270,7 +272,9 @@ namespace tutorial
 		std::unique_ptr<MenuWindow> menuWindow_;
 		std::unique_ptr<CharacterCreationWindow>
 		    characterCreationWindow_;
-		TCOD_Console* console_;
+		TCOD_Console*
+		    rootConsole_; // Full window for compositing layers
+		TCOD_Console* gameConsole_; // Game view only (map + entities)
 		SDL_Window* window_;
 		TCOD_ViewportOptions viewportOptions_;
 

@@ -43,7 +43,8 @@ namespace tutorial
 	      turnsSinceLastAutosave_(0),
 	      context_(nullptr),
 	      menuWindow_(nullptr),
-	      console_(nullptr),
+	      rootConsole_(nullptr),
+	      gameConsole_(nullptr),
 	      window_(nullptr),
 	      windowState_(StartMenu),
 	      gameOver_(false),
@@ -51,10 +52,23 @@ namespace tutorial
 	      mousePos_ { 0, 0 },
 	      inventoryMode_(InventoryMode::Use)
 	{
-		console_ = TCOD_console_new(config.width, config.height);
-		if (!console_) {
+		// Create root console for full window
+		rootConsole_ = TCOD_console_new(config.width, config.height);
+		if (!rootConsole_) {
 			SDL_Quit();
-			throw std::runtime_error("Failed to create console");
+			throw std::runtime_error(
+			    "Failed to create root console");
+		}
+
+		// Create game console for map view only (separate from UI)
+		auto& cfg = ConfigManager::Instance();
+		int gameViewHeight = config.height - cfg.GetMapHeightOffset();
+		gameConsole_ = TCOD_console_new(config.width, gameViewHeight);
+		if (!gameConsole_) {
+			TCOD_console_delete(rootConsole_);
+			SDL_Quit();
+			throw std::runtime_error(
+			    "Failed to create game console");
 		}
 
 		// Load BDF font if path is provided
@@ -62,7 +76,8 @@ namespace tutorial
 			try {
 				tileset_ = tcod::load_bdf(config.fontPath);
 			} catch (const std::exception& e) {
-				TCOD_console_delete(console_);
+				TCOD_console_delete(gameConsole_);
+				TCOD_console_delete(rootConsole_);
 				SDL_Quit();
 				throw std::runtime_error(
 				    std::string("Failed to load BDF font: ")
@@ -72,7 +87,7 @@ namespace tutorial
 
 		TCOD_ContextParams params = {};
 		params.tcod_version = TCOD_COMPILEDVERSION;
-		params.console = console_;
+		params.console = rootConsole_;
 		params.window_title = config.title.c_str();
 		// Set tileset if loaded
 		if (tileset_) {
@@ -84,7 +99,8 @@ namespace tutorial
 		params.argv = nullptr;
 
 		if (TCOD_context_new(&params, &context_) != TCOD_E_OK) {
-			TCOD_console_delete(console_);
+			TCOD_console_delete(gameConsole_);
+			TCOD_console_delete(rootConsole_);
 			SDL_Quit();
 			throw std::runtime_error("Failed to create context");
 		}
@@ -109,8 +125,11 @@ namespace tutorial
 		if (context_) {
 			TCOD_context_delete(context_);
 		}
-		if (console_) {
-			TCOD_console_delete(console_);
+		if (gameConsole_) {
+			TCOD_console_delete(gameConsole_);
+		}
+		if (rootConsole_) {
+			TCOD_console_delete(rootConsole_);
 		}
 		SDL_Quit();
 	}
@@ -1279,9 +1298,12 @@ namespace tutorial
 		}
 	}
 
-	void Engine::RenderGameBackground(TCOD_Console* console)
+	void Engine::RenderGame()
 	{
-		map_->Render(console);
+		// Clear and render ONLY the game world (map + entities)
+		TCOD_console_clear(gameConsole_);
+
+		map_->Render(gameConsole_);
 
 		// Render all entities in FOV
 		for (const auto& entity : entities_) {
@@ -1289,65 +1311,152 @@ namespace tutorial
 			if (map_->IsInFov(pos)) {
 				const auto& renderable =
 				    entity->GetRenderable();
-				renderable->Render(console, pos);
+				renderable->Render(gameConsole_, pos);
 			}
 		}
+	}
 
-		// Render health bar if player exists
+	void Engine::RenderUI(TCOD_Console* targetConsole)
+	{
+		// Render ONLY UI elements (health bar, message log, mouse look)
 		if (player_ && healthBar_) {
-			healthBar_->Render(console);
+			healthBar_->Render(targetConsole);
 		}
 
-		messageLogWindow_->Render(console);
+		if (messageLogWindow_) {
+			messageLogWindow_->Render(targetConsole);
+		}
+	}
+
+	void Engine::RenderGameBackground(TCOD_Console* console)
+	{
+		// Composite layers: Game + UI
+		RenderGame();
+
+		// Blit game console to target
+		TCOD_console_blit(gameConsole_, 0, 0,
+		                  TCOD_console_get_width(gameConsole_),
+		                  TCOD_console_get_height(gameConsole_),
+		                  console, 0, 0, 1.0f, 1.0f);
+
+		// Render UI on top
+		RenderUI(console);
 	}
 
 	void Engine::Render()
 	{
-		TCOD_console_clear(console_);
+		TCOD_console_clear(rootConsole_);
 
-		if (windowState_ == StartMenu) {
-			if (menuWindow_) {
-				menuWindow_->Render(console_);
-			}
-		} else if (windowState_ == CharacterCreation) {
-			if (characterCreationWindow_) {
-				characterCreationWindow_->Render(console_);
-			}
-			// Also render confirmation dialog if present
-			if (menuWindow_) {
-				menuWindow_->Render(console_);
-			}
-		} else if (windowState_ == NewGameConfirmation) {
-			if (menuWindow_) {
-				menuWindow_->Render(console_);
-			}
-		} else if (windowState_ == MainGame) {
-			RenderGameBackground(console_);
-			messageLogWindow_->RenderMouseLook(console_, *this);
-		} else if (windowState_ == MessageHistory) {
-			messageHistoryWindow_->Render(console_);
-		} else if (windowState_ == Inventory) {
-			RenderGameBackground(console_);
-			inventoryWindow_->Render(console_);
-		} else if (windowState_ == SpellMenu) {
-			RenderGameBackground(console_);
-			spellMenuWindow_->Render(console_);
-		} else if (windowState_ == ItemSelection) {
-			RenderGameBackground(console_);
-			itemSelectionWindow_->Render(console_);
-		} else if (windowState_ == PauseMenu) {
-			RenderGameBackground(console_);
-			if (menuWindow_) {
-				menuWindow_->Render(console_);
-			}
-		} else if (windowState_ == LevelUpMenu) {
-			RenderGameBackground(console_);
-			if (menuWindow_) {
-				menuWindow_->Render(console_);
+		// Determine which layers to render based on window state
+		bool renderGame = false;
+		bool renderUI = false;
+		bool renderOverlay = false;
+
+		switch (windowState_) {
+			case StartMenu:
+			case CharacterCreation:
+			case NewGameConfirmation:
+			case MessageHistory:
+				// Full-screen menus: no game/UI underneath
+				renderOverlay = true;
+				break;
+
+			case MainGame:
+				// Just game + UI
+				renderGame = true;
+				renderUI = true;
+				break;
+
+			case Inventory:
+			case SpellMenu:
+			case ItemSelection:
+			case PauseMenu:
+			case LevelUpMenu:
+				// Game + UI + Overlay menu on top
+				renderGame = true;
+				renderUI = true;
+				renderOverlay = true;
+				break;
+		}
+
+		// Layer 1: Game world (map + entities)
+		if (renderGame) {
+			RenderGame();
+			TCOD_console_blit(gameConsole_, 0, 0,
+			                  TCOD_console_get_width(gameConsole_),
+			                  TCOD_console_get_height(gameConsole_),
+			                  rootConsole_, 0, 0, 1.0f, 1.0f);
+		}
+
+		// Layer 2: UI panels (health, message log, mouse look)
+		if (renderUI) {
+			RenderUI(rootConsole_);
+			if (windowState_ == MainGame) {
+				messageLogWindow_->RenderMouseLook(rootConsole_,
+				                                   *this);
 			}
 		}
 
-		TCOD_context_present(context_, console_, &viewportOptions_);
+		// Layer 3: Overlay menus/windows
+		if (renderOverlay) {
+			switch (windowState_) {
+				case StartMenu:
+					if (menuWindow_) {
+						menuWindow_->Render(
+						    rootConsole_);
+					}
+					break;
+
+				case CharacterCreation:
+					if (characterCreationWindow_) {
+						characterCreationWindow_
+						    ->Render(rootConsole_);
+					}
+					if (menuWindow_) {
+						menuWindow_->Render(
+						    rootConsole_);
+					}
+					break;
+
+				case NewGameConfirmation:
+					if (menuWindow_) {
+						menuWindow_->Render(
+						    rootConsole_);
+					}
+					break;
+
+				case MessageHistory:
+					messageHistoryWindow_->Render(
+					    rootConsole_);
+					break;
+
+				case Inventory:
+					inventoryWindow_->Render(rootConsole_);
+					break;
+
+				case SpellMenu:
+					spellMenuWindow_->Render(rootConsole_);
+					break;
+
+				case ItemSelection:
+					itemSelectionWindow_->Render(
+					    rootConsole_);
+					break;
+
+				case PauseMenu:
+				case LevelUpMenu:
+					if (menuWindow_) {
+						menuWindow_->Render(
+						    rootConsole_);
+					}
+					break;
+
+				default:
+					break;
+			}
+		}
+
+		TCOD_context_present(context_, rootConsole_, &viewportOptions_);
 	}
 
 	void Engine::RenderGameUI(TCOD_Console* targetConsole) const
