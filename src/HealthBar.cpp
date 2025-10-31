@@ -181,38 +181,67 @@ namespace tutorial
 			                            .flag = TCOD_BKGND_NONE,
 			                            .alignment = TCOD_LEFT },
 			    "%s", xpBuffer);
+		}
 
-			// === STAT DISPLAY (Row 4) ===
-			// Get stats from components
-			unsigned int str = 0;
-			unsigned int dex = 0;
-			unsigned int intel = 0;
-
-			if (auto* attacker = entity_.GetAttacker()) {
-				str = attacker->GetStrength();
-			}
-			dex = destructible->GetDexterity();
-			intel = destructible->GetIntelligence();
-
-			// Print stats
-			char statBuffer[50];
-			snprintf(statBuffer, sizeof(statBuffer),
-			         "STR:%u DEX:%u INT:%u", str, dex, intel);
-
-			tcod::ColorRGB statColor =
+		// === ATTRIBUTE STATS (One per line below bars) ===
+		auto attacker = entity_.GetAttacker();
+		if (attacker != nullptr) {
+			tcod::ColorRGB textColor =
 			    ConfigManager::Instance().GetUITextColor();
 
-			TCOD_printf_rgb(
-			    console_,
-			    (TCOD_PrintParamsRGB) { .x = 1,
-			                            .y = 4,
-			                            .width = 0,
-			                            .height = 0,
-			                            .fg = &statColor,
-			                            .bg = NULL,
-			                            .flag = TCOD_BKGND_NONE,
-			                            .alignment = TCOD_LEFT },
-			    "%s", statBuffer);
+			// Get current stat values
+			unsigned int str = attacker->GetStrength();
+			unsigned int dex = destructible->GetDexterity();
+			unsigned int intel = destructible->GetIntelligence();
+
+			// STR (row 6)
+			char strBuffer[20];
+			snprintf(strBuffer, sizeof(strBuffer), "STR: %u", str);
+			TCOD_printf_rgb(console_,
+			                (TCOD_PrintParamsRGB) {
+			                    .x = 1,
+			                    .y = 6,
+			                    .width = 0,
+			                    .height = 0,
+			                    .fg = &textColor,
+			                    .bg = NULL,
+			                    .flag = TCOD_BKGND_NONE,
+			                    .alignment = TCOD_LEFT,
+			                },
+			                "%s", strBuffer);
+
+			// DEX (row 7)
+			char dexBuffer[20];
+			snprintf(dexBuffer, sizeof(dexBuffer), "DEX: %u", dex);
+			TCOD_printf_rgb(console_,
+			                (TCOD_PrintParamsRGB) {
+			                    .x = 1,
+			                    .y = 7,
+			                    .width = 0,
+			                    .height = 0,
+			                    .fg = &textColor,
+			                    .bg = NULL,
+			                    .flag = TCOD_BKGND_NONE,
+			                    .alignment = TCOD_LEFT,
+			                },
+			                "%s", dexBuffer);
+
+			// INT (row 8)
+			char intBuffer[20];
+			snprintf(intBuffer, sizeof(intBuffer), "INT: %u",
+			         intel);
+			TCOD_printf_rgb(console_,
+			                (TCOD_PrintParamsRGB) {
+			                    .x = 1,
+			                    .y = 8,
+			                    .width = 0,
+			                    .height = 0,
+			                    .fg = &textColor,
+			                    .bg = NULL,
+			                    .flag = TCOD_BKGND_NONE,
+			                    .alignment = TCOD_LEFT,
+			                },
+			                "%s", intBuffer);
 		}
 
 		TCOD_console_blit(console_, 0, 0,

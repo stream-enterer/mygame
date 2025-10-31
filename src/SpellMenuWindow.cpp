@@ -26,7 +26,7 @@ namespace tutorial
 		    TCOD_BKGND_DEFAULT, true);
 
 		// Draw title
-		std::string title = "Cast what?";
+		std::string title = "Cast which spell?";
 		int titleX = (TCOD_console_get_width(console_)
 		              - static_cast<int>(title.length()))
 		             / 2;

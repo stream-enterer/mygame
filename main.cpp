@@ -30,9 +30,8 @@ int main()
 	try {
 		tutorial::StringTable::Instance().LoadLocale("class.en_US");
 	} catch (const std::exception& e) {
-		std::cerr
-		    << "[Main] WARNING: Failed to load class.en_US.json: "
-		    << e.what() << std::endl;
+		std::cerr << "[Main] WARNING: Failed to load class.en_US.json: "
+		          << e.what() << std::endl;
 	}
 
 	try {
@@ -44,7 +43,7 @@ int main()
 
 	static const tutorial::Configuration config {
 		"libtcod C++ tutorial 8", // title
-		80,                       // width
+		100,                      // width
 		50,                       // height
 		60,                       // fps
 		"font.bdf"                // fontPath

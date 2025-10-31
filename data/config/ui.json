@@ -4,13 +4,13 @@
 		"map_height_offset": 5,
 		"health_bar": {
 			"width": 20,
-			"height": 5,
-			"position": { "x": 0, "y": 45 }
+			"height": 50,
+			"position": { "x": 80, "y": 0 }
 		},
 		"message_log": {
-			"width": 40,
+			"width": 80,
 			"height": 5,
-			"position": { "x": 21, "y": 45 }
+			"position": { "x": 0, "y": 45 }
 		},
 		"inventory_window": {
 			"width": 50,

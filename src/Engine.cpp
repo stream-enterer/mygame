@@ -1319,7 +1319,7 @@ namespace tutorial
 	void Engine::RenderUI(TCOD_Console* targetConsole)
 	{
 		// Render ONLY UI elements (health bar, message log, mouse look)
-		if (player_ && healthBar_) {
+		if (healthBar_) {
 			healthBar_->Render(targetConsole);
 		}
 
@@ -1461,8 +1461,8 @@ namespace tutorial
 
 	void Engine::RenderGameUI(TCOD_Console* targetConsole) const
 	{
-		// Render health bar if player exists
-		if (player_ && healthBar_) {
+		// Render health bar (always show, even if player is dead)
+		if (healthBar_) {
 			healthBar_->Render(targetConsole);
 		}
 
@@ -1515,16 +1515,18 @@ namespace tutorial
 				SpawnEntity(std::move(corpse), corpsePos);
 			}
 
-			// CRITICAL FIX: Nullify player pointer if we're
-			// removing the player
+			// SPECIAL CASE: Don't remove player entity to keep
+			// HealthBar reference valid Only nullify the pointer so
+			// game logic knows player is dead
 			if (entity == player_) {
 				player_ = nullptr;
+			} else {
+				// Remove non-player entities normally
+				RemoveEntity(entity);
 			}
-
-			// Now safe to remove the entity
-			RemoveEntity(entity);
 		}
 
 		entitiesToRemove_.clear();
 	}
+
 } // namespace tutorial
