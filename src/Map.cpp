@@ -240,4 +240,9 @@ namespace tutorial
 		}
 		return tiles_.at(util::posToIndex(pos, width_)).scent;
 	}
+
+	void Map::AddRoom(const Room& room)
+	{
+		rooms_.push_back(room);
+	}
 } // namespace tutorial

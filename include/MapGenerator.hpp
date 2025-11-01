@@ -17,8 +17,9 @@ namespace tutorial
 	{
 	public:
 		Generator(const MapParameters& params);
+		virtual ~Generator() = default;
 
-		void Generate(Map& map);
+		virtual void Generate(Map& map);
 
 	private:
 		MapParameters params_;

@@ -23,6 +23,7 @@ namespace tutorial
 		void Generate(Generator& generator);
 		void SetExplored(pos_t pos, bool explored);
 		void SetTileType(pos_t pos, TileType type);
+		void AddRoom(const Room& room);
 		void Update();
 		void UpdateScent(
 		    pos_t playerPos); // Update scent field around player

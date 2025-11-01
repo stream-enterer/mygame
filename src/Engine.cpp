@@ -1,5 +1,6 @@
 #include "Engine.hpp"
 
+#include "BasicDungeonGenerator.hpp"
 #include "CharacterCreationWindow.hpp"
 #include "Colors.hpp"
 #include "DynamicSpawnSystem.hpp"
@@ -16,6 +17,7 @@
 #include "MenuWindow.hpp"
 #include "MessageHistoryWindow.hpp"
 #include "MessageLogWindow.hpp"
+#include "PathFinding.hpp"
 #include "SaveManager.hpp"
 #include "SpellMenuWindow.hpp"
 #include "SpellRegistry.hpp"
@@ -216,9 +218,10 @@ namespace tutorial
 
 		// Initialize map if not already created
 		if (!map_) {
-			map_ = std::make_unique<Map>(
-			    config_.width,
-			    config_.height - cfg.GetMapHeightOffset());
+			// Map should be playable area size (80x45), not full
+			// console size UI elements render in the extra console
+			// space (columns 80-99)
+			map_ = std::make_unique<Map>(80, 45);
 		}
 
 		// Initialize message log window if not already created
@@ -309,8 +312,18 @@ namespace tutorial
 			                        currentLevel_.id);
 		}
 
-		auto playerEntity = TemplateRegistry::Instance().Create(
-		    "player", rooms[0].GetCenter());
+		// Find first room that's on floor (connected to trails)
+		pos_t playerSpawn = rooms[0].GetCenter();
+		for (const auto& room : rooms) {
+			pos_t center = room.GetCenter();
+			if (!map_->IsWall(center)) {
+				playerSpawn = center;
+				break;
+			}
+		}
+
+		auto playerEntity =
+		    TemplateRegistry::Instance().Create("player", playerSpawn);
 		player_ = entities_.Spawn(std::move(playerEntity)).get();
 
 		// Give player starting spells and MP
@@ -1496,11 +1509,16 @@ namespace tutorial
 
 	void Engine::GenerateMap(int width, int height)
 	{
-		Map::Generator generator({ currentLevel_.generation.maxRooms,
-		                           currentLevel_.generation.minRoomSize,
-		                           currentLevel_.generation.maxRoomSize,
-		                           width, height });
+		// Use DCSS-style basic dungeon generator
+		auto config =
+		    BasicDungeonGenerator::GetDefaultConfig(width, height);
 
+		// Override with level-specific settings if desired
+		config.maxRooms = currentLevel_.generation.maxRooms;
+		config.minRoomSize = currentLevel_.generation.minRoomSize;
+		config.maxRoomSize = currentLevel_.generation.maxRoomSize;
+
+		BasicDungeonGenerator generator(config);
 		map_->Generate(generator);
 		map_->Update();
 	}
@@ -1517,21 +1535,22 @@ namespace tutorial
 			    "corpse", corpsePos);
 
 			if (corpse) {
-				// Override the generic name with specific
-				// corpse name
+				// Override the generic name with
+				// specific corpse name
 				corpse->SetName(corpseName);
 
-				// Set corpse priority to -1 so it renders below
-				// any items at this position (Items have
-				// default priority 0 or higher within the ITEMS
-				// layer)
+				// Set corpse priority to -1 so it
+				// renders below any items at this
+				// position (Items have default priority
+				// 0 or higher within the ITEMS layer)
 				corpse->SetRenderPriority(-1);
 				SpawnEntity(std::move(corpse), corpsePos);
 			}
 
-			// SPECIAL CASE: Don't remove player entity to keep
-			// HealthBar reference valid Only nullify the pointer so
-			// game logic knows player is dead
+			// SPECIAL CASE: Don't remove player entity to
+			// keep HealthBar reference valid Only nullify
+			// the pointer so game logic knows player is
+			// dead
 			if (entity == player_) {
 				player_ = nullptr;
 			} else {
