@@ -38,12 +38,6 @@ Tailor only the structure of your responses for ADHD accessibility.
 
 4. **Combine adjacent changes**: If changes are <5 lines apart, show as single block
 
-### If You Realize Mid-Response You're Wrong
-
-**Restart silently. Show corrected version only.**
-- Don't show false starts or "Wait!" corrections
-- User follows instructions sequentially - only show the right path
-
 ### After Code Changes
 
 - **Explain what the change accomplishes** in plain language

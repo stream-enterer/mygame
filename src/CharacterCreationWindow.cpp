@@ -12,9 +12,9 @@ namespace tutorial
 	                                                 std::size_t height,
 	                                                 pos_t pos)
 	    : UiWindowBase(width, height, pos),
-	      currentTab_(CreationTab::Race),
-	      raceMenuIndex_(0),
-	      selectedRaceIndex_(-1),
+	      currentTab_(CreationTab::Species),
+	      speciesMenuIndex_(0),
+	      selectedSpeciesIndex_(-1),
 	      classMenuIndex_(0),
 	      selectedClassIndex_(-1),
 	      statsMenuIndex_(0),
@@ -30,46 +30,41 @@ namespace tutorial
 			    static_cast<int>(height) / 2 - centerHeight / 2 };
 		menuStartY_ = menuPos_.y;
 
-		LoadRaceOptions();
+		LoadSpeciesOptions();
 		LoadClassOptions();
 		InitializeStats();
 	}
 
-	void CharacterCreationWindow::LoadRaceOptions()
+	void CharacterCreationWindow::LoadSpeciesOptions()
 	{
 		auto& st = StringTable::Instance();
 
-		// NOTE: race.en_US.json should be loaded by Engine after
-		// en_US.json TODO: Multi-language support - load
-		// race.<locale>.json based on current locale
+		std::vector<std::string> speciesOrder = { "human", "elf",
+			                                  "dwarf" };
 
-		// Load race order from locale
-		std::vector<std::string> raceOrder = { "human", "elf",
-			                               "dwarf" };
-
-		for (const auto& raceId : raceOrder) {
-			std::string nameKey = "races." + raceId + ".name";
+		for (const auto& speciesId : speciesOrder) {
+			std::string nameKey = "species." + speciesId + ".name";
 			std::string descKey =
-			    "races." + raceId + ".description";
+			    "species." + speciesId + ".description";
 
 			if (st.Has(nameKey) && st.Has(descKey)) {
-				raceOptions_.push_back(
-				    { raceId, st.GetString(nameKey),
+				speciesOptions_.push_back(
+				    { speciesId, st.GetString(nameKey),
 				      st.GetString(descKey) });
 			}
 		}
 
 		// Fall back if nothing loaded
-		if (raceOptions_.empty()) {
-			std::cerr
-			    << "[CharacterCreation] WARNING: No race options "
-			       "loaded from locale, using fallback"
-			    << std::endl;
-			raceOptions_.push_back(
+		if (speciesOptions_.empty()) {
+			std::cerr << "[CharacterCreation] WARNING: No species "
+			             "options "
+			             "loaded from locale, using fallback"
+			          << std::endl;
+			speciesOptions_.push_back(
 			    { "human", "Human", "Versatile and adaptable" });
-			raceOptions_.push_back(
-			    { "elf", "Elf", "Graceful and perceptive" });
-			raceOptions_.push_back(
+			speciesOptions_.push_back(
+			    { "elf", "Elf", "Gspeciesful and perceptive" });
+			speciesOptions_.push_back(
 			    { "dwarf", "Dwarf", "Sturdy and resilient" });
 		}
 	}
@@ -78,11 +73,6 @@ namespace tutorial
 	{
 		auto& st = StringTable::Instance();
 
-		// NOTE: class.en_US.json should be loaded by Engine after
-		// en_US.json TODO: Multi-language support - load
-		// class.<locale>.json based on current locale
-
-		// Load class order from locale
 		std::vector<std::string> classOrder = { "warrior", "rogue",
 			                                "mage" };
 
@@ -121,11 +111,6 @@ namespace tutorial
 	{
 		auto& st = StringTable::Instance();
 
-		// NOTE: stats.en_US.json should be loaded by Engine after
-		// en_US.json TODO: Multi-language support - load
-		// stats.<locale>.json based on current locale
-
-		// Initialize stats with base values
 		std::vector<std::string> statOrder = { "strength", "dexterity",
 			                               "intelligence" };
 
@@ -211,8 +196,8 @@ namespace tutorial
 
 		// Render current tab content
 		switch (currentTab_) {
-			case CreationTab::Race:
-				RenderRaceMenu(console_, width, height);
+			case CreationTab::Species:
+				RenderSpeciesMenu(console_, width, height);
 				break;
 			case CreationTab::Class:
 				RenderClassMenu(console_, width, height);
@@ -238,8 +223,8 @@ namespace tutorial
 		auto highlightColor = tcod::ColorRGB { 255, 200, 100 };
 
 		// Tab names
-		std::vector<std::string> tabNames = { "RACE", "CLASS", "STATS",
-			                              "CONFIRM" };
+		std::vector<std::string> tabNames = { "SPECIES", "CLASS",
+			                              "STATS", "CONFIRM" };
 
 		// Calculate tab positions (1/4 width each)
 		int tabY = menuStartY_ - 2;
@@ -274,16 +259,16 @@ namespace tutorial
 		}
 	}
 
-	void CharacterCreationWindow::RenderRaceMenu(TCOD_Console* console,
-	                                             int width,
-	                                             int /*height*/) const
+	void CharacterCreationWindow::RenderSpeciesMenu(TCOD_Console* console,
+	                                                int width,
+	                                                int /*height*/) const
 	{
 		auto& cfg = ConfigManager::Instance();
 		auto textColor = cfg.GetUITextColor();
 		auto highlightColor = tcod::ColorRGB { 255, 200, 100 };
 
 		// Draw title
-		std::string title = "Choose Your Race";
+		std::string title = "Choose Your Species";
 		int titleX = width / 2 - static_cast<int>(title.length()) / 2;
 		int titleY = menuStartY_ + 2;
 
@@ -299,13 +284,13 @@ namespace tutorial
 		                            .alignment = TCOD_LEFT },
 		    "%s", title.c_str());
 
-		// Draw race options
+		// Draw species options
 		int startY = menuStartY_ + 5;
-		for (size_t i = 0; i < raceOptions_.size(); ++i) {
+		for (size_t i = 0; i < speciesOptions_.size(); ++i) {
 			bool isSelected =
-			    (static_cast<int>(i) == raceMenuIndex_);
+			    (static_cast<int>(i) == speciesMenuIndex_);
 			bool isMarked =
-			    (static_cast<int>(i) == selectedRaceIndex_);
+			    (static_cast<int>(i) == selectedSpeciesIndex_);
 
 			tcod::ColorRGB color =
 			    isSelected ? highlightColor : textColor;
@@ -322,8 +307,8 @@ namespace tutorial
 			itemText += "(";
 			itemText += letter;
 			itemText += ") ";
-			itemText += raceOptions_[i].name + " - "
-			            + raceOptions_[i].description;
+			itemText += speciesOptions_[i].name + " - "
+			            + speciesOptions_[i].description;
 
 			int itemY = startY + static_cast<int>(i) * 2;
 			int itemX =
@@ -530,17 +515,19 @@ namespace tutorial
 		int startY = menuStartY_ + 5;
 		int currentY = startY;
 
-		// Race
-		if (selectedRaceIndex_ >= 0
-		    && selectedRaceIndex_
-		           < static_cast<int>(raceOptions_.size())) {
-			std::string raceText =
-			    "Race: " + raceOptions_[selectedRaceIndex_].name;
-			int raceX =
-			    width / 2 - static_cast<int>(raceText.length()) / 2;
+		// Species
+		if (selectedSpeciesIndex_ >= 0
+		    && selectedSpeciesIndex_
+		           < static_cast<int>(speciesOptions_.size())) {
+			std::string speciesText =
+			    "Species: "
+			    + speciesOptions_[selectedSpeciesIndex_].name;
+			int speciesX =
+			    width / 2
+			    - static_cast<int>(speciesText.length()) / 2;
 			TCOD_printf_rgb(
 			    console,
-			    (TCOD_PrintParamsRGB) { .x = raceX,
+			    (TCOD_PrintParamsRGB) { .x = speciesX,
 			                            .y = currentY,
 			                            .width = 0,
 			                            .height = 0,
@@ -548,7 +535,7 @@ namespace tutorial
 			                            .bg = NULL,
 			                            .flag = TCOD_BKGND_NONE,
 			                            .alignment = TCOD_LEFT },
-			    "%s", raceText.c_str());
+			    "%s", speciesText.c_str());
 			currentY += 2;
 		}
 
@@ -635,14 +622,14 @@ namespace tutorial
 	void CharacterCreationWindow::SelectPrevious()
 	{
 		switch (currentTab_) {
-			case CreationTab::Race:
-				if (!raceOptions_.empty()) {
-					raceMenuIndex_ =
-					    (raceMenuIndex_ - 1
+			case CreationTab::Species:
+				if (!speciesOptions_.empty()) {
+					speciesMenuIndex_ =
+					    (speciesMenuIndex_ - 1
 					     + static_cast<int>(
-					         raceOptions_.size()))
+					         speciesOptions_.size()))
 					    % static_cast<int>(
-					        raceOptions_.size());
+					        speciesOptions_.size());
 				}
 				break;
 
@@ -675,12 +662,12 @@ namespace tutorial
 	void CharacterCreationWindow::SelectNext()
 	{
 		switch (currentTab_) {
-			case CreationTab::Race:
-				if (!raceOptions_.empty()) {
-					raceMenuIndex_ =
-					    (raceMenuIndex_ + 1)
+			case CreationTab::Species:
+				if (!speciesOptions_.empty()) {
+					speciesMenuIndex_ =
+					    (speciesMenuIndex_ + 1)
 					    % static_cast<int>(
-					        raceOptions_.size());
+					        speciesOptions_.size());
 				}
 				break;
 
@@ -717,12 +704,13 @@ namespace tutorial
 		int index = letter - 'a';
 
 		switch (currentTab_) {
-			case CreationTab::Race:
+			case CreationTab::Species:
 				if (index >= 0
 				    && index < static_cast<int>(
-				           raceOptions_.size())) {
-					raceMenuIndex_ = index;
-					selectedRaceIndex_ = index; // Mark it
+				           speciesOptions_.size())) {
+					speciesMenuIndex_ = index;
+					selectedSpeciesIndex_ =
+					    index; // Mark it
 					return true;
 				}
 				break;
@@ -749,13 +737,15 @@ namespace tutorial
 	void CharacterCreationWindow::ConfirmSelection()
 	{
 		switch (currentTab_) {
-			case CreationTab::Race:
+			case CreationTab::Species:
 				// If already marked, advance to next tab
-				if (selectedRaceIndex_ == raceMenuIndex_) {
+				if (selectedSpeciesIndex_
+				    == speciesMenuIndex_) {
 					SelectNextTab();
 				} else {
 					// Mark the selection
-					selectedRaceIndex_ = raceMenuIndex_;
+					selectedSpeciesIndex_ =
+					    speciesMenuIndex_;
 				}
 				break;
 
@@ -806,7 +796,7 @@ namespace tutorial
 
 	bool CharacterCreationWindow::IsReadyToConfirm() const
 	{
-		return selectedRaceIndex_ >= 0 && selectedClassIndex_ >= 0;
+		return selectedSpeciesIndex_ >= 0 && selectedClassIndex_ >= 0;
 	}
 
 } // namespace tutorial

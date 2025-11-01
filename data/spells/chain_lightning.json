@@ -1,6 +1,6 @@
 {
 	"name": "Chain Lightning",
-	"manaCost": 0,
+	"manaCost": 5,
 	"effect": "damage",
 	"effectParams": {
 		"amount": 8,

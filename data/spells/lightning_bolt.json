@@ -1,6 +1,6 @@
 {
 	"name": "Lightning Bolt",
-	"manaCost": 0,
+	"manaCost": 2,
 	"effect": "damage",
 	"effectParams": {
 		"amount": 20,

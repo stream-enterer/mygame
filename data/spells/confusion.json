@@ -1,6 +1,6 @@
 {
 	"name": "Confusion",
-	"manaCost": 0,
+	"manaCost": 3,
 	"effect": "ai_change",
 	"effectParams": {
 		"message": "messages.effects.confusion.success"

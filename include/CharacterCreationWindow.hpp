@@ -13,7 +13,12 @@
 
 namespace tutorial
 {
-	enum class CreationTab { Race = 0, Class = 1, Stats = 2, Confirm = 3 };
+	enum class CreationTab {
+		Species = 0,
+		Class = 1,
+		Stats = 2,
+		Confirm = 3
+	};
 
 	struct CreationOption {
 		std::string id;
@@ -51,13 +56,13 @@ namespace tutorial
 		void SelectNext();
 		bool SelectByLetter(char letter);
 
-		// Confirm current selection (for Race/Class tabs)
+		// Confirm current selection (for Species/Class tabs)
 		void ConfirmSelection();
 
 		// Get current selections
-		int GetSelectedRaceIndex() const
+		int GetSelectedSpeciesIndex() const
 		{
-			return selectedRaceIndex_;
+			return selectedSpeciesIndex_;
 		}
 		int GetSelectedClassIndex() const
 		{
@@ -76,13 +81,13 @@ namespace tutorial
 		bool IsReadyToConfirm() const;
 
 	private:
-		void LoadRaceOptions();
+		void LoadSpeciesOptions();
 		void LoadClassOptions();
 		void InitializeStats();
 
 		void RenderTabs(TCOD_Console* console, int width) const;
-		void RenderRaceMenu(TCOD_Console* console, int width,
-		                    int height) const;
+		void RenderSpeciesMenu(TCOD_Console* console, int width,
+		                       int height) const;
 		void RenderClassMenu(TCOD_Console* console, int width,
 		                     int height) const;
 		void RenderStatsMenu(TCOD_Console* console, int width,
@@ -92,10 +97,10 @@ namespace tutorial
 
 		CreationTab currentTab_;
 
-		// Race options
-		std::vector<CreationOption> raceOptions_;
-		int raceMenuIndex_;
-		int selectedRaceIndex_;
+		// Species options
+		std::vector<CreationOption> speciesOptions_;
+		int speciesMenuIndex_;
+		int selectedSpeciesIndex_;
 
 		// Class options
 		std::vector<CreationOption> classOptions_;

@@ -1,6 +1,6 @@
 {
 	"name": "Fireball",
-	"manaCost": 0,
+	"manaCost": 4,
 	"effect": "damage",
 	"effectParams": {
 		"amount": 25,
