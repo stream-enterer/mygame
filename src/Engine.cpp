@@ -629,6 +629,20 @@ namespace tutorial
 		}
 	}
 
+	void Engine::GridNavigateLeft()
+	{
+		if (characterCreationWindow_) {
+			characterCreationWindow_->SelectLeft();
+		}
+	}
+
+	void Engine::GridNavigateRight()
+	{
+		if (characterCreationWindow_) {
+			characterCreationWindow_->SelectRight();
+		}
+	}
+
 	void Engine::MenuSelectByLetter(char letter)
 	{
 		if (menuWindow_) {

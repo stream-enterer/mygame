@@ -13,21 +13,33 @@ namespace tutorial
 	                                                 pos_t pos)
 	    : UiWindowBase(width, height, pos),
 	      currentTab_(CreationTab::Species),
-	      speciesMenuIndex_(0),
+	      speciesOptions_(),
+	      speciesGrid_(
+	          ConfigManager::Instance().GetCharacterCreationGridColumns(),
+	          ConfigManager::Instance()
+	              .GetCharacterCreationGridItemsPerColumn(),
+	          0),
 	      selectedSpeciesIndex_(-1),
-	      classMenuIndex_(0),
+	      classOptions_(),
+	      classGrid_(
+	          ConfigManager::Instance().GetCharacterCreationGridColumns(),
+	          ConfigManager::Instance()
+	              .GetCharacterCreationGridItemsPerColumn(),
+	          0),
 	      selectedClassIndex_(-1),
+	      stats_(),
 	      statsMenuIndex_(0),
 	      availablePoints_(10)
 	{
-		// Calculate central menu area (same position as before)
-		int centerWidth = 50;
-		int centerHeight = 25;
-		menuWidth_ = centerWidth;
-		menuHeight_ = centerHeight;
+		// Load menu dimensions from config
+		auto& cfg = ConfigManager::Instance();
+		menuWidth_ = cfg.GetCharacterCreationMenuWidth();
+		menuHeight_ = cfg.GetCharacterCreationMenuHeight();
+
+		// Center the menu on screen
 		menuPos_ =
-		    pos_t { static_cast<int>(width) / 2 - centerWidth / 2,
-			    static_cast<int>(height) / 2 - centerHeight / 2 };
+		    pos_t { static_cast<int>(width) / 2 - menuWidth_ / 2,
+			    static_cast<int>(height) / 2 - menuHeight_ / 2 };
 		menuStartY_ = menuPos_.y;
 
 		LoadSpeciesOptions();
@@ -46,6 +58,13 @@ namespace tutorial
 			                            species.description });
 		}
 
+		// Update grid with actual item count
+		speciesGrid_ = GridNavigator(
+		    ConfigManager::Instance().GetCharacterCreationGridColumns(),
+		    ConfigManager::Instance()
+		        .GetCharacterCreationGridItemsPerColumn(),
+		    static_cast<int>(speciesOptions_.size()));
+
 		std::cout << "[CharacterCreation] Loaded "
 		          << speciesOptions_.size()
 		          << " species from LocaleManager" << std::endl;
@@ -61,6 +80,13 @@ namespace tutorial
 			classOptions_.push_back(
 			    { cls.name, cls.name, cls.description });
 		}
+
+		// Update grid with actual item count
+		classGrid_ = GridNavigator(
+		    ConfigManager::Instance().GetCharacterCreationGridColumns(),
+		    ConfigManager::Instance()
+		        .GetCharacterCreationGridItemsPerColumn(),
+		    static_cast<int>(classOptions_.size()));
 
 		std::cout << "[CharacterCreation] Loaded "
 		          << classOptions_.size()
@@ -84,21 +110,7 @@ namespace tutorial
 			std::string desc =
 			    st.Has(descKey) ? st.GetString(descKey) : "";
 
-			stats_.push_back({ statId, name, desc, 10 }); // Base 10
-		}
-
-		// Fall back if nothing loaded
-		if (stats_.empty()) {
-			std::cerr
-			    << "[CharacterCreation] WARNING: No stats loaded "
-			       "from locale, using fallback"
-			    << std::endl;
-			stats_.push_back(
-			    { "strength", "Strength", "Physical power", 10 });
-			stats_.push_back({ "dexterity", "Dexterity",
-			                   "Agility and reflexes", 10 });
-			stats_.push_back({ "intelligence", "Intelligence",
-			                   "Magical aptitude", 10 });
+			stats_.push_back({ statId, name, desc, 8 });
 		}
 	}
 
@@ -108,53 +120,22 @@ namespace tutorial
 			return;
 		}
 
-		auto& cfg = ConfigManager::Instance();
-		auto frameColor = cfg.GetUIFrameColor();
-
 		// Clear console
 		TCOD_console_clear(console_);
 
-		// Draw frame at screen edges
+		// Draw border
+		auto& cfg = ConfigManager::Instance();
+		auto frameColor = cfg.GetUIFrameColor();
+		DrawBorder(console_, frameColor);
+
+		// Get console dimensions for rendering
 		const int width = TCOD_console_get_width(console_);
 		const int height = TCOD_console_get_height(console_);
 
-		// Draw corners
-		TCOD_console_put_rgb(console_, 0, 0, 0x2219, &frameColor, NULL,
-		                     TCOD_BKGND_SET); // Top-left: ∙
-		TCOD_console_put_rgb(console_, width - 1, 0, 0x2219,
-		                     &frameColor, NULL,
-		                     TCOD_BKGND_SET); // Top-right: ∙
-		TCOD_console_put_rgb(console_, 0, height - 1, 0x2219,
-		                     &frameColor, NULL,
-		                     TCOD_BKGND_SET); // Bottom-left: ∙
-		TCOD_console_put_rgb(console_, width - 1, height - 1, 0x2219,
-		                     &frameColor, NULL,
-		                     TCOD_BKGND_SET); // Bottom-right: ∙
-
-		// Draw horizontal edges
-		for (int x = 1; x < width - 1; ++x) {
-			TCOD_console_put_rgb(console_, x, 0, 0x2550,
-			                     &frameColor, NULL,
-			                     TCOD_BKGND_SET); // Top: ═
-			TCOD_console_put_rgb(console_, x, height - 1, 0x2550,
-			                     &frameColor, NULL,
-			                     TCOD_BKGND_SET); // Bottom: ═
-		}
-
-		// Draw vertical edges
-		for (int y = 1; y < height - 1; ++y) {
-			TCOD_console_put_rgb(console_, 0, y, 0x2551,
-			                     &frameColor, NULL,
-			                     TCOD_BKGND_SET); // Left: ║
-			TCOD_console_put_rgb(console_, width - 1, y, 0x2551,
-			                     &frameColor, NULL,
-			                     TCOD_BKGND_SET); // Right: ║
-		}
-
-		// Render tabs
+		// Render tabs at top
 		RenderTabs(console_, width);
 
-		// Render current tab content
+		// Render content based on current tab
 		switch (currentTab_) {
 			case CreationTab::Species:
 				RenderSpeciesMenu(console_, width, height);
@@ -186,18 +167,19 @@ namespace tutorial
 		std::vector<std::string> tabNames = { "SPECIES", "CLASS",
 			                              "STATS", "CONFIRM" };
 
-		// Calculate tab positions (1/4 width each)
-		int tabY = menuStartY_ - 2;
+		// Calculate tab positions (evenly distributed)
 		int tabWidth = menuWidth_ / 4;
 		int tabStartX = menuPos_.x;
+		int tabY = menuStartY_;
 
-		for (size_t i = 0; i < tabNames.size(); ++i) {
+		for (std::size_t i = 0; i < tabNames.size(); ++i) {
 			const std::string& name = tabNames[i];
-			bool isSelected = (static_cast<int>(i)
-			                   == static_cast<int>(currentTab_));
+			bool isActive = (static_cast<int>(i)
+			                 == static_cast<int>(currentTab_));
 
+			// Choose color based on whether this is the active tab
 			tcod::ColorRGB color =
-			    isSelected ? highlightColor : textColor;
+			    isActive ? highlightColor : textColor;
 
 			// Calculate center position for this tab
 			int tabX = tabStartX + static_cast<int>(i) * tabWidth;
@@ -220,139 +202,492 @@ namespace tutorial
 	}
 
 	void CharacterCreationWindow::RenderSpeciesMenu(TCOD_Console* console,
-	                                                int width,
+	                                                int /*width*/,
 	                                                int /*height*/) const
 	{
-		auto& cfg = ConfigManager::Instance();
-		auto textColor = cfg.GetUITextColor();
-
-		// Draw title
-		std::string title = "Choose Your Species";
-		int titleX = width / 2 - static_cast<int>(title.length()) / 2;
-		int titleY = menuStartY_ + 2;
-
-		TCOD_printf_rgb(
-		    console,
-		    (TCOD_PrintParamsRGB) { .x = titleX,
-		                            .y = titleY,
-		                            .width = 0,
-		                            .height = 0,
-		                            .fg = &textColor,
-		                            .bg = NULL,
-		                            .flag = TCOD_BKGND_NONE,
-		                            .alignment = TCOD_LEFT },
-		    "%s", title.c_str());
-
-		// Calculate bounds based on tab labels
-		// Left: Start of 'S' in "SPECIES" (position 3 from tab
-		// rendering) Right: Position of 'M' in "CONFIRM"
-		int tabStartX = menuPos_.x;
-		int leftBound = tabStartX;
-		int rightBound = tabStartX + (menuWidth_ / 4) * 3
-		                 + 6; // Approximately to 'M' in CONFIRM
+		// Content bounds: full menu width
+		int leftBound = menuPos_.x;
+		int rightBound = menuPos_.x + menuWidth_;
 
 		// Render three-column species list
-		int currentY = menuStartY_ + 5;
-		RenderThreeColumnList(console, speciesOptions_,
-		                      speciesMenuIndex_, leftBound, rightBound,
-		                      currentY);
+		int currentY = menuStartY_ + 2;
+		RenderThreeColumnList(
+		    console, speciesOptions_, speciesGrid_.GetIndex(),
+		    selectedSpeciesIndex_, leftBound, rightBound, currentY);
 
 		// Add line break
 		currentY += 2;
 
 		// Render description for currently highlighted species
-		if (speciesMenuIndex_ >= 0
-		    && speciesMenuIndex_
+		if (speciesGrid_.GetIndex() >= 0
+		    && speciesGrid_.GetIndex()
 		           < static_cast<int>(speciesOptions_.size())) {
 			const std::string& description =
-			    speciesOptions_[speciesMenuIndex_].description;
+			    speciesOptions_[speciesGrid_.GetIndex()]
+			        .description;
 			RenderDescriptionBlock(console, description, leftBound,
 			                       rightBound, currentY);
 		}
 	}
 
 	void CharacterCreationWindow::RenderClassMenu(TCOD_Console* console,
-	                                              int width,
+	                                              int /*width*/,
 	                                              int /*height*/) const
 	{
-		auto& cfg = ConfigManager::Instance();
-		auto textColor = cfg.GetUITextColor();
-
-		// Draw title
-		std::string title = "Choose Your Class";
-		int titleX = width / 2 - static_cast<int>(title.length()) / 2;
-		int titleY = menuStartY_ + 2;
-
-		TCOD_printf_rgb(
-		    console,
-		    (TCOD_PrintParamsRGB) { .x = titleX,
-		                            .y = titleY,
-		                            .width = 0,
-		                            .height = 0,
-		                            .fg = &textColor,
-		                            .bg = NULL,
-		                            .flag = TCOD_BKGND_NONE,
-		                            .alignment = TCOD_LEFT },
-		    "%s", title.c_str());
-
-		// Calculate bounds (same as species menu)
-		int tabStartX = menuPos_.x;
-		int leftBound = tabStartX;
-		int rightBound = tabStartX + (menuWidth_ / 4) * 3 + 6;
+		// Content bounds: full menu width
+		int leftBound = menuPos_.x;
+		int rightBound = menuPos_.x + menuWidth_;
 
 		// Render three-column class list
-		int currentY = menuStartY_ + 5;
-		RenderThreeColumnList(console, classOptions_, classMenuIndex_,
-		                      leftBound, rightBound, currentY);
+		int currentY = menuStartY_ + 2;
+		RenderThreeColumnList(
+		    console, classOptions_, classGrid_.GetIndex(),
+		    selectedClassIndex_, leftBound, rightBound, currentY);
 
 		// Add line break
 		currentY += 2;
 
 		// Render description for currently highlighted class
-		if (classMenuIndex_ >= 0
-		    && classMenuIndex_
+		if (classGrid_.GetIndex() >= 0
+		    && classGrid_.GetIndex()
 		           < static_cast<int>(classOptions_.size())) {
 			const std::string& description =
-			    classOptions_[classMenuIndex_].description;
+			    classOptions_[classGrid_.GetIndex()].description;
 			RenderDescriptionBlock(console, description, leftBound,
 			                       rightBound, currentY);
 		}
 	}
 
-	void CharacterCreationWindow::RenderStatsMenu(TCOD_Console* console,
-	                                              int width,
-	                                              int /*height*/) const
+	void CharacterCreationWindow::SelectNextTab()
+	{
+		int tabIndex = static_cast<int>(currentTab_);
+		tabIndex = (tabIndex + 1) % 4;
+		currentTab_ = static_cast<CreationTab>(tabIndex);
+	}
+
+	void CharacterCreationWindow::SelectPreviousTab()
+	{
+		int tabIndex = static_cast<int>(currentTab_);
+		tabIndex = (tabIndex - 1 + 4) % 4;
+		currentTab_ = static_cast<CreationTab>(tabIndex);
+	}
+
+	void CharacterCreationWindow::SelectTab(CreationTab tab)
+	{
+		currentTab_ = tab;
+	}
+
+	void CharacterCreationWindow::SelectPrevious()
+	{
+		switch (currentTab_) {
+			case CreationTab::Species:
+				speciesGrid_.MoveUp();
+				break;
+
+			case CreationTab::Class:
+				classGrid_.MoveUp();
+				break;
+
+			case CreationTab::Stats:
+				if (!stats_.empty()) {
+					statsMenuIndex_ =
+					    (statsMenuIndex_ - 1
+					     + static_cast<int>(stats_.size()))
+					    % static_cast<int>(stats_.size());
+				}
+				break;
+
+			case CreationTab::Confirm:
+				// No navigation in confirm tab
+				break;
+		}
+	}
+
+	void CharacterCreationWindow::SelectNext()
+	{
+		switch (currentTab_) {
+			case CreationTab::Species:
+				speciesGrid_.MoveDown();
+				break;
+
+			case CreationTab::Class:
+				classGrid_.MoveDown();
+				break;
+
+			case CreationTab::Stats:
+				if (!stats_.empty()) {
+					statsMenuIndex_ =
+					    (statsMenuIndex_ + 1)
+					    % static_cast<int>(stats_.size());
+				}
+				break;
+
+			case CreationTab::Confirm:
+				// No navigation in confirm tab
+				break;
+		}
+	}
+
+	void CharacterCreationWindow::SelectLeft()
+	{
+		switch (currentTab_) {
+			case CreationTab::Species:
+				speciesGrid_.MoveLeft();
+				break;
+
+			case CreationTab::Class:
+				classGrid_.MoveLeft();
+				break;
+
+			case CreationTab::Stats:
+				DecrementStat();
+				break;
+
+			case CreationTab::Confirm:
+				// No left/right navigation in confirm tab
+				break;
+		}
+	}
+
+	void CharacterCreationWindow::SelectRight()
+	{
+		switch (currentTab_) {
+			case CreationTab::Species:
+				speciesGrid_.MoveRight();
+				break;
+
+			case CreationTab::Class:
+				classGrid_.MoveRight();
+				break;
+
+			case CreationTab::Stats:
+				IncrementStat();
+				break;
+
+			case CreationTab::Confirm:
+				// No left/right navigation in confirm tab
+				break;
+		}
+	}
+
+	bool CharacterCreationWindow::SelectByLetter(char letter)
+	{
+		// Convert to lowercase
+		if (letter >= 'A' && letter <= 'Z') {
+			letter = letter - 'A' + 'a';
+		}
+
+		int index = letter - 'a';
+
+		switch (currentTab_) {
+			case CreationTab::Species:
+				if (index >= 0
+				    && index < static_cast<int>(
+				           speciesOptions_.size())) {
+					speciesGrid_.SetIndex(index);
+					selectedSpeciesIndex_ =
+					    index; // Mark it
+					return true;
+				}
+				break;
+
+			case CreationTab::Class:
+				if (index >= 0
+				    && index < static_cast<int>(
+				           classOptions_.size())) {
+					classGrid_.SetIndex(index);
+					selectedClassIndex_ = index; // Mark it
+					return true;
+				}
+				break;
+
+			case CreationTab::Stats:
+			case CreationTab::Confirm:
+				// No letter selection in these tabs
+				break;
+		}
+
+		return false;
+	}
+
+	void CharacterCreationWindow::ConfirmSelection()
+	{
+		switch (currentTab_) {
+			case CreationTab::Species:
+				// If already marked, advance to next tab
+				if (selectedSpeciesIndex_
+				    == speciesGrid_.GetIndex()) {
+					SelectNextTab();
+				} else {
+					// Mark the selection
+					selectedSpeciesIndex_ =
+					    speciesGrid_.GetIndex();
+				}
+				break;
+
+			case CreationTab::Class:
+				// If already marked, advance to next tab
+				if (selectedClassIndex_
+				    == classGrid_.GetIndex()) {
+					SelectNextTab();
+				} else {
+					// Mark the selection
+					selectedClassIndex_ =
+					    classGrid_.GetIndex();
+				}
+				break;
+
+			case CreationTab::Stats:
+				// Stats don't get "confirmed" - just advance
+				SelectNextTab();
+				break;
+
+			case CreationTab::Confirm:
+				// Handled by Engine
+				break;
+		}
+	}
+
+	void CharacterCreationWindow::IncrementStat()
+	{
+		if (currentTab_ != CreationTab::Stats || stats_.empty()) {
+			return;
+		}
+
+		if (availablePoints_ > 0) {
+			stats_[statsMenuIndex_].value++;
+			availablePoints_--;
+		}
+	}
+
+	void CharacterCreationWindow::DecrementStat()
+	{
+		if (currentTab_ != CreationTab::Stats || stats_.empty()) {
+			return;
+		}
+
+		if (stats_[statsMenuIndex_].value > 1) {
+			stats_[statsMenuIndex_].value--;
+			availablePoints_++;
+		}
+	}
+
+	void CharacterCreationWindow::RenderThreeColumnList(
+	    TCOD_Console* console, const std::vector<CreationOption>& items,
+	    int highlightIndex, int selectedIndex, int leftBound,
+	    int rightBound, int& currentY) const
 	{
 		auto& cfg = ConfigManager::Instance();
 		auto textColor = cfg.GetUITextColor();
 		auto highlightColor = tcod::ColorRGB { 255, 200, 100 };
 
-		// Draw title
-		std::string title = "Allocate Stat Points";
-		int titleX = width / 2 - static_cast<int>(title.length()) / 2;
-		int titleY = menuStartY_ + 2;
+		const int totalWidth = rightBound - leftBound;
+		const int columnWidth = totalWidth / 3;
+		const int itemsPerColumn = 4;
 
-		TCOD_printf_rgb(
-		    console,
-		    (TCOD_PrintParamsRGB) { .x = titleX,
-		                            .y = titleY,
-		                            .width = 0,
-		                            .height = 0,
-		                            .fg = &textColor,
-		                            .bg = NULL,
-		                            .flag = TCOD_BKGND_NONE,
-		                            .alignment = TCOD_LEFT },
-		    "%s", title.c_str());
+		int maxY = currentY;
+
+		for (int col = 0; col < 3; ++col) {
+			int colX = leftBound + (col * columnWidth);
+			int colY = currentY;
+
+			for (int row = 0; row < itemsPerColumn; ++row) {
+				int itemIndex = (col * itemsPerColumn) + row;
+				if (itemIndex
+				    >= static_cast<int>(items.size())) {
+					break;
+				}
+
+				// Convert index to letter (0='a', 1='b', etc.)
+				char letter = 'a' + itemIndex;
+
+				// Truncate name if it exceeds column width
+				// Reserve 5 chars for "*(x) " prefix
+				int maxNameWidth = columnWidth - 6;
+				std::string displayName = items[itemIndex].name;
+				if (static_cast<int>(displayName.length())
+				    > maxNameWidth) {
+					// HARD CUT: Truncate name without
+					// ellipsis
+					displayName =
+					    displayName.substr(0, maxNameWidth);
+				}
+
+				// Add asterisk prefix if this item is confirmed
+				std::string prefix =
+				    (itemIndex == selectedIndex) ? "*" : " ";
+				std::string line = prefix + "("
+				                   + std::string(1, letter)
+				                   + ") " + displayName;
+
+				// Highlight if this is the currently
+				// highlighted item
+				tcod::ColorRGB color =
+				    (itemIndex == highlightIndex)
+				        ? highlightColor
+				        : textColor;
+
+				TCOD_printf_rgb(console,
+				                (TCOD_PrintParamsRGB) {
+				                    .x = colX,
+				                    .y = colY,
+				                    .width = 0,
+				                    .height = 0,
+				                    .fg = &color,
+				                    .bg = NULL,
+				                    .flag = TCOD_BKGND_NONE,
+				                    .alignment = TCOD_LEFT },
+				                "%s", line.c_str());
+
+				colY += 1;
+				if (colY > maxY) {
+					maxY = colY;
+				}
+			}
+		}
+
+		currentY = maxY;
+	}
+
+	void CharacterCreationWindow::RenderDescriptionBlock(
+	    TCOD_Console* console, const std::string& description,
+	    int leftBound, int rightBound, int startY) const
+	{
+		auto& cfg = ConfigManager::Instance();
+		auto textColor = cfg.GetUITextColor();
+
+		int maxWidth = rightBound - leftBound;
+		std::string wrappedText = WrapText(description, maxWidth);
+
+		int currentY = startY;
+		std::string line;
+		for (char c : wrappedText) {
+			if (c == '\n') {
+				TCOD_printf_rgb(console,
+				                (TCOD_PrintParamsRGB) {
+				                    .x = leftBound,
+				                    .y = currentY,
+				                    .width = 0,
+				                    .height = 0,
+				                    .fg = &textColor,
+				                    .bg = NULL,
+				                    .flag = TCOD_BKGND_NONE,
+				                    .alignment = TCOD_LEFT },
+				                "%s", line.c_str());
+				line.clear();
+				currentY++;
+			} else {
+				line += c;
+			}
+		}
+
+		// Print remaining line if any
+		if (!line.empty()) {
+			TCOD_printf_rgb(
+			    console,
+			    (TCOD_PrintParamsRGB) { .x = leftBound,
+			                            .y = currentY,
+			                            .width = 0,
+			                            .height = 0,
+			                            .fg = &textColor,
+			                            .bg = NULL,
+			                            .flag = TCOD_BKGND_NONE,
+			                            .alignment = TCOD_LEFT },
+			    "%s", line.c_str());
+		}
+	}
+
+	std::string CharacterCreationWindow::WrapText(const std::string& text,
+	                                              int maxWidth) const
+	{
+		std::string result;
+		std::string currentLine;
+		std::string currentWord;
+
+		for (char c : text) {
+			if (c == ' ' || c == '\n') {
+				// Process the word we've accumulated
+				if (!currentWord.empty()) {
+					// Check if adding this word would
+					// exceed width
+					int potentialLength =
+					    static_cast<int>(
+					        currentLine.length())
+					    + (currentLine.empty() ? 0 : 1)
+					    + static_cast<int>(
+					        currentWord.length());
+
+					if (potentialLength > maxWidth
+					    && !currentLine.empty()) {
+						// Start new line
+						result += currentLine + '\n';
+						currentLine = currentWord;
+					} else {
+						// Add to current line
+						if (!currentLine.empty()) {
+							currentLine += ' ';
+						}
+						currentLine += currentWord;
+					}
+
+					currentWord.clear();
+				}
+
+				// Handle explicit newlines
+				if (c == '\n') {
+					result += currentLine + '\n';
+					currentLine.clear();
+				}
+			} else {
+				currentWord += c;
+			}
+		}
+
+		// Process final word
+		if (!currentWord.empty()) {
+			int potentialLength =
+			    static_cast<int>(currentLine.length())
+			    + (currentLine.empty() ? 0 : 1)
+			    + static_cast<int>(currentWord.length());
+
+			if (potentialLength > maxWidth
+			    && !currentLine.empty()) {
+				result += currentLine + '\n';
+				currentLine = currentWord;
+			} else {
+				if (!currentLine.empty()) {
+					currentLine += ' ';
+				}
+				currentLine += currentWord;
+			}
+		}
+
+		// Add final line
+		if (!currentLine.empty()) {
+			result += currentLine;
+		}
+
+		return result;
+	}
+
+	void CharacterCreationWindow::RenderStatsMenu(TCOD_Console* console,
+	                                              int width,
+	                                              int height) const
+	{
+		auto& cfg = ConfigManager::Instance();
+		auto textColor = cfg.GetUITextColor();
+		auto highlightColor = tcod::ColorRGB { 255, 200, 100 };
 
 		// Show available points
+		int currentY = menuStartY_ + 5;
 		std::string pointsText =
-		    "Available Points: " + std::to_string(availablePoints_);
+		    "Points Available: " + std::to_string(availablePoints_);
 		int pointsX =
 		    width / 2 - static_cast<int>(pointsText.length()) / 2;
 		TCOD_printf_rgb(
 		    console,
 		    (TCOD_PrintParamsRGB) { .x = pointsX,
-		                            .y = titleY + 1,
+		                            .y = currentY,
 		                            .width = 0,
 		                            .height = 0,
 		                            .fg = &textColor,
@@ -361,57 +696,74 @@ namespace tutorial
 		                            .alignment = TCOD_LEFT },
 		    "%s", pointsText.c_str());
 
-		// Draw stats
-		int startY = menuStartY_ + 6;
-		for (size_t i = 0; i < stats_.size(); ++i) {
-			bool isSelected =
+		currentY += 3;
+
+		// Render stat list
+		for (std::size_t i = 0; i < stats_.size(); ++i) {
+			const auto& stat = stats_[i];
+			bool isHighlighted =
 			    (static_cast<int>(i) == statsMenuIndex_);
 
 			tcod::ColorRGB color =
-			    isSelected ? highlightColor : textColor;
+			    isHighlighted ? highlightColor : textColor;
 
-			std::string itemText =
-			    stats_[i].name + ": "
-			    + std::to_string(stats_[i].value);
-
-			int itemY = startY + static_cast<int>(i) * 2;
-			int itemX =
-			    width / 2 - static_cast<int>(itemText.length()) / 2;
+			std::string line =
+			    stat.name + ": " + std::to_string(stat.value);
+			int lineX =
+			    width / 2 - static_cast<int>(line.length()) / 2;
 
 			TCOD_printf_rgb(
 			    console,
-			    (TCOD_PrintParamsRGB) { .x = itemX,
-			                            .y = itemY,
+			    (TCOD_PrintParamsRGB) { .x = lineX,
+			                            .y = currentY,
 			                            .width = 0,
 			                            .height = 0,
 			                            .fg = &color,
 			                            .bg = NULL,
 			                            .flag = TCOD_BKGND_NONE,
 			                            .alignment = TCOD_LEFT },
-			    "%s", itemText.c_str());
+			    "%s", line.c_str());
+
+			currentY += 2;
 		}
 
-		// Instructions
-		std::string instructions = "Use +/- keys to adjust stats";
+		// Render description for currently highlighted stat
+		currentY += 1;
+		if (statsMenuIndex_ >= 0
+		    && statsMenuIndex_ < static_cast<int>(stats_.size())) {
+			const std::string& description =
+			    stats_[statsMenuIndex_].description;
+
+			int leftBound = menuPos_.x;
+			int rightBound = menuPos_.x + menuWidth_;
+
+			RenderDescriptionBlock(console, description, leftBound,
+			                       rightBound, currentY);
+		}
+
+		// Render instructions
+		currentY = height - 3;
+		std::string instructions =
+		    "UP/DOWN: Select | LEFT/RIGHT or +/-: Adjust | ENTER: "
+		    "Continue";
 		int instrX =
 		    width / 2 - static_cast<int>(instructions.length()) / 2;
 		TCOD_printf_rgb(
 		    console,
-		    (TCOD_PrintParamsRGB) {
-		        .x = instrX,
-		        .y = startY + static_cast<int>(stats_.size() * 2) + 2,
-		        .width = 0,
-		        .height = 0,
-		        .fg = &textColor,
-		        .bg = NULL,
-		        .flag = TCOD_BKGND_NONE,
-		        .alignment = TCOD_LEFT },
+		    (TCOD_PrintParamsRGB) { .x = instrX,
+		                            .y = currentY,
+		                            .width = 0,
+		                            .height = 0,
+		                            .fg = &textColor,
+		                            .bg = NULL,
+		                            .flag = TCOD_BKGND_NONE,
+		                            .alignment = TCOD_LEFT },
 		    "%s", instructions.c_str());
 	}
 
 	void CharacterCreationWindow::RenderConfirmMenu(TCOD_Console* console,
 	                                                int width,
-	                                                int /*height*/) const
+	                                                int height) const
 	{
 		auto& cfg = ConfigManager::Instance();
 		auto textColor = cfg.GetUITextColor();
@@ -484,6 +836,7 @@ namespace tutorial
 		}
 
 		// Stats
+		currentY += 1;
 		for (const auto& stat : stats_) {
 			std::string statText =
 			    stat.name + ": " + std::to_string(stat.value);
@@ -503,10 +856,10 @@ namespace tutorial
 			currentY += 1;
 		}
 
-		// Instructions
-		currentY += 2;
+		// Render instructions
+		currentY = height - 3;
 		std::string instructions =
-		    "Press Enter to begin your adventure!";
+		    "ENTER: Begin Adventure | ESC: Go Back";
 		int instrX =
 		    width / 2 - static_cast<int>(instructions.length()) / 2;
 		TCOD_printf_rgb(
@@ -520,335 +873,6 @@ namespace tutorial
 		                            .flag = TCOD_BKGND_NONE,
 		                            .alignment = TCOD_LEFT },
 		    "%s", instructions.c_str());
-	}
-
-	void CharacterCreationWindow::SelectNextTab()
-	{
-		int tabIndex = static_cast<int>(currentTab_);
-		tabIndex = (tabIndex + 1) % 4;
-		currentTab_ = static_cast<CreationTab>(tabIndex);
-	}
-
-	void CharacterCreationWindow::SelectPreviousTab()
-	{
-		int tabIndex = static_cast<int>(currentTab_);
-		tabIndex = (tabIndex - 1 + 4) % 4;
-		currentTab_ = static_cast<CreationTab>(tabIndex);
-	}
-
-	void CharacterCreationWindow::SelectTab(CreationTab tab)
-	{
-		currentTab_ = tab;
-	}
-
-	void CharacterCreationWindow::SelectPrevious()
-	{
-		switch (currentTab_) {
-			case CreationTab::Species:
-				if (!speciesOptions_.empty()) {
-					speciesMenuIndex_ =
-					    (speciesMenuIndex_ - 1
-					     + static_cast<int>(
-					         speciesOptions_.size()))
-					    % static_cast<int>(
-					        speciesOptions_.size());
-				}
-				break;
-
-			case CreationTab::Class:
-				if (!classOptions_.empty()) {
-					classMenuIndex_ =
-					    (classMenuIndex_ - 1
-					     + static_cast<int>(
-					         classOptions_.size()))
-					    % static_cast<int>(
-					        classOptions_.size());
-				}
-				break;
-
-			case CreationTab::Stats:
-				if (!stats_.empty()) {
-					statsMenuIndex_ =
-					    (statsMenuIndex_ - 1
-					     + static_cast<int>(stats_.size()))
-					    % static_cast<int>(stats_.size());
-				}
-				break;
-
-			case CreationTab::Confirm:
-				// No navigation in confirm tab
-				break;
-		}
-	}
-
-	void CharacterCreationWindow::SelectNext()
-	{
-		switch (currentTab_) {
-			case CreationTab::Species:
-				if (!speciesOptions_.empty()) {
-					speciesMenuIndex_ =
-					    (speciesMenuIndex_ + 1)
-					    % static_cast<int>(
-					        speciesOptions_.size());
-				}
-				break;
-
-			case CreationTab::Class:
-				if (!classOptions_.empty()) {
-					classMenuIndex_ =
-					    (classMenuIndex_ + 1)
-					    % static_cast<int>(
-					        classOptions_.size());
-				}
-				break;
-
-			case CreationTab::Stats:
-				if (!stats_.empty()) {
-					statsMenuIndex_ =
-					    (statsMenuIndex_ + 1)
-					    % static_cast<int>(stats_.size());
-				}
-				break;
-
-			case CreationTab::Confirm:
-				// No navigation in confirm tab
-				break;
-		}
-	}
-
-	bool CharacterCreationWindow::SelectByLetter(char letter)
-	{
-		// Convert to lowercase
-		if (letter >= 'A' && letter <= 'Z') {
-			letter = letter - 'A' + 'a';
-		}
-
-		int index = letter - 'a';
-
-		switch (currentTab_) {
-			case CreationTab::Species:
-				if (index >= 0
-				    && index < static_cast<int>(
-				           speciesOptions_.size())) {
-					speciesMenuIndex_ = index;
-					selectedSpeciesIndex_ =
-					    index; // Mark it
-					return true;
-				}
-				break;
-
-			case CreationTab::Class:
-				if (index >= 0
-				    && index < static_cast<int>(
-				           classOptions_.size())) {
-					classMenuIndex_ = index;
-					selectedClassIndex_ = index; // Mark it
-					return true;
-				}
-				break;
-
-			case CreationTab::Stats:
-			case CreationTab::Confirm:
-				// No letter selection in these tabs
-				break;
-		}
-
-		return false;
-	}
-
-	void CharacterCreationWindow::ConfirmSelection()
-	{
-		switch (currentTab_) {
-			case CreationTab::Species:
-				// If already marked, advance to next tab
-				if (selectedSpeciesIndex_
-				    == speciesMenuIndex_) {
-					SelectNextTab();
-				} else {
-					// Mark the selection
-					selectedSpeciesIndex_ =
-					    speciesMenuIndex_;
-				}
-				break;
-
-			case CreationTab::Class:
-				// If already marked, advance to next tab
-				if (selectedClassIndex_ == classMenuIndex_) {
-					SelectNextTab();
-				} else {
-					// Mark the selection
-					selectedClassIndex_ = classMenuIndex_;
-				}
-				break;
-
-			case CreationTab::Stats:
-				// Stats don't get "confirmed" - just advance
-				SelectNextTab();
-				break;
-
-			case CreationTab::Confirm:
-				// Handled by Engine
-				break;
-		}
-	}
-
-	void CharacterCreationWindow::IncrementStat()
-	{
-		if (currentTab_ != CreationTab::Stats || stats_.empty()) {
-			return;
-		}
-
-		if (availablePoints_ > 0) {
-			stats_[statsMenuIndex_].value++;
-			availablePoints_--;
-		}
-	}
-
-	void CharacterCreationWindow::DecrementStat()
-	{
-		if (currentTab_ != CreationTab::Stats || stats_.empty()) {
-			return;
-		}
-
-		if (stats_[statsMenuIndex_].value > 1) {
-			stats_[statsMenuIndex_].value--;
-			availablePoints_++;
-		}
-	}
-
-	void CharacterCreationWindow::RenderThreeColumnList(
-	    TCOD_Console* console, const std::vector<CreationOption>& items,
-	    int highlightIndex, int leftBound, int rightBound,
-	    int& currentY) const
-	{
-		auto& cfg = ConfigManager::Instance();
-		auto textColor = cfg.GetUITextColor();
-		auto highlightColor = tcod::ColorRGB { 255, 200, 100 };
-
-		const int totalWidth = rightBound - leftBound;
-		const int columnWidth = totalWidth / 3;
-		const int itemsPerColumn = 4;
-
-		int maxY = currentY;
-
-		for (int col = 0; col < 3; ++col) {
-			int colX = leftBound + (col * columnWidth);
-			int colY = currentY;
-
-			for (int row = 0; row < itemsPerColumn; ++row) {
-				int itemIndex = (col * itemsPerColumn) + row;
-				if (itemIndex
-				    >= static_cast<int>(items.size())) {
-					break;
-				}
-
-				// Convert index to letter (0='a', 1='b', etc.)
-				char letter = 'a' + itemIndex;
-
-				// Truncate name if it exceeds column width
-				// Reserve 4 chars for "(x) " prefix
-				int maxNameWidth = columnWidth - 5;
-				std::string displayName = items[itemIndex].name;
-				if (static_cast<int>(displayName.length())
-				    > maxNameWidth) {
-					// HARD CUT: Truncate name without
-					// ellipsis
-					displayName =
-					    displayName.substr(0, maxNameWidth);
-				}
-
-				std::string line = "(" + std::string(1, letter)
-				                   + ") " + displayName;
-
-				// Highlight if this is the selected item
-				tcod::ColorRGB color =
-				    (itemIndex == highlightIndex)
-				        ? highlightColor
-				        : textColor;
-
-				TCOD_printf_rgb(console,
-				                (TCOD_PrintParamsRGB) {
-				                    .x = colX,
-				                    .y = colY,
-				                    .width = 0,
-				                    .height = 0,
-				                    .fg = &color,
-				                    .bg = NULL,
-				                    .flag = TCOD_BKGND_NONE,
-				                    .alignment = TCOD_LEFT },
-				                "%s", line.c_str());
-
-				colY++;
-				maxY = std::max(maxY, colY);
-			}
-		}
-
-		currentY = maxY;
-	}
-
-	std::string CharacterCreationWindow::WrapText(const std::string& text,
-	                                              int maxWidth) const
-	{
-		if (maxWidth <= 0) return text;
-
-		std::string result;
-		std::string currentLine;
-		std::istringstream words(text);
-		std::string word;
-
-		while (words >> word) {
-			// Check if adding this word would exceed width
-			std::string testLine = currentLine.empty()
-			                           ? word
-			                           : currentLine + " " + word;
-
-			if (static_cast<int>(testLine.length()) <= maxWidth) {
-				currentLine = testLine;
-			} else {
-				// Flush current line and start new one
-				if (!currentLine.empty()) {
-					result += currentLine + "\n";
-				}
-				currentLine = word;
-			}
-		}
-
-		// Add remaining text
-		if (!currentLine.empty()) {
-			result += currentLine;
-		}
-
-		return result;
-	}
-
-	void CharacterCreationWindow::RenderDescriptionBlock(
-	    TCOD_Console* console, const std::string& description,
-	    int leftBound, int rightBound, int startY) const
-	{
-		auto& cfg = ConfigManager::Instance();
-		auto textColor = cfg.GetUITextColor();
-
-		int maxWidth = rightBound - leftBound;
-		std::string wrapped = WrapText(description, maxWidth);
-
-		std::istringstream lines(wrapped);
-		std::string line;
-		int y = startY;
-
-		while (std::getline(lines, line)) {
-			TCOD_printf_rgb(
-			    console,
-			    (TCOD_PrintParamsRGB) { .x = leftBound,
-			                            .y = y,
-			                            .width = 0,
-			                            .height = 0,
-			                            .fg = &textColor,
-			                            .bg = NULL,
-			                            .flag = TCOD_BKGND_NONE,
-			                            .alignment = TCOD_LEFT },
-			    "%s", line.c_str());
-			y++;
-		}
 	}
 
 	bool CharacterCreationWindow::IsReadyToConfirm() const

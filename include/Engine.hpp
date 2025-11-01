@@ -103,6 +103,8 @@ namespace tutorial
 		void MenuNavigateDown();
 		void MenuNavigateLeft();
 		void MenuNavigateRight();
+		void GridNavigateLeft();
+		void GridNavigateRight();
 		void MenuConfirm();
 		void MenuSelectByLetter(char letter);
 		void MenuIncrementStat();

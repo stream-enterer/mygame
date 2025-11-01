@@ -56,6 +56,12 @@ namespace tutorial
 		int GetInventoryWindowHeight() const;
 		bool GetInventoryCenterOnScreen() const;
 
+		// Character creation grid
+		int GetCharacterCreationGridColumns() const;
+		int GetCharacterCreationGridItemsPerColumn() const;
+		int GetCharacterCreationMenuWidth() const;
+		int GetCharacterCreationMenuHeight() const;
+
 		// UI colors
 		tcod::ColorRGB GetUIFrameColor() const;
 		tcod::ColorRGB GetUITextColor() const;

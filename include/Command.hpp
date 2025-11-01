@@ -144,6 +144,26 @@ namespace tutorial
 		}
 	};
 
+	class GridNavigateLeftCommand final : public Command
+	{
+	public:
+		void Execute(Engine& engine) override;
+		bool ConsumesTurn() override
+		{
+			return false;
+		}
+	};
+
+	class GridNavigateRightCommand final : public Command
+	{
+	public:
+		void Execute(Engine& engine) override;
+		bool ConsumesTurn() override
+		{
+			return false;
+		}
+	};
+
 	class MenuSelectLetterCommand final : public Command
 	{
 	public:

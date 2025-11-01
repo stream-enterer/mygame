@@ -17,13 +17,11 @@ namespace tutorial
 	{
 		TCOD_console_clear(console_);
 
-		// Draw frame
+		// Draw border
 		auto frameColor = ConfigManager::Instance().GetUIFrameColor();
-		// Draw frame and title separately (printf_frame is deprecated)
-		TCOD_console_draw_frame_rgb(
-		    console_, 0, 0, TCOD_console_get_width(console_),
-		    TCOD_console_get_height(console_), NULL, NULL, NULL,
-		    TCOD_BKGND_DEFAULT, true);
+		DrawBorder(console_, frameColor);
+
+		// Draw title
 		int titleX = (TCOD_console_get_width(console_)
 		              - static_cast<int>(title_.length()))
 		             / 2;

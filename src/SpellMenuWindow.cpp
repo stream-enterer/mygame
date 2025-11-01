@@ -18,12 +18,9 @@ namespace tutorial
 	{
 		TCOD_console_clear(console_);
 
-		// Draw frame
+		// Draw border
 		auto frameColor = ConfigManager::Instance().GetUIFrameColor();
-		TCOD_console_draw_frame_rgb(
-		    console_, 0, 0, TCOD_console_get_width(console_),
-		    TCOD_console_get_height(console_), NULL, NULL, NULL,
-		    TCOD_BKGND_DEFAULT, true);
+		DrawBorder(console_, frameColor);
 
 		// Draw title
 		std::string title = "Cast which spell?";

@@ -18,6 +18,14 @@
 			"center_on_screen": true
 		}
 	},
+	"character_creation": {
+		"menu_width": 50,
+		"menu_height": 25,
+		"grid": {
+			"columns": 3,
+			"items_per_column": 4
+		}
+	},
 	"colors": {
 		"health_bar_full": [0, 60, 0],
 		"health_bar_empty": [191, 0, 0],

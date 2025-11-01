@@ -1,6 +1,7 @@
 #ifndef CHARACTER_CREATION_WINDOW_HPP
 #define CHARACTER_CREATION_WINDOW_HPP
 
+#include "GridNavigator.hpp"
 #include "Position.hpp"
 #include "UiWindow.hpp"
 
@@ -54,6 +55,8 @@ namespace tutorial
 		// Menu navigation (within current tab)
 		void SelectPrevious();
 		void SelectNext();
+		void SelectLeft();
+		void SelectRight();
 		bool SelectByLetter(char letter);
 
 		// Confirm current selection (for Species/Class tabs)
@@ -93,8 +96,8 @@ namespace tutorial
 		void RenderThreeColumnList(
 		    TCOD_Console* console,
 		    const std::vector<CreationOption>& items,
-		    int highlightIndex, int leftBound, int rightBound,
-		    int& currentY) const;
+		    int highlightIndex, int selectedIndex, int leftBound,
+		    int rightBound, int& currentY) const;
 		void RenderDescriptionBlock(TCOD_Console* console,
 		                            const std::string& description,
 		                            int leftBound, int rightBound,
@@ -110,12 +113,12 @@ namespace tutorial
 
 		// Species options
 		std::vector<CreationOption> speciesOptions_;
-		int speciesMenuIndex_;
+		GridNavigator speciesGrid_;
 		int selectedSpeciesIndex_;
 
 		// Class options
 		std::vector<CreationOption> classOptions_;
-		int classMenuIndex_;
+		GridNavigator classGrid_;
 		int selectedClassIndex_;
 
 		// Stats

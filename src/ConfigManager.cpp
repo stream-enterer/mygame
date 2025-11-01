@@ -373,6 +373,58 @@ namespace tutorial
 		                    .get<bool>();
 	}
 
+	int ConfigManager::GetCharacterCreationGridColumns() const
+	{
+		if (!uiConfig_.contains("character_creation")
+		    || !uiConfig_["character_creation"].contains("grid")
+		    || !uiConfig_["character_creation"]["grid"].contains(
+		        "columns")) {
+			throw std::runtime_error(
+			    "ui.json missing "
+			    "character_creation.grid.columns");
+		}
+		return uiConfig_["character_creation"]["grid"]["columns"]
+		    .get<int>();
+	}
+
+	int ConfigManager::GetCharacterCreationGridItemsPerColumn() const
+	{
+		if (!uiConfig_.contains("character_creation")
+		    || !uiConfig_["character_creation"].contains("grid")
+		    || !uiConfig_["character_creation"]["grid"].contains(
+		        "items_per_column")) {
+			throw std::runtime_error(
+			    "ui.json missing "
+			    "character_creation.grid.items_per_column");
+		}
+		return uiConfig_["character_creation"]["grid"]
+		                ["items_per_column"]
+		                    .get<int>();
+	}
+
+	int ConfigManager::GetCharacterCreationMenuWidth() const
+	{
+		if (!uiConfig_.contains("character_creation")
+		    || !uiConfig_["character_creation"].contains(
+		        "menu_width")) {
+			throw std::runtime_error(
+			    "ui.json missing character_creation.menu_width");
+		}
+		return uiConfig_["character_creation"]["menu_width"].get<int>();
+	}
+
+	int ConfigManager::GetCharacterCreationMenuHeight() const
+	{
+		if (!uiConfig_.contains("character_creation")
+		    || !uiConfig_["character_creation"].contains(
+		        "menu_height")) {
+			throw std::runtime_error(
+			    "ui.json missing character_creation.menu_height");
+		}
+		return uiConfig_["character_creation"]["menu_height"]
+		    .get<int>();
+	}
+
 	tcod::ColorRGB ConfigManager::GetUIFrameColor() const
 	{
 		if (!uiConfig_.contains("colors")

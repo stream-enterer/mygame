@@ -377,18 +377,19 @@ namespace tutorial
 					    MenuNavigateDownCommand>();
 				}
 
-				// LEFT key or KP4 - navigate tabs left
+				// LEFT key or KP4 - navigate grid columns left
 				if (sdlKey == SDLK_LEFT
 				    || sdlKey == SDLK_KP_4) {
 					return std::make_unique<
-					    MenuNavigateLeftCommand>();
+					    GridNavigateLeftCommand>();
 				}
 
-				// RIGHT key or KP6 - navigate tabs right
+				// RIGHT key or KP6 - navigate grid columns
+				// right
 				if (sdlKey == SDLK_RIGHT
 				    || sdlKey == SDLK_KP_6) {
 					return std::make_unique<
-					    MenuNavigateRightCommand>();
+					    GridNavigateRightCommand>();
 				}
 
 				// Tab - cycle tabs forward, or backward if

@@ -78,6 +78,16 @@ namespace tutorial
 		engine.MenuNavigateRight();
 	}
 
+	void GridNavigateLeftCommand::Execute(Engine& engine)
+	{
+		engine.GridNavigateLeft();
+	}
+
+	void GridNavigateRightCommand::Execute(Engine& engine)
+	{
+		engine.GridNavigateRight();
+	}
+
 	void MenuSelectLetterCommand::Execute(Engine& engine)
 	{
 		engine.MenuSelectByLetter(letter_);

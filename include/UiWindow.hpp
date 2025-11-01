@@ -26,6 +26,9 @@ namespace tutorial
 		virtual void Render(TCOD_Console* parent) const;
 
 	protected:
+		void DrawBorder(TCOD_Console* console,
+		                const tcod::ColorRGB& frameColor) const;
+
 		TCOD_Console* console_;
 		pos_t pos_;
 	};

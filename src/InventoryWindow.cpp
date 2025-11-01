@@ -1,6 +1,7 @@
 #include "InventoryWindow.hpp"
 
 #include "Colors.hpp"
+#include "ConfigManager.hpp"
 #include "Engine.hpp"
 #include "Entity.hpp"
 
@@ -18,13 +19,12 @@ namespace tutorial
 	{
 		TCOD_console_clear(console_);
 
-		// Draw frame
-		tcod::ColorRGB frameColor = tcod::ColorRGB { 200, 180, 50 };
-		// Draw frame and title separately
-		TCOD_console_draw_frame_rgb(
-		    console_, 0, 0, TCOD_console_get_width(console_),
-		    TCOD_console_get_height(console_), NULL, NULL, NULL,
-		    TCOD_BKGND_DEFAULT, true);
+		// Draw border
+		auto& cfg = ConfigManager::Instance();
+		auto frameColor = cfg.GetUIFrameColor();
+		DrawBorder(console_, frameColor);
+
+		// Draw title
 		int titleX = (TCOD_console_get_width(console_)
 		              - static_cast<int>(title_.length()))
 		             / 2;
