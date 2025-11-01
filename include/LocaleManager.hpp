@@ -1,11 +1,12 @@
-#ifndef STRING_TABLE_HPP
-#define STRING_TABLE_HPP
+#ifndef LOCALEMANAGER_HPP
+#define LOCALEMANAGER_HPP
 
 #include <libtcod/color.hpp>
 #include <nlohmann/json.hpp>
 
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace tutorial
 {
@@ -28,11 +29,18 @@ namespace tutorial
 		}
 	};
 
-	class StringTable
+	// Species and class data structures
+	struct SpeciesClassData {
+		int order;
+		std::string name;
+		std::string description;
+	};
+
+	class LocaleManager
 	{
 	public:
 		// Get singleton instance
-		static StringTable& Instance();
+		static LocaleManager& Instance();
 
 		// Load a locale file (e.g., "en_US")
 		void LoadLocale(const std::string& locale);
@@ -60,13 +68,23 @@ namespace tutorial
 		// Clear all loaded strings
 		void Clear();
 
+		// Get species and class data
+		const std::vector<SpeciesClassData>& GetSpecies() const
+		{
+			return species_;
+		}
+		const std::vector<SpeciesClassData>& GetClasses() const
+		{
+			return classes_;
+		}
+
 	private:
-		StringTable() = default;
-		~StringTable() = default;
+		LocaleManager() = default;
+		~LocaleManager() = default;
 
 		// Prevent copying
-		StringTable(const StringTable&) = delete;
-		StringTable& operator=(const StringTable&) = delete;
+		LocaleManager(const LocaleManager&) = delete;
+		LocaleManager& operator=(const LocaleManager&) = delete;
 
 		// Parse a message JSON object (handles text, color, stack
 		// fields)
@@ -88,7 +106,9 @@ namespace tutorial
 
 		nlohmann::json locale_;
 		std::string currentLocale_;
+		std::vector<SpeciesClassData> species_;
+		std::vector<SpeciesClassData> classes_;
 	};
 } // namespace tutorial
 
-#endif // STRING_TABLE_HPP
+#endif // LOCALEMANAGER_HPP

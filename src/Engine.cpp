@@ -10,6 +10,7 @@
 #include "InventoryWindow.hpp"
 #include "ItemSelectionWindow.hpp"
 #include "LevelConfig.hpp"
+#include "LocaleManager.hpp"
 #include "Map.hpp"
 #include "MapGenerator.hpp"
 #include "MenuWindow.hpp"
@@ -19,7 +20,6 @@
 #include "SpellMenuWindow.hpp"
 #include "SpellRegistry.hpp"
 #include "SpellcasterComponent.hpp"
-#include "StringTable.hpp"
 
 #include <iostream>
 #include <memory>
@@ -369,7 +369,7 @@ namespace tutorial
 		this->ComputeFOV();
 
 		auto welcomeMsg =
-		    StringTable::Instance().GetMessage("game.welcome");
+		    LocaleManager::Instance().GetMessage("game.welcome");
 		messageLog_.AddMessage(welcomeMsg.text, welcomeMsg.color,
 		                       welcomeMsg.stack);
 

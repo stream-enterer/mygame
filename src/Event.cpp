@@ -3,10 +3,10 @@
 #include "Effect.hpp"
 #include "Engine.hpp"
 #include "Entity.hpp"
+#include "LocaleManager.hpp"
 #include "SaveManager.hpp"
 #include "SpellRegistry.hpp"
 #include "SpellcasterComponent.hpp"
-#include "StringTable.hpp"
 #include "TargetSelector.hpp"
 #include "TemplateRegistry.hpp"
 #include "Util.hpp"
@@ -106,14 +106,14 @@ namespace tutorial
 		entity_.Die();
 
 		if (engine_.IsPlayer(entity_)) {
-			auto msg = StringTable::Instance().GetMessage(
+			auto msg = LocaleManager::Instance().GetMessage(
 			    "messages.death.player");
 			engine_.LogMessage(msg.text, msg.color, msg.stack);
 
 			// Wipe save on player death (which triggers game over)
 			SaveManager::Instance().DeleteSave();
 		} else {
-			auto msg = StringTable::Instance().GetMessage(
+			auto msg = LocaleManager::Instance().GetMessage(
 			    "messages.death.npc",
 			    { { "name",
 			        util::capitalize(entity_.GetName()) } });
@@ -197,7 +197,7 @@ namespace tutorial
 			    attacker->Attack() - defender->GetDefense();
 
 			if (damage > 0) {
-				auto msg = StringTable::Instance().GetMessage(
+				auto msg = LocaleManager::Instance().GetMessage(
 				    "messages.combat.attack_hit",
 				    { { "attacker",
 				        util::capitalize(entity_.GetName()) },
@@ -208,7 +208,7 @@ namespace tutorial
 
 				engine_.DealDamage(*target, damage);
 			} else {
-				auto msg = StringTable::Instance().GetMessage(
+				auto msg = LocaleManager::Instance().GetMessage(
 				    "messages.combat.attack_miss",
 				    { { "attacker",
 				        util::capitalize(entity_.GetName()) },
@@ -272,7 +272,7 @@ namespace tutorial
 		}
 
 		if (itemsHere.empty()) {
-			auto msg = StringTable::Instance().GetMessage(
+			auto msg = LocaleManager::Instance().GetMessage(
 			    "messages.pickup.fail");
 			engine_.LogMessage(msg.text, msg.color, msg.stack);
 			return;
@@ -315,12 +315,12 @@ namespace tutorial
 		    player->AddToInventory(engine_.RemoveEntity(item_));
 
 		if (success) {
-			auto msg = StringTable::Instance().GetMessage(
+			auto msg = LocaleManager::Instance().GetMessage(
 			    "messages.pickup.success",
 			    { { "item", itemName } });
 			engine_.LogMessage(msg.text, msg.color, msg.stack);
 		} else {
-			auto msg = StringTable::Instance().GetMessage(
+			auto msg = LocaleManager::Instance().GetMessage(
 			    "messages.pickup.inventory_full");
 			engine_.LogMessage(msg.text, msg.color, msg.stack);
 		}
@@ -405,7 +405,7 @@ namespace tutorial
 
 		// Check if spell is known
 		if (!caster->KnowsSpell(spellId_)) {
-			auto msg = StringTable::Instance().GetMessage(
+			auto msg = LocaleManager::Instance().GetMessage(
 			    "messages.spell.unknown");
 			engine_.LogMessage(msg.text, msg.color, msg.stack);
 			return;
@@ -428,7 +428,7 @@ namespace tutorial
 		}
 
 		if (destructible->GetMp() < spell->manaCost) {
-			auto msg = StringTable::Instance().GetMessage(
+			auto msg = LocaleManager::Instance().GetMessage(
 			    "messages.spell.not_enough_mana");
 			engine_.LogMessage(msg.text, msg.color, msg.stack);
 			engine_.ReturnToMainGame();
@@ -483,7 +483,7 @@ namespace tutorial
 
 		engine.SpawnEntity(std::move(droppedItem), dropPos);
 
-		auto msg = StringTable::Instance().GetMessage(
+		auto msg = LocaleManager::Instance().GetMessage(
 		    "messages.drop.success", { { "item", itemName } });
 		engine.LogMessage(msg.text, msg.color, msg.stack);
 
@@ -507,7 +507,7 @@ namespace tutorial
 
 		engine.SpawnEntity(std::move(extractedItem), dropPos);
 
-		auto msg = StringTable::Instance().GetMessage(
+		auto msg = LocaleManager::Instance().GetMessage(
 		    "messages.drop.success", { { "item", itemName } });
 		engine.LogMessage(msg.text, msg.color, msg.stack);
 

@@ -4,7 +4,7 @@
 #include "Components.hpp"
 #include "Engine.hpp"
 #include "Entity.hpp"
-#include "StringTable.hpp"
+#include "LocaleManager.hpp"
 #include "Util.hpp"
 
 namespace tutorial
@@ -33,12 +33,14 @@ namespace tutorial
 			if (healed > 0) {
 				if (!messageKey_.empty()) {
 					auto msg =
-					    StringTable::Instance().GetMessage(
-					        messageKey_,
-					        { { "target",
-					            target.GetName() },
-					          { "amount",
-					            std::to_string(healed) } });
+					    LocaleManager::Instance()
+					        .GetMessage(
+					            messageKey_,
+					            { { "target",
+					                target.GetName() },
+					              { "amount",
+					                std::to_string(
+					                    healed) } });
 					engine.LogMessage(msg.text, msg.color,
 					                  msg.stack);
 				}
@@ -51,7 +53,7 @@ namespace tutorial
 			    static_cast<unsigned int>(-amount_);
 
 			if (!messageKey_.empty()) {
-				auto msg = StringTable::Instance().GetMessage(
+				auto msg = LocaleManager::Instance().GetMessage(
 				    messageKey_,
 				    { { "target",
 				        util::capitalize(target.GetName()) },
@@ -81,7 +83,7 @@ namespace tutorial
 
 		if (aiType_ == "confused") {
 			if (!messageKey_.empty()) {
-				auto msg = StringTable::Instance().GetMessage(
+				auto msg = LocaleManager::Instance().GetMessage(
 				    messageKey_,
 				    { { "target", target.GetName() } });
 				engine.LogMessage(msg.text, msg.color,

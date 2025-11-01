@@ -10,8 +10,8 @@
 #include "HealthBar.hpp"
 #include "InventoryWindow.hpp"
 #include "LevelConfig.hpp"
+#include "LocaleManager.hpp"
 #include "Map.hpp"
-#include "StringTable.hpp"
 #include "TemplateRegistry.hpp"
 
 #include <chrono>
@@ -724,8 +724,8 @@ namespace tutorial
 			engine.turnsSinceLastAutosave_ = 0;
 
 			// Step 9: Add welcome back message
-			auto msg =
-			    StringTable::Instance().GetMessage("game.welcome");
+			auto msg = LocaleManager::Instance().GetMessage(
+			    "game.welcome");
 			engine.messageLog_.AddMessage(
 			    "Welcome back, adventurer!", msg.color, false);
 

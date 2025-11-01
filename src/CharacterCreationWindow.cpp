@@ -1,7 +1,7 @@
 #include "CharacterCreationWindow.hpp"
 
 #include "ConfigManager.hpp"
-#include "StringTable.hpp"
+#include "LocaleManager.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -37,79 +37,39 @@ namespace tutorial
 
 	void CharacterCreationWindow::LoadSpeciesOptions()
 	{
-		auto& st = StringTable::Instance();
+		auto& lm = LocaleManager::Instance();
+		const auto& speciesData = lm.GetSpecies();
 
-		std::vector<std::string> speciesOrder = { "human", "elf",
-			                                  "dwarf" };
-
-		for (const auto& speciesId : speciesOrder) {
-			std::string nameKey = "species." + speciesId + ".name";
-			std::string descKey =
-			    "species." + speciesId + ".description";
-
-			if (st.Has(nameKey) && st.Has(descKey)) {
-				speciesOptions_.push_back(
-				    { speciesId, st.GetString(nameKey),
-				      st.GetString(descKey) });
-			}
+		speciesOptions_.clear();
+		for (const auto& species : speciesData) {
+			speciesOptions_.push_back({ species.name, species.name,
+			                            species.description });
 		}
 
-		// Fall back if nothing loaded
-		if (speciesOptions_.empty()) {
-			std::cerr << "[CharacterCreation] WARNING: No species "
-			             "options "
-			             "loaded from locale, using fallback"
-			          << std::endl;
-			speciesOptions_.push_back(
-			    { "human", "Human", "Versatile and adaptable" });
-			speciesOptions_.push_back(
-			    { "elf", "Elf", "Gspeciesful and perceptive" });
-			speciesOptions_.push_back(
-			    { "dwarf", "Dwarf", "Sturdy and resilient" });
-		}
+		std::cout << "[CharacterCreation] Loaded "
+		          << speciesOptions_.size()
+		          << " species from LocaleManager" << std::endl;
 	}
 
 	void CharacterCreationWindow::LoadClassOptions()
 	{
-		auto& st = StringTable::Instance();
+		auto& lm = LocaleManager::Instance();
+		const auto& classData = lm.GetClasses();
 
-		std::vector<std::string> classOrder = { "warrior", "rogue",
-			                                "mage" };
-
-		for (const auto& classId : classOrder) {
-			std::string nameKey = "classes." + classId + ".name";
-			std::string descKey =
-			    "classes." + classId + ".description";
-
-			if (st.Has(nameKey) && st.Has(descKey)) {
-				classOptions_.push_back(
-				    { classId, st.GetString(nameKey),
-				      st.GetString(descKey) });
-			}
+		classOptions_.clear();
+		for (const auto& cls : classData) {
+			classOptions_.push_back(
+			    { cls.name, cls.name, cls.description });
 		}
 
-		// Fall back if nothing loaded
-		if (classOptions_.empty()) {
-			std::cerr
-			    << "[CharacterCreation] WARNING: No class options "
-			       "loaded from locale, using fallback"
-			    << std::endl;
-			classOptions_.push_back(
-			    { "warrior", "Warrior",
-			      "Masters of melee combat and heavy armor" });
-			classOptions_.push_back(
-			    { "rogue", "Rogue",
-			      "Swift assassins specializing in critical "
-			      "strikes" });
-			classOptions_.push_back(
-			    { "mage", "Mage",
-			      "Wielders of arcane magic and elemental power" });
-		}
+		std::cout << "[CharacterCreation] Loaded "
+		          << classOptions_.size()
+		          << " classes from LocaleManager" << std::endl;
 	}
 
 	void CharacterCreationWindow::InitializeStats()
 	{
-		auto& st = StringTable::Instance();
+		auto& st = LocaleManager::Instance();
 
 		std::vector<std::string> statOrder = { "strength", "dexterity",
 			                               "intelligence" };
@@ -265,7 +225,6 @@ namespace tutorial
 	{
 		auto& cfg = ConfigManager::Instance();
 		auto textColor = cfg.GetUITextColor();
-		auto highlightColor = tcod::ColorRGB { 255, 200, 100 };
 
 		// Draw title
 		std::string title = "Choose Your Species";
@@ -284,47 +243,31 @@ namespace tutorial
 		                            .alignment = TCOD_LEFT },
 		    "%s", title.c_str());
 
-		// Draw species options
-		int startY = menuStartY_ + 5;
-		for (size_t i = 0; i < speciesOptions_.size(); ++i) {
-			bool isSelected =
-			    (static_cast<int>(i) == speciesMenuIndex_);
-			bool isMarked =
-			    (static_cast<int>(i) == selectedSpeciesIndex_);
+		// Calculate bounds based on tab labels
+		// Left: Start of 'S' in "SPECIES" (position 3 from tab
+		// rendering) Right: Position of 'M' in "CONFIRM"
+		int tabStartX = menuPos_.x;
+		int leftBound = tabStartX;
+		int rightBound = tabStartX + (menuWidth_ / 4) * 3
+		                 + 6; // Approximately to 'M' in CONFIRM
 
-			tcod::ColorRGB color =
-			    isSelected ? highlightColor : textColor;
+		// Render three-column species list
+		int currentY = menuStartY_ + 5;
+		RenderThreeColumnList(console, speciesOptions_,
+		                      speciesMenuIndex_, leftBound, rightBound,
+		                      currentY);
 
-			// Build item text with letter and marker
-			std::string itemText;
-			if (isMarked) {
-				itemText += "* ";
-			} else {
-				itemText += "  ";
-			}
+		// Add line break
+		currentY += 2;
 
-			char letter = 'a' + static_cast<char>(i);
-			itemText += "(";
-			itemText += letter;
-			itemText += ") ";
-			itemText += speciesOptions_[i].name + " - "
-			            + speciesOptions_[i].description;
-
-			int itemY = startY + static_cast<int>(i) * 2;
-			int itemX =
-			    width / 2 - static_cast<int>(itemText.length()) / 2;
-
-			TCOD_printf_rgb(
-			    console,
-			    (TCOD_PrintParamsRGB) { .x = itemX,
-			                            .y = itemY,
-			                            .width = 0,
-			                            .height = 0,
-			                            .fg = &color,
-			                            .bg = NULL,
-			                            .flag = TCOD_BKGND_NONE,
-			                            .alignment = TCOD_LEFT },
-			    "%s", itemText.c_str());
+		// Render description for currently highlighted species
+		if (speciesMenuIndex_ >= 0
+		    && speciesMenuIndex_
+		           < static_cast<int>(speciesOptions_.size())) {
+			const std::string& description =
+			    speciesOptions_[speciesMenuIndex_].description;
+			RenderDescriptionBlock(console, description, leftBound,
+			                       rightBound, currentY);
 		}
 	}
 
@@ -334,7 +277,6 @@ namespace tutorial
 	{
 		auto& cfg = ConfigManager::Instance();
 		auto textColor = cfg.GetUITextColor();
-		auto highlightColor = tcod::ColorRGB { 255, 200, 100 };
 
 		// Draw title
 		std::string title = "Choose Your Class";
@@ -353,47 +295,27 @@ namespace tutorial
 		                            .alignment = TCOD_LEFT },
 		    "%s", title.c_str());
 
-		// Draw class options
-		int startY = menuStartY_ + 5;
-		for (size_t i = 0; i < classOptions_.size(); ++i) {
-			bool isSelected =
-			    (static_cast<int>(i) == classMenuIndex_);
-			bool isMarked =
-			    (static_cast<int>(i) == selectedClassIndex_);
+		// Calculate bounds (same as species menu)
+		int tabStartX = menuPos_.x;
+		int leftBound = tabStartX;
+		int rightBound = tabStartX + (menuWidth_ / 4) * 3 + 6;
 
-			tcod::ColorRGB color =
-			    isSelected ? highlightColor : textColor;
+		// Render three-column class list
+		int currentY = menuStartY_ + 5;
+		RenderThreeColumnList(console, classOptions_, classMenuIndex_,
+		                      leftBound, rightBound, currentY);
 
-			// Build item text with letter and marker
-			std::string itemText;
-			if (isMarked) {
-				itemText += "* ";
-			} else {
-				itemText += "  ";
-			}
+		// Add line break
+		currentY += 2;
 
-			char letter = 'a' + static_cast<char>(i);
-			itemText += "(";
-			itemText += letter;
-			itemText += ") ";
-			itemText += classOptions_[i].name + " - "
-			            + classOptions_[i].description;
-
-			int itemY = startY + static_cast<int>(i) * 2;
-			int itemX =
-			    width / 2 - static_cast<int>(itemText.length()) / 2;
-
-			TCOD_printf_rgb(
-			    console,
-			    (TCOD_PrintParamsRGB) { .x = itemX,
-			                            .y = itemY,
-			                            .width = 0,
-			                            .height = 0,
-			                            .fg = &color,
-			                            .bg = NULL,
-			                            .flag = TCOD_BKGND_NONE,
-			                            .alignment = TCOD_LEFT },
-			    "%s", itemText.c_str());
+		// Render description for currently highlighted class
+		if (classMenuIndex_ >= 0
+		    && classMenuIndex_
+		           < static_cast<int>(classOptions_.size())) {
+			const std::string& description =
+			    classOptions_[classMenuIndex_].description;
+			RenderDescriptionBlock(console, description, leftBound,
+			                       rightBound, currentY);
 		}
 	}
 
@@ -791,6 +713,141 @@ namespace tutorial
 		if (stats_[statsMenuIndex_].value > 1) {
 			stats_[statsMenuIndex_].value--;
 			availablePoints_++;
+		}
+	}
+
+	void CharacterCreationWindow::RenderThreeColumnList(
+	    TCOD_Console* console, const std::vector<CreationOption>& items,
+	    int highlightIndex, int leftBound, int rightBound,
+	    int& currentY) const
+	{
+		auto& cfg = ConfigManager::Instance();
+		auto textColor = cfg.GetUITextColor();
+		auto highlightColor = tcod::ColorRGB { 255, 200, 100 };
+
+		const int totalWidth = rightBound - leftBound;
+		const int columnWidth = totalWidth / 3;
+		const int itemsPerColumn = 4;
+
+		int maxY = currentY;
+
+		for (int col = 0; col < 3; ++col) {
+			int colX = leftBound + (col * columnWidth);
+			int colY = currentY;
+
+			for (int row = 0; row < itemsPerColumn; ++row) {
+				int itemIndex = (col * itemsPerColumn) + row;
+				if (itemIndex
+				    >= static_cast<int>(items.size())) {
+					break;
+				}
+
+				// Convert index to letter (0='a', 1='b', etc.)
+				char letter = 'a' + itemIndex;
+
+				// Truncate name if it exceeds column width
+				// Reserve 4 chars for "(x) " prefix
+				int maxNameWidth = columnWidth - 5;
+				std::string displayName = items[itemIndex].name;
+				if (static_cast<int>(displayName.length())
+				    > maxNameWidth) {
+					// HARD CUT: Truncate name without
+					// ellipsis
+					displayName =
+					    displayName.substr(0, maxNameWidth);
+				}
+
+				std::string line = "(" + std::string(1, letter)
+				                   + ") " + displayName;
+
+				// Highlight if this is the selected item
+				tcod::ColorRGB color =
+				    (itemIndex == highlightIndex)
+				        ? highlightColor
+				        : textColor;
+
+				TCOD_printf_rgb(console,
+				                (TCOD_PrintParamsRGB) {
+				                    .x = colX,
+				                    .y = colY,
+				                    .width = 0,
+				                    .height = 0,
+				                    .fg = &color,
+				                    .bg = NULL,
+				                    .flag = TCOD_BKGND_NONE,
+				                    .alignment = TCOD_LEFT },
+				                "%s", line.c_str());
+
+				colY++;
+				maxY = std::max(maxY, colY);
+			}
+		}
+
+		currentY = maxY;
+	}
+
+	std::string CharacterCreationWindow::WrapText(const std::string& text,
+	                                              int maxWidth) const
+	{
+		if (maxWidth <= 0) return text;
+
+		std::string result;
+		std::string currentLine;
+		std::istringstream words(text);
+		std::string word;
+
+		while (words >> word) {
+			// Check if adding this word would exceed width
+			std::string testLine = currentLine.empty()
+			                           ? word
+			                           : currentLine + " " + word;
+
+			if (static_cast<int>(testLine.length()) <= maxWidth) {
+				currentLine = testLine;
+			} else {
+				// Flush current line and start new one
+				if (!currentLine.empty()) {
+					result += currentLine + "\n";
+				}
+				currentLine = word;
+			}
+		}
+
+		// Add remaining text
+		if (!currentLine.empty()) {
+			result += currentLine;
+		}
+
+		return result;
+	}
+
+	void CharacterCreationWindow::RenderDescriptionBlock(
+	    TCOD_Console* console, const std::string& description,
+	    int leftBound, int rightBound, int startY) const
+	{
+		auto& cfg = ConfigManager::Instance();
+		auto textColor = cfg.GetUITextColor();
+
+		int maxWidth = rightBound - leftBound;
+		std::string wrapped = WrapText(description, maxWidth);
+
+		std::istringstream lines(wrapped);
+		std::string line;
+		int y = startY;
+
+		while (std::getline(lines, line)) {
+			TCOD_printf_rgb(
+			    console,
+			    (TCOD_PrintParamsRGB) { .x = leftBound,
+			                            .y = y,
+			                            .width = 0,
+			                            .height = 0,
+			                            .fg = &textColor,
+			                            .bg = NULL,
+			                            .flag = TCOD_BKGND_NONE,
+			                            .alignment = TCOD_LEFT },
+			    "%s", line.c_str());
+			y++;
 		}
 	}
 

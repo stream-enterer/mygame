@@ -1,0 +1,64 @@
+{
+	"species": [
+		{
+			"order": 1,
+			"name": "Human",
+			"description": "Versatile and adaptable, humans excel in all professions through determination and ingenuity."
+		},
+		{
+			"order": 2,
+			"name": "Elf",
+			"description": "Graceful and long-lived, elves possess keen senses and natural affinity for magic and archery."
+		},
+		{
+			"order": 3,
+			"name": "Dwarf",
+			"description": "Sturdy and resilient, dwarves are master craftsmen with unmatched endurance and resistance to magic."
+		},
+		{
+			"order": 4,
+			"name": "Gnome",
+			"description": "Clever and inventive, gnomes combine arcane knowledge with mechanical genius and insatiable curiosity."
+		},
+		{
+			"order": 5,
+			"name": "Dragonborn",
+			"description": "Proud dragon-descended warriors who breathe elemental energy and possess formidable natural armor."
+		},
+		{
+			"order": 6,
+			"name": "Githzerai",
+			"description": "Ascetic psychic warriors from the astral plane, masters of mental discipline and martial prowess."
+		},
+		{
+			"order": 7,
+			"name": "Orc",
+			"description": "Fierce and powerful, orcs channel rage into devastating strength and intimidating presence."
+		},
+		{
+			"order": 8,
+			"name": "Halfling",
+			"description": "Nimble and lucky, halflings rely on stealth, resourcefulness, and remarkable fortune to survive."
+		},
+		{
+			"order": 9,
+			"name": "Demonspawn",
+			"description": "Born of infernal heritage, demonspawn wield dark powers and resist fire while struggling with their nature."
+		},
+		{
+			"order": 10,
+			"name": "Centaur",
+			"description": "Swift horse-bodied warriors who combine mobility with archery skills and natural survivalism."
+		},
+		{
+			"order": 11,
+			"name": "Goblin",
+			"description": "Small and scrappy, goblins compensate for size with cunning, agility, and explosive inventions."
+		},
+		{
+			"order": 12,
+			"name": "Changeling",
+			"description": "Mysterious shapeshifters who can assume any humanoid form, masters of deception and infiltration."
+		}
+	]
+}

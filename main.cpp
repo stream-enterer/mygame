@@ -2,8 +2,8 @@
 #include "ConfigManager.hpp"
 #include "Configuration.hpp"
 #include "Engine.hpp"
+#include "LocaleManager.hpp"
 #include "SaveManager.hpp"
-#include "StringTable.hpp"
 #include "TurnManager.hpp"
 
 #include <iostream>
@@ -15,7 +15,7 @@ int main()
 	tutorial::ConfigManager::Instance().LoadAll();
 
 	// Load default locale
-	tutorial::StringTable::Instance().LoadLocale("en_US");
+	tutorial::LocaleManager::Instance().LoadLocale("en_US");
 
 	static const tutorial::Configuration config {
 		"libtcod C++ tutorial 8", // title

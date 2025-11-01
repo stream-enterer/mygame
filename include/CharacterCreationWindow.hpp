@@ -90,6 +90,17 @@ namespace tutorial
 		                       int height) const;
 		void RenderClassMenu(TCOD_Console* console, int width,
 		                     int height) const;
+		void RenderThreeColumnList(
+		    TCOD_Console* console,
+		    const std::vector<CreationOption>& items,
+		    int highlightIndex, int leftBound, int rightBound,
+		    int& currentY) const;
+		void RenderDescriptionBlock(TCOD_Console* console,
+		                            const std::string& description,
+		                            int leftBound, int rightBound,
+		                            int startY) const;
+		std::string WrapText(const std::string& text,
+		                     int maxWidth) const;
 		void RenderStatsMenu(TCOD_Console* console, int width,
 		                     int height) const;
 		void RenderConfirmMenu(TCOD_Console* console, int width,

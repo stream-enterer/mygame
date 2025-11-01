@@ -2,8 +2,8 @@
 
 #include "Engine.hpp"
 #include "Entity.hpp"
+#include "LocaleManager.hpp"
 #include "Map.hpp"
-#include "StringTable.hpp"
 
 #include <libtcod/bresenham.hpp>
 
@@ -54,14 +54,15 @@ namespace tutorial
 	bool ClosestEnemySelector::SelectTargets(
 	    Entity& user, Engine& engine, std::vector<Entity*>& targets) const
 	{
-		Entity* closest = engine.GetClosestMonster(user.GetPos(), range_);
+		Entity* closest =
+		    engine.GetClosestMonster(user.GetPos(), range_);
 
 		if (closest) {
 			targets.push_back(closest);
 			return true;
 		}
 
-		auto msg = StringTable::Instance().GetMessage(
+		auto msg = LocaleManager::Instance().GetMessage(
 		    "items.targeting.no_enemy_in_range");
 		engine.LogMessage(msg.text, msg.color, msg.stack);
 		return false;
@@ -75,7 +76,7 @@ namespace tutorial
 	bool SingleTargetSelector::SelectTargets(
 	    Entity& user, Engine& engine, std::vector<Entity*>& targets) const
 	{
-		auto msg = StringTable::Instance().GetMessage(
+		auto msg = LocaleManager::Instance().GetMessage(
 		    "items.targeting.select_target");
 		engine.LogMessage(msg.text, msg.color, msg.stack);
 
@@ -90,7 +91,7 @@ namespace tutorial
 				// No target - log message and return false to
 				// stay in targeting
 				auto failMsg =
-				    StringTable::Instance().GetMessage(
+				    LocaleManager::Instance().GetMessage(
 				        "items.targeting.no_target_at_"
 				        "location");
 				engine.LogMessage(failMsg.text, failMsg.color,
@@ -101,7 +102,7 @@ namespace tutorial
 			// Check line-of-sight
 			if (!HasLineOfSight(engine, user.GetPos(), pos)) {
 				auto losMsg =
-				    StringTable::Instance().GetMessage(
+				    LocaleManager::Instance().GetMessage(
 				        "items.targeting.no_line_of_sight");
 				engine.LogMessage(losMsg.text, losMsg.color,
 				                  losMsg.stack);
@@ -136,7 +137,7 @@ namespace tutorial
 	bool AreaTargetSelector::SelectTargets(
 	    Entity& user, Engine& engine, std::vector<Entity*>& targets) const
 	{
-		auto msg = StringTable::Instance().GetMessage(
+		auto msg = LocaleManager::Instance().GetMessage(
 		    "items.targeting.select_tile");
 		engine.LogMessage(msg.text, msg.color, msg.stack);
 
@@ -157,7 +158,8 @@ namespace tutorial
 			if (entity->GetDestructible()
 			    && !entity->GetDestructible()->IsDead()
 			    && !entity->IsCorpse() && !entity->GetItem()
-			    && entity->GetDistance(pos.x, pos.y) <= effectRadius_
+			    && entity->GetDistance(pos.x, pos.y)
+			           <= effectRadius_
 			    && HasLineOfSight(engine, user.GetPos(),
 			                      entity->GetPos())) {
 				targets.push_back(entity.get());
@@ -166,7 +168,7 @@ namespace tutorial
 		}
 
 		if (!foundAny) {
-			auto failMsg = StringTable::Instance().GetMessage(
+			auto failMsg = LocaleManager::Instance().GetMessage(
 			    "items.targeting.no_targets_in_area");
 			engine.LogMessage(failMsg.text, failMsg.color,
 			                  failMsg.stack);
@@ -183,7 +185,7 @@ namespace tutorial
 	bool BeamTargetSelector::SelectTargets(
 	    Entity& user, Engine& engine, std::vector<Entity*>& targets) const
 	{
-		auto msg = StringTable::Instance().GetMessage(
+		auto msg = LocaleManager::Instance().GetMessage(
 		    "items.targeting.select_target");
 		engine.LogMessage(msg.text, msg.color, msg.stack);
 
@@ -201,7 +203,8 @@ namespace tutorial
 		// Trace beam from user to selected tile using Bresenham
 		const Map& map = engine.GetMap();
 		pos_t userPos = user.GetPos();
-		tcod::BresenhamLine line({ userPos.x, userPos.y }, { pos.x, pos.y });
+		tcod::BresenhamLine line({ userPos.x, userPos.y },
+		                         { pos.x, pos.y });
 
 		// Collect all tiles the beam passes through
 		std::vector<pos_t> beamTiles;
@@ -242,7 +245,7 @@ namespace tutorial
 		}
 
 		if (!foundAny) {
-			auto failMsg = StringTable::Instance().GetMessage(
+			auto failMsg = LocaleManager::Instance().GetMessage(
 			    "items.targeting.no_targets_in_beam");
 			engine.LogMessage(failMsg.text, failMsg.color,
 			                  failMsg.stack);
@@ -260,7 +263,7 @@ namespace tutorial
 	bool FirstInBeamTargetSelector::SelectTargets(
 	    Entity& user, Engine& engine, std::vector<Entity*>& targets) const
 	{
-		auto msg = StringTable::Instance().GetMessage(
+		auto msg = LocaleManager::Instance().GetMessage(
 		    "items.targeting.select_target");
 		engine.LogMessage(msg.text, msg.color, msg.stack);
 
@@ -278,7 +281,8 @@ namespace tutorial
 		// Trace beam from user to selected tile using Bresenham
 		const Map& map = engine.GetMap();
 		pos_t userPos = user.GetPos();
-		tcod::BresenhamLine line({ userPos.x, userPos.y }, { pos.x, pos.y });
+		tcod::BresenhamLine line({ userPos.x, userPos.y },
+		                         { pos.x, pos.y });
 
 		// Find FIRST valid target along the beam path
 		for (auto it = line.begin(); it != line.end(); ++it) {
@@ -314,7 +318,7 @@ namespace tutorial
 		}
 
 		// No target found along beam
-		auto failMsg = StringTable::Instance().GetMessage(
+		auto failMsg = LocaleManager::Instance().GetMessage(
 		    "items.targeting.no_targets_in_beam");
 		engine.LogMessage(failMsg.text, failMsg.color, failMsg.stack);
 		return false;

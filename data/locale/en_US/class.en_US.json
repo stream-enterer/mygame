@@ -1,0 +1,64 @@
+{
+	"classes": [
+		{
+			"order": 1,
+			"name": "Fighter",
+			"description": "Master of weapons and armor, fighters dominate the battlefield through superior martial training and versatility."
+		},
+		{
+			"order": 2,
+			"name": "Wizard",
+			"description": "Scholarly spellcasters who manipulate reality through arcane formulas and vast magical knowledge."
+		},
+		{
+			"order": 3,
+			"name": "Rogue",
+			"description": "Cunning specialists in stealth, traps, and precision strikes who exploit enemy weaknesses."
+		},
+		{
+			"order": 4,
+			"name": "Cleric",
+			"description": "Divine champions who channel deity power to heal allies and smite foes with holy magic."
+		},
+		{
+			"order": 5,
+			"name": "Ranger",
+			"description": "Wilderness experts combining archery, tracking, and nature magic to hunt their chosen prey."
+		},
+		{
+			"order": 6,
+			"name": "Paladin",
+			"description": "Holy warriors bound by sacred oath, wielding righteous fury and divine protection."
+		},
+		{
+			"order": 7,
+			"name": "Barbarian",
+			"description": "Primal warriors who enter battle rage, unleashing devastating strength and resilience."
+		},
+		{
+			"order": 8,
+			"name": "Monk",
+			"description": "Martial artists channeling ki energy for supernatural speed, strikes, and self-perfection."
+		},
+		{
+			"order": 9,
+			"name": "Warlock",
+			"description": "Pact-bound casters drawing eldritch power from otherworldly patrons for dark magic."
+		},
+		{
+			"order": 10,
+			"name": "Bard",
+			"description": "Charismatic performers weaving magic through music, inspiring allies and deceiving enemies."
+		},
+		{
+			"order": 11,
+			"name": "Druid",
+			"description": "Nature guardians shapeshifting into beasts and commanding primal elemental forces."
+		},
+		{
+			"order": 12,
+			"name": "Sorcerer",
+			"description": "Innate spellcasters with magic in their blood, manipulating spells through raw charisma."
+		}
+	]
+}

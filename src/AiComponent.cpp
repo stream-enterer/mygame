@@ -3,9 +3,9 @@
 #include "Engine.hpp"
 #include "Entity.hpp"
 #include "Event.hpp"
+#include "LocaleManager.hpp"
 #include "Map.hpp"
 #include "Position.hpp"
-#include "StringTable.hpp"
 
 #include <libtcod/bresenham.hpp>
 
@@ -221,7 +221,7 @@ namespace tutorial
 		// Decrease confusion and restore old AI when done
 		nbTurns_--;
 		if (nbTurns_ <= 0) {
-			auto msg = StringTable::Instance().GetMessage(
+			auto msg = LocaleManager::Instance().GetMessage(
 			    "items.confusion_scroll.wears_off",
 			    { { "name", entity.GetName() } });
 			engine.LogMessage(msg.text, msg.color, msg.stack);
